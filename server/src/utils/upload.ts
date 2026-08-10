@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import type { UploadApiResponse } from 'cloudinary';
-import { cloudinary, isCloudinaryConfigured } from '../config/cloudinary';
+import { cloudinary, configureCloudinary, isCloudinaryConfigured } from '../config/cloudinary';
 import ApiError from './apiError';
 
 export type AttachmentType = 'image' | 'audio';
@@ -27,20 +27,11 @@ const ensureUploadsDir = (): void => {
   }
 };
 
-export const IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-export const AUDIO_MIMES = new Set([
-  'audio/mpeg',
-  'audio/wav',
-  'audio/wave',
-  'audio/x-wav',
-  'audio/webm',
-  'audio/mp4',
-  'video/webm',
-]);
-
 export const getAttachmentType = (mimetype: string): AttachmentType | null => {
-  if (IMAGE_MIMES.has(mimetype)) return 'image';
-  if (AUDIO_MIMES.has(mimetype)) return 'audio';
+  if (!mimetype) return null;
+  const cleanMime = mimetype.split(';')[0].toLowerCase().trim();
+  if (cleanMime.startsWith('image/')) return 'image';
+  if (cleanMime.startsWith('audio/') || cleanMime.startsWith('video/')) return 'audio';
   return null;
 };
 
@@ -53,38 +44,52 @@ export const uploadBuffer = async (
   const type = getAttachmentType(file.mimetype);
   if (!type) {
     throw ApiError.badRequest(
-      'Invalid file type. Allowed: jpeg, png, webp, mpeg, wav, webm, mp4',
+      'Invalid file type. Only image and audio files are allowed.',
       'INVALID_FILE_TYPE'
     );
   }
 
-  const maxBytes = type === 'image' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+  const maxBytes = type === 'image' ? 10 * 1024 * 1024 : 25 * 1024 * 1024;
   if (file.size > maxBytes) {
     throw ApiError.badRequest(
-      type === 'image' ? 'Image must be <= 5MB' : 'Audio must be <= 10MB',
+      type === 'image' ? 'Image file size must be <= 10MB' : 'Audio file size must be <= 25MB',
       'FILE_TOO_LARGE'
     );
   }
 
+  // Attempt Cloudinary Upload if credentials exist
   if (isCloudinaryConfigured()) {
-    const resourceType = type === 'image' ? 'image' : 'video';
-    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder, resource_type: resourceType },
-        (err, res) => (err ? reject(err) : resolve(res as UploadApiResponse))
-      );
-      stream.end(file.buffer);
-    });
+    try {
+      configureCloudinary();
+      // Note: Cloudinary classifies audio as 'video' resource type
+      const resourceType = type === 'image' ? 'image' : 'video';
+      const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder,
+            resource_type: resourceType,
+            use_filename: true,
+            unique_filename: true,
+          },
+          (err, res) => (err ? reject(err) : resolve(res as UploadApiResponse))
+        );
+        stream.end(file.buffer);
+      });
 
-    return {
-      url: result.secure_url,
-      type,
-      publicId: result.public_id,
-    };
+      return {
+        url: result.secure_url,
+        type,
+        publicId: result.public_id,
+      };
+    } catch (err: any) {
+      console.error('Cloudinary upload error:', err?.message || err);
+      // Fallback to local storage if Cloudinary fails
+    }
   }
 
+  // Fallback: Save to local uploads directory
   ensureUploadsDir();
-  const ext = path.extname(file.originalname) || (type === 'image' ? '.jpg' : '.mp3');
+  const ext = path.extname(file.originalname) || (type === 'image' ? '.jpg' : '.webm');
   const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
   const filepath = path.join(uploadsDir, filename);
   fs.writeFileSync(filepath, file.buffer);

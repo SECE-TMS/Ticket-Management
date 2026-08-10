@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ArrowLeft, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Volume2, X } from 'lucide-react'
 import { ticketService } from '../../services/ticketService'
 import { userService } from '../../services/userService'
 import { Button } from '../../components/common/Button'
@@ -12,7 +12,7 @@ import { AssignModal } from '../../components/tickets/AssignModal'
 import { ResolveModal } from '../../components/tickets/ResolveModal'
 import { useToast } from '../../context/ToastContext'
 import { useAppSelector } from '../../store/hooks'
-import { getErrorMessage } from '../../lib/utils'
+import { getErrorMessage, getAttachmentUrl } from '../../lib/utils'
 import type { Activity, Ticket, User } from '../../types'
 import { getId, getName } from '../../types'
 
@@ -52,6 +52,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const [assignOpen, setAssignOpen] = useState(false)
   const [resolveOpen, setResolveOpen] = useState(false)
   const [comment, setComment] = useState('')
+  const [activeImageModal, setActiveImageModal] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -267,44 +268,136 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               </div>
             )}
 
-            {ticket.userAttachment?.url && (
-              <div className="mt-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
-                  Requester attachment
-                </p>
-                {ticket.userAttachment.type === 'image' ? (
-                  <img
-                    src={ticket.userAttachment.url}
-                    alt="Attachment"
-                    className="max-h-64 rounded-lg border border-[var(--border)]"
-                  />
-                ) : (
-                  <audio controls src={ticket.userAttachment.url} className="w-full" />
-                )}
-              </div>
-            )}
+            {/* ── BEFORE & AFTER MEDIA PROOF GALLERY (2-COL GRID) ────────────────── */}
+            <div className="mt-6 border-t border-[var(--border)] pt-5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)] mb-3 flex items-center gap-2">
+                <Camera size={15} className="text-[var(--primary-blue)]" />
+                Media Proof &amp; Attachments
+              </h3>
 
-            {ticket.resolution?.remarks && (
-              <div className="mt-5 rounded-xl border border-[var(--success)]/20 bg-[var(--success-light)] p-4 text-sm">
-                <p className="font-bold text-[var(--success)]">
-                  ✓ Resolution
-                </p>
-                <p className="mt-1 text-[var(--ink)]">
-                  {ticket.resolution.remarks}
-                </p>
-                {ticket.resolution.attachment?.url && (
-                  <div className="mt-2">
-                    {ticket.resolution.attachment.type === 'image' ? (
-                      <img
-                        src={ticket.resolution.attachment.url}
-                        alt="Proof"
-                        className="max-h-48 rounded-lg"
-                      />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Card 1: Initial Reported Issue Attachment (Before) */}
+                <div className="flex flex-col justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[var(--primary-blue)]">
+                        📸 Initial Reported Issue
+                      </span>
+                      <span className="rounded-full bg-[var(--primary-blue-light)] px-2 py-0.5 text-[10px] font-bold text-[var(--primary-blue)]">
+                        Before
+                      </span>
+                    </div>
+
+                    {ticket.userAttachment?.url ? (
+                      ticket.userAttachment.type === 'image' ? (
+                        <div
+                          className="group relative cursor-pointer overflow-hidden rounded-lg border border-[var(--border)] bg-black/5"
+                          onClick={() => setActiveImageModal(ticket.userAttachment!.url!)}
+                        >
+                          <img
+                            src={getAttachmentUrl(ticket.userAttachment.url)}
+                            alt="Initial Issue Proof"
+                            className="h-44 w-full object-cover transition-all duration-200 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-all group-hover:opacity-100">
+                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-[var(--ink)] shadow-md">
+                              <ExternalLink size={13} /> View Photo
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-[var(--border)] bg-[var(--white)] p-3">
+                          <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[var(--ink)]">
+                            <Volume2 size={15} className="text-[var(--primary-blue)]" />
+                            Voice Note Attachment
+                          </div>
+                          <audio controls src={getAttachmentUrl(ticket.userAttachment.url)} className="w-full h-10" />
+                        </div>
+                      )
                     ) : (
-                      <audio controls src={ticket.resolution.attachment.url} className="w-full" />
+                      <div className="flex h-36 flex-col items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--white)] p-3 text-center">
+                        <Camera size={22} className="mb-1 text-[var(--ink-muted)] opacity-50" />
+                        <p className="text-xs font-semibold text-[var(--ink-muted)]">
+                          No photo attached during submission
+                        </p>
+                      </div>
                     )}
                   </div>
-                )}
+                </div>
+
+                {/* Card 2: Technician Resolution Proof Attachment (After) */}
+                <div className="flex flex-col justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+                  <div>
+                    {(() => {
+                      const isCompleted = ticket.status === 'resolved' || ticket.status === 'closed' || !!ticket.resolution?.attachment?.url
+                      return (
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`text-xs font-bold uppercase tracking-wider ${isCompleted ? 'text-[var(--success)]' : 'text-[var(--ink-muted)]'}`}>
+                            {isCompleted ? '✅ Completion Proof' : '⏳ Completion Proof'}
+                          </span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            isCompleted
+                              ? 'bg-[var(--success-light)] text-[var(--success)]'
+                              : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
+                          }`}>
+                            {isCompleted ? 'After' : 'Pending'}
+                          </span>
+                        </div>
+                      )
+                    })()}
+
+                    {ticket.resolution?.attachment?.url ? (
+                      ticket.resolution.attachment.type === 'image' ? (
+                        <div
+                          className="group relative cursor-pointer overflow-hidden rounded-lg border border-green-200 bg-black/5"
+                          onClick={() => setActiveImageModal(ticket.resolution!.attachment!.url!)}
+                        >
+                          <img
+                            src={getAttachmentUrl(ticket.resolution.attachment.url)}
+                            alt="Completion Resolution Proof"
+                            className="h-44 w-full object-cover transition-all duration-200 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-all group-hover:opacity-100">
+                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-[var(--ink)] shadow-md">
+                              <ExternalLink size={13} /> View Resolution Photo
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-green-200 bg-[var(--white)] p-3">
+                          <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[var(--success)]">
+                            <Volume2 size={15} /> Technician Audio Proof
+                          </div>
+                          <audio controls src={getAttachmentUrl(ticket.resolution.attachment.url)} className="w-full h-10" />
+                        </div>
+                      )
+                    ) : (
+                      <div className="flex h-36 flex-col items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--white)] p-3 text-center">
+                        <Clock size={22} className="mb-1 text-[var(--ink-muted)] opacity-50" />
+                        <p className="text-xs font-semibold text-[var(--ink-muted)]">
+                          {ticket.status === 'resolved' || ticket.status === 'closed'
+                            ? 'Resolved without attachment'
+                            : 'Pending technician completion proof'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Technician Resolution Remarks Callout */}
+            {ticket.resolution?.remarks && (
+              <div className="mt-4 rounded-xl border border-[var(--success)]/30 bg-[var(--success-light)] p-4 shadow-xs">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle2 size={16} className="text-[var(--success)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--success)]">
+                    Technician Resolution Notes
+                  </h4>
+                </div>
+                <p className="text-sm leading-relaxed text-[var(--ink)]">
+                  {ticket.resolution.remarks}
+                </p>
               </div>
             )}
           </div>
@@ -402,6 +495,29 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           }, 'Ticket resolved')
         }}
       />
+
+      {/* Lightbox Image Zoom Modal */}
+      {activeImageModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs animate-fade-in"
+          onClick={() => setActiveImageModal(null)}
+        >
+          <div className="relative max-w-4xl w-full flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => setActiveImageModal(null)}
+              className="absolute -top-10 right-0 inline-flex items-center gap-1 text-sm font-bold text-white hover:text-[var(--gold)] cursor-pointer"
+            >
+              <X size={20} /> Close
+            </button>
+            <img
+              src={getAttachmentUrl(activeImageModal)}
+              alt="Enlarged attachment"
+              className="max-h-[80vh] w-auto rounded-2xl shadow-2xl object-contain border border-white/20"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

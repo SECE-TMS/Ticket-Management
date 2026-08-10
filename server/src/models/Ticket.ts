@@ -33,6 +33,7 @@ export interface ITicketComment {
 export interface ITicketResolution {
   remarks: string;
   attachment: IAttachment | null;
+  attachments: IAttachment[];
   resolvedAt: Date | null;
 }
 
@@ -49,6 +50,7 @@ export interface ITicket {
   complaintType: string;
   description: string;
   userAttachment: IAttachment | null;
+  userAttachments: IAttachment[];
   priority: TicketPriority;
   status: TicketStatus;
   assignedTo: mongoose.Types.ObjectId | null;
@@ -91,6 +93,7 @@ const ticketSchema = new Schema<ITicket>(
     complaintType: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
     userAttachment: { type: attachmentSchema, default: null },
+    userAttachments: { type: [attachmentSchema], default: [] },
     priority: { type: String, enum: PRIORITIES, default: 'medium', index: true },
     status: { type: String, enum: STATUSES, default: 'new', index: true },
     assignedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null, index: true },
@@ -99,6 +102,7 @@ const ticketSchema = new Schema<ITicket>(
     resolution: {
       remarks: { type: String, default: '' },
       attachment: { type: attachmentSchema, default: null },
+      attachments: { type: [attachmentSchema], default: [] },
       resolvedAt: { type: Date, default: null },
     },
     closedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },

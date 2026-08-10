@@ -87,7 +87,8 @@ const buildListFilter = (actor: IUserDocument, query: Record<string, unknown>) =
 
 export const createPublicTicket = async (
   body: Record<string, unknown>,
-  file?: UploadableFile | Express.Multer.File
+  file?: UploadableFile | Express.Multer.File,
+  files?: Array<UploadableFile | Express.Multer.File>
 ) => {
   const department = await Department.findById(body.department as string);
   if (!department || !department.isActive) {
@@ -101,10 +102,13 @@ export const createPublicTicket = async (
     throw ApiError.badRequest('Invalid complaint type for this department');
   }
 
-  let userAttachment = null;
-  if (file) {
-    userAttachment = await uploadBuffer(file, 'tms/tickets');
+  const rawFiles = files && files.length ? files : file ? [file] : [];
+  const userAttachments = [];
+  for (const f of rawFiles) {
+    const uploaded = await uploadBuffer(f, 'tms/tickets');
+    if (uploaded) userAttachments.push(uploaded);
   }
+  const userAttachment = userAttachments.length ? userAttachments[0] : null;
 
   const ticketCode = await generateTicketCode();
   const expectedResolutionAt = new Date(
@@ -122,6 +126,7 @@ export const createPublicTicket = async (
     complaintType: body.complaintType as string,
     description: body.description as string,
     userAttachment,
+    userAttachments,
     priority: (body.priority as string) || 'medium',
     status: 'new',
     expectedResolutionAt,
@@ -360,14 +365,15 @@ export const updateStatus = async (
 export const resolveTicket = async (
   id: string,
   { remarks }: { remarks: string },
-  file: UploadableFile | Express.Multer.File | undefined,
-  actor: IUserDocument
+  file?: UploadableFile | Express.Multer.File,
+  files?: Array<UploadableFile | Express.Multer.File>,
+  actor?: IUserDocument
 ) => {
   const ticket = await Ticket.findById(id);
   if (!ticket) throw ApiError.notFound('Ticket not found');
-  assertTicketAccess(ticket, actor);
+  if (actor) assertTicketAccess(ticket, actor);
 
-  if (actor.role === 'employee') {
+  if (actor && actor.role === 'employee') {
     if (!ticket.assignedTo || String(ticket.assignedTo) !== String(actor._id)) {
       throw ApiError.forbidden();
     }
@@ -377,16 +383,20 @@ export const resolveTicket = async (
     throw ApiError.badRequest(`Cannot resolve ticket in status "${ticket.status}"`);
   }
 
-  let attachment = null;
-  if (file) {
-    attachment = await uploadBuffer(file, 'tms/resolutions');
+  const rawFiles = files && files.length ? files : file ? [file] : [];
+  const resolutionAttachments = [];
+  for (const f of rawFiles) {
+    const uploaded = await uploadBuffer(f, 'tms/resolutions');
+    if (uploaded) resolutionAttachments.push(uploaded);
   }
+  const resolutionAttachment = resolutionAttachments.length ? resolutionAttachments[0] : null;
 
   const fromStatus = ticket.status;
   ticket.status = 'resolved';
   ticket.resolution = {
     remarks,
-    attachment,
+    attachment: resolutionAttachment,
+    attachments: resolutionAttachments,
     resolvedAt: new Date(),
   };
   await ticket.save();
@@ -469,7 +479,7 @@ export const reopenTicket = async (id: string, actor: IUserDocument, message?: s
   ticket.reopenCount = (ticket.reopenCount || 0) + 1;
   ticket.closedBy = null;
   ticket.closedAt = null;
-  ticket.resolution = { remarks: '', attachment: null, resolvedAt: null };
+  ticket.resolution = { remarks: '', attachment: null, attachments: [], resolvedAt: null };
   await ticket.save();
 
   await logActivity({

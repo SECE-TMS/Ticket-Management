@@ -5,7 +5,8 @@ import type { AuthRequest } from '../types/auth';
 
 export const create = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await ticketService.createPublicTicket(req.body, req.file);
+    const files = (req.files as Express.Multer.File[]) || (req.file ? [req.file] : []);
+    const data = await ticketService.createPublicTicket(req.body, req.file, files);
     return sendSuccess(res, { statusCode: 201, data, message: 'Ticket created' });
   } catch (err) {
     next(err);
@@ -68,7 +69,8 @@ export const updateStatus = async (req: AuthRequest, res: Response, next: NextFu
 
 export const resolve = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await ticketService.resolveTicket(req.params.id, req.body, req.file, req.user!);
+    const files = (req.files as Express.Multer.File[]) || (req.file ? [req.file] : []);
+    const data = await ticketService.resolveTicket(req.params.id, req.body, req.file, files, req.user!);
     return sendSuccess(res, { data, message: 'Ticket resolved' });
   } catch (err) {
     next(err);

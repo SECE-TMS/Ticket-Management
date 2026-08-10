@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Link as RouterLink } from 'react-router-dom'
+import { Link, useNavigate, Link as RouterLink } from 'react-router-dom'
 import { AlertTriangle, Building2, Ticket, Users } from 'lucide-react'
 import {
   Bar,
@@ -22,6 +22,7 @@ import { getName } from '../../types'
 
 export function AdminDashboard() {
   const toast = useToast()
+  const navigate = useNavigate()
   const [data, setData] = useState<AdminDashboard | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -162,11 +163,16 @@ export function AdminDashboard() {
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
             {data.recent.map((t) => (
-              <tr key={t._id} className="transition-colors hover:bg-[var(--primary-blue-light)]">
+              <tr
+                key={t._id}
+                onClick={() => navigate(`/admin/tickets/${t._id}`)}
+                className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
+              >
                 <td className="px-5 py-3.5">
                   <Link
                     to={`/admin/tickets/${t._id}`}
                     className="font-bold text-[var(--primary-blue)] hover:underline"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     {t.ticketCode}
                   </Link>

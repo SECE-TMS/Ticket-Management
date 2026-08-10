@@ -1,23 +1,23 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, ClipboardList, Headset, Search, Shield, Zap } from 'lucide-react'
+import { ArrowRight, Headset, Search} from 'lucide-react'
 
-const features = [
-  {
-    icon: Zap,
-    title: 'Raise in minutes',
-    desc: 'Submit facility issues instantly with photos or voice notes attached.',
-  },
-  {
-    icon: Search,
-    title: 'Track live status',
-    desc: 'Follow every stage from assignment to resolution without any calls.',
-  },
-  {
-    icon: Shield,
-    title: 'SLA guaranteed',
-    desc: 'Every department has defined response times so issues never go unresolved.',
-  },
-]
+// const features = [
+//   {
+//     icon: Zap,
+//     title: 'Raise in minutes',
+//     desc: 'Submit facility issues instantly with photos or voice notes attached.',
+//   },
+//   {
+//     icon: Search,
+//     title: 'Track live status',
+//     desc: 'Follow every stage from assignment to resolution without any calls.',
+//   },
+//   {
+//     icon: Shield,
+//     title: 'SLA guaranteed',
+//     desc: 'Every department has defined response times so issues never go unresolved.',
+//   },
+// ]
 
 export function Landing() {
   return (
@@ -103,20 +103,20 @@ export function Landing() {
               <Search size={16} />
               Track Ticket
             </Link>
-            <Link
+            {/* <Link
               to="/login"
               id="hero-staff-login"
               className="inline-flex h-12 items-center gap-2 rounded-xl px-5 text-sm font-medium text-white/60 transition-colors hover:text-[var(--white)]"
             >
               <ClipboardList size={16} />
               Staff Login
-            </Link>
+            </Link> */}
           </div>
         </div>
       </section>
 
       {/* ── Feature Cards ─────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8" aria-label="Features">
+      {/* <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8" aria-label="Features">
         <div className="grid gap-6 sm:grid-cols-3">
           {features.map(({ icon: Icon, title, desc }) => (
             <div
@@ -134,10 +134,10 @@ export function Landing() {
               </p>
             </div>
           ))}
-        </div>
+        </div> */}
 
         {/* Bottom CTA strip */}
-        <div className="mt-10 rounded-2xl bg-[var(--primary-blue)] p-8 text-center text-[var(--white)] shadow-md">
+        {/* <div className="mt-10 rounded-2xl bg-[var(--primary-blue)] p-8 text-center text-[var(--white)] shadow-md">
           <p className="text-lg font-bold">Ready to report an issue?</p>
           <p className="mt-1 text-sm text-white/70">
             It takes less than 2 minutes.
@@ -150,7 +150,7 @@ export function Landing() {
             Get Started <ArrowRight size={15} />
           </Link>
         </div>
-      </section>
+      </section> */}
     </div>
   )
 }

@@ -1,9 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* ─── Global Theme Variables ─────────────────────────────────────────────
-   Changing these variables here updates the entire theme across the app.
-────────────────────────────────────────────────────────────────────────── */
 :root {
   /* Core Theme Palette */
   --primary-blue: #235EAA;
@@ -30,9 +27,7 @@
   --success-light: #DCFCE7;
   --warning: #D97706;
   --warning-light: #FEF3C7;
-}
 
-@theme {
   --font-sans: "Inter", "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", ui-serif, Georgia, serif;
 }
@@ -50,6 +45,10 @@ body {
   background: var(--surface);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: var(--font-display);
 }
 
 /* Custom Scrollbar using Theme Variables */

@@ -1,18 +1,19 @@
 import multer, { MulterError } from 'multer';
 import type { Response, NextFunction } from 'express';
 import ApiError from '../utils/apiError';
-import { IMAGE_MIMES, AUDIO_MIMES } from '../utils/upload';
+import { getAttachmentType } from '../utils/upload';
 import type { AuthRequest } from '../types/auth';
 
 const storage = multer.memoryStorage();
 
 const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
-  if (IMAGE_MIMES.has(file.mimetype) || AUDIO_MIMES.has(file.mimetype)) {
+  const type = getAttachmentType(file.mimetype);
+  if (type) {
     cb(null, true);
   } else {
     cb(
       ApiError.badRequest(
-        'Invalid file type. Allowed: jpeg, png, webp, mpeg, wav, webm, mp4',
+        'Invalid file type. Only image and audio files are allowed.',
         'INVALID_FILE_TYPE'
       )
     );
@@ -22,39 +23,48 @@ const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 25 * 1024 * 1024, files: 10 }, // Up to 10 files, max 25MB each
 });
 
-export const singleAttachment =
-  (fieldName = 'attachment') =>
-  (req: AuthRequest, _res: Response, next: NextFunction): void => {
-    upload.single(fieldName)(req, _res, (err: unknown) => {
-      if (err instanceof MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          next(ApiError.badRequest('File too large (max 10MB)', 'FILE_TOO_LARGE'));
-          return;
-        }
-        next(ApiError.badRequest(err.message, 'UPLOAD_ERROR'));
+export const anyAttachment = (req: AuthRequest, _res: Response, next: NextFunction): void => {
+  upload.any()(req, _res, (err: unknown) => {
+    if (err instanceof MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        next(ApiError.badRequest('File too large (max 25MB per file)', 'FILE_TOO_LARGE'));
         return;
       }
-      if (err) {
-        next(err);
+      if (err.code === 'LIMIT_FILE_COUNT') {
+        next(ApiError.badRequest('Maximum 10 attachments allowed', 'TOO_MANY_FILES'));
         return;
       }
+      next(ApiError.badRequest(err.message, 'UPLOAD_ERROR'));
+      return;
+    }
+    if (err) {
+      next(err);
+      return;
+    }
 
-      if (req.file) {
-        const isImage = IMAGE_MIMES.has(req.file.mimetype);
-        const max = isImage ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
-        if (req.file.size > max) {
-          next(
-            ApiError.badRequest(
-              isImage ? 'Image must be <= 5MB' : 'Audio must be <= 10MB',
-              'FILE_TOO_LARGE'
-            )
-          );
-          return;
-        }
+    const files = (req.files as Express.Multer.File[]) || [];
+    for (const f of files) {
+      const type = getAttachmentType(f.mimetype);
+      const max = type === 'image' ? 10 * 1024 * 1024 : 25 * 1024 * 1024;
+      if (f.size > max) {
+        next(
+          ApiError.badRequest(
+            type === 'image' ? 'Image must be <= 10MB' : 'Audio must be <= 25MB',
+            'FILE_TOO_LARGE'
+          )
+        );
+        return;
       }
-      next();
-    });
+    }
+    next();
+  });
+};
+
+export const singleAttachment =
+  (_fieldName = 'attachment') =>
+  (req: AuthRequest, res: Response, next: NextFunction): void => {
+    anyAttachment(req, res, next);
   };

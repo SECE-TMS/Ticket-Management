@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AlertTriangle, Ticket, UserRound, Users } from 'lucide-react'
 import { dashboardService } from '../../services/dashboardService'
 import { KpiCard, PageHeader } from '../../components/common/KpiCard'
@@ -13,6 +13,7 @@ import { getName } from '../../types'
 
 export function ManagerDashboard() {
   const toast = useToast()
+  const navigate = useNavigate()
   const [data, setData] = useState<ManagerDashboard | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -137,11 +138,16 @@ export function ManagerDashboard() {
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
             {data.recent.map((t) => (
-              <tr key={t._id} className="transition-colors hover:bg-[var(--primary-blue-light)]">
+              <tr
+                key={t._id}
+                onClick={() => navigate(`/manager/tickets/${t._id}`)}
+                className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
+              >
                 <td className="px-5 py-3.5">
                   <Link
                     to={`/manager/tickets/${t._id}`}
                     className="font-bold text-[var(--primary-blue)] hover:underline"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     {t.ticketCode}
                   </Link>

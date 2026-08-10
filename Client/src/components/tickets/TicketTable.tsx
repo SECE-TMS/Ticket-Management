@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { Inbox } from 'lucide-react'
 import type { Ticket } from '../../types'
@@ -11,6 +11,8 @@ interface TicketTableProps {
 }
 
 export function TicketTable({ tickets, detailBase }: TicketTableProps) {
+  const navigate = useNavigate()
+
   if (!tickets.length) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
@@ -43,11 +45,16 @@ export function TicketTable({ tickets, detailBase }: TicketTableProps) {
         </thead>
         <tbody className="divide-y divide-[var(--border)]">
           {tickets.map((t) => (
-            <tr key={t._id} className="transition-colors hover:bg-[var(--primary-blue-light)]">
+            <tr
+              key={t._id}
+              onClick={() => navigate(`${detailBase}/${t._id}`)}
+              className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
+            >
               <td className="px-4 py-3.5">
                 <Link
                   to={`${detailBase}/${t._id}`}
                   className="font-bold text-[var(--primary-blue)] hover:underline"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {t.ticketCode}
                 </Link>
