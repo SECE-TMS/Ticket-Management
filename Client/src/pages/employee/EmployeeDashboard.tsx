@@ -5,6 +5,7 @@ import { dashboardService } from '../../services/dashboardService'
 import { KpiCard, PageHeader } from '../../components/common/KpiCard'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/Badge'
+import { Button } from '../../components/common/Button'
 import { useToast } from '../../context/ToastContext'
 import { useAppSelector } from '../../store/hooks'
 import { getErrorMessage } from '../../lib/utils'
@@ -33,15 +34,9 @@ export function EmployeeDashboard() {
   if (!data) return null
 
   return (
-    <div className="animate-fade-in">
-      {/* Welcome greeting */}
-      <div
-        className="mb-6 rounded-xl p-5"
-        style={{
-          background: 'linear-gradient(135deg, var(--primary-blue-deeper), var(--primary-blue))',
-          color: 'var(--white)',
-        }}
-      >
+    <div>
+      {/* Welcome greeting banner */}
+      <div className="mb-6 rounded-xl bg-gradient-to-br from-[var(--primary-blue-deeper)] to-[var(--primary-blue)] p-5 text-[var(--white)] shadow-md">
         <p className="text-sm font-medium opacity-80">Welcome back 👋</p>
         <p className="mt-1 text-xl font-bold">{user?.name ?? 'Employee'}</p>
         <p className="mt-0.5 text-sm opacity-70">
@@ -53,8 +48,8 @@ export function EmployeeDashboard() {
         title="My Dashboard"
         description="Your assigned work and personal resolution metrics."
         actions={
-          <Link to="/employee/tickets" className="btn btn-primary btn-sm">
-            My Tickets
+          <Link to="/employee/tickets">
+            <Button size="sm" variant="primary">My Tickets</Button>
           </Link>
         }
       />
@@ -69,19 +64,19 @@ export function EmployeeDashboard() {
       {/* Details grid */}
       <div className="mt-6 grid gap-4 lg:grid-cols-5">
         {/* Status breakdown */}
-        <div className="panel p-5 lg:col-span-2">
-          <h2 className="section-title mb-4">By Status</h2>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs lg:col-span-2">
+          <h2 className="text-base font-bold text-[var(--ink)] mb-4">By Status</h2>
           <ul className="space-y-3">
             {Object.entries(data.byStatus).map(([status, count]) => (
               <li key={status} className="flex items-center justify-between text-sm">
                 <StatusBadge status={status as never} />
-                <span className="font-bold tabular-nums" style={{ color: 'var(--ink)' }}>
+                <span className="font-bold tabular-nums text-[var(--ink)]">
                   {count}
                 </span>
               </li>
             ))}
             {!Object.keys(data.byStatus).length && (
-              <li className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+              <li className="text-sm text-[var(--ink-muted)]">
                 No assigned tickets yet.
               </li>
             )}
@@ -89,42 +84,39 @@ export function EmployeeDashboard() {
         </div>
 
         {/* Recent assignments */}
-        <div className="panel overflow-x-auto lg:col-span-3">
-          <div className="section-header">
-            <h2 className="section-title">Recent Assignments</h2>
+        <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs lg:col-span-3">
+          <div className="border-b border-[var(--border)] px-5 py-4">
+            <h2 className="text-base font-bold text-[var(--ink)]">Recent Assignments</h2>
           </div>
-          <table className="data-table">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr>
-                <th>Code</th>
-                <th>Department</th>
-                <th>Status</th>
+              <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
+                <th className="px-5 py-3">Code</th>
+                <th className="px-5 py-3">Department</th>
+                <th className="px-5 py-3">Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[var(--border)]">
               {data.recent.map((t) => (
-                <tr key={t._id}>
-                  <td>
+                <tr key={t._id} className="transition-colors hover:bg-[var(--primary-blue-light)]">
+                  <td className="px-5 py-3.5">
                     <Link
                       to={`/employee/tickets/${t._id}`}
-                      className="font-semibold hover:underline"
-                      style={{ color: 'var(--primary-blue)' }}
+                      className="font-bold text-[var(--primary-blue)] hover:underline"
                     >
                       {t.ticketCode}
                     </Link>
                   </td>
-                  <td style={{ color: 'var(--ink-muted)' }}>{getName(t.department)}</td>
-                  <td>
+                  <td className="px-5 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
+                  <td className="px-5 py-3.5">
                     <StatusBadge status={t.status} />
                   </td>
                 </tr>
               ))}
               {!data.recent.length && (
                 <tr>
-                  <td colSpan={3}>
-                    <p className="py-6 text-center text-sm" style={{ color: 'var(--ink-muted)' }}>
-                      No recent assignments.
-                    </p>
+                  <td colSpan={3} className="py-8 text-center text-sm text-[var(--ink-muted)]">
+                    No recent assignments.
                   </td>
                 </tr>
               )}

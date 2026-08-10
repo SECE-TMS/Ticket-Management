@@ -1,6 +1,5 @@
 import { Outlet } from 'react-router-dom'
 import { LayoutDashboard, Ticket } from 'lucide-react'
-import { TopBar } from '../components/common/Navbar'
 import { MobileNav, Sidebar, type SidebarItem } from '../components/common/Sidebar'
 
 const employeeItems: SidebarItem[] = [
@@ -10,12 +9,14 @@ const employeeItems: SidebarItem[] = [
 
 export function EmployeeLayout() {
   return (
-    <div className="app-shell">
+    <div className="flex min-h-screen bg-[var(--surface)] text-[var(--ink)]">
+      {/* Full-Height Desktop Left Sidebar */}
       <Sidebar items={employeeItems} title="Employee" />
-      <div className="main-content">
-        <TopBar />
+
+      {/* Main Content Area (Offset by 260px sidebar width on desktop) */}
+      <div className="flex flex-1 min-w-0 flex-col lg:pl-[260px]">
         <MobileNav items={employeeItems} />
-        <main className="page-main">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

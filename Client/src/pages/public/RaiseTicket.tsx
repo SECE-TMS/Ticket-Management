@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Copy } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Copy } from 'lucide-react'
 import { departmentService } from '../../services/departmentService'
 import { ticketService } from '../../services/ticketService'
 import { Button } from '../../components/common/Button'
@@ -33,10 +33,10 @@ function Field({
   children: React.ReactNode
 }) {
   return (
-    <div className="form-field">
-      <label className="form-label">{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-semibold text-[var(--ink)]">{label}</label>
       {children}
-      {error && <span className="form-error">{error}</span>}
+      {error && <span className="text-xs text-[var(--danger)]">{error}</span>}
     </div>
   )
 }
@@ -123,40 +123,33 @@ export function RaiseTicket() {
 
     return (
       <div className="mx-auto max-w-lg px-4 py-12 sm:px-6">
-        <div className="panel p-8 text-center animate-fade-in">
-          <div
-            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-            style={{ background: 'var(--success-light)' }}
-          >
-            <CheckCircle2 size={36} style={{ color: 'var(--success)' }} />
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-8 text-center shadow-xs">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--success-light)] text-[var(--success)]">
+            <CheckCircle2 size={36} />
           </div>
-          <h1 className="font-display text-2xl font-bold" style={{ color: 'var(--ink)' }}>
+          <h1 className="font-display text-2xl font-bold text-[var(--ink)]">
             Ticket raised!
           </h1>
-          <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>
+          <p className="mt-2 text-sm text-[var(--ink-muted)]">
             Save your ticket code to track progress later. We'll assign it shortly.
           </p>
 
           {/* Ticket code card */}
-          <div
-            className="mt-6 rounded-xl px-6 py-5"
-            style={{ background: 'var(--primary-blue-light)', border: '1.5px solid var(--primary-blue-muted)' }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--primary-blue)' }}>
+          <div className="mt-6 rounded-xl border border-[var(--primary-blue-muted)] bg-[var(--primary-blue-light)] px-6 py-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--primary-blue)]">
               Your ticket code
             </p>
-            <p className="mt-2 font-mono text-3xl font-bold tracking-widest" style={{ color: 'var(--primary-blue-deeper)' }}>
+            <p className="mt-2 font-mono text-3xl font-bold tracking-widest text-[var(--primary-blue-deeper)]">
               {ticketCode}
             </p>
             <button
               type="button"
               onClick={handleCopy}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition"
-              style={{
-                background: copied ? 'var(--success-light)' : 'var(--white)',
-                color: copied ? 'var(--success)' : 'var(--primary-blue)',
-                border: '1px solid currentColor',
-              }}
+              className={`mt-3 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                copied
+                  ? 'border-[var(--success)] bg-[var(--success-light)] text-[var(--success)]'
+                  : 'border-[var(--primary-blue)] bg-[var(--white)] text-[var(--primary-blue)]'
+              }`}
             >
               <Copy size={12} />
               {copied ? 'Copied!' : 'Copy code'}
@@ -178,22 +171,34 @@ export function RaiseTicket() {
     )
   }
 
+  const inputClass = (hasError?: boolean) =>
+    `h-10 w-full rounded-lg border bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+      hasError ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+    }`
+
   // ── Form ───────────────────────────────────────────────────────────
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
+      <Link
+        to="/"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--primary-blue)] hover:underline"
+      >
+        <ArrowLeft size={15} />
+        Home
+      </Link>
       <div className="mb-8">
-        <h1 className="page-title">Raise a Ticket</h1>
-        <p className="page-subtitle">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)]">Raise a Ticket</h1>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">
           Report a facility or maintenance issue. Your request will be assigned to the right team.
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="panel space-y-5 p-6" id="raise-ticket-form">
+      <form onSubmit={onSubmit} className="space-y-5 rounded-xl border border-[var(--border)] bg-[var(--white)] p-6 shadow-xs" id="raise-ticket-form">
         <Field label="Your full name" error={errors.name?.message}>
           <input
             {...register('name')}
             id="rt-name"
-            className={`input-field ${errors.name ? 'input-error' : ''}`}
+            className={inputClass(!!errors.name)}
             placeholder="Full name"
             autoComplete="name"
           />
@@ -203,7 +208,7 @@ export function RaiseTicket() {
           <select
             {...register('department')}
             id="rt-department"
-            className={`input-field ${errors.department ? 'input-error' : ''}`}
+            className={`cursor-pointer ${inputClass(!!errors.department)}`}
           >
             <option value="">Select department…</option>
             {departments.map((d) => (
@@ -218,7 +223,7 @@ export function RaiseTicket() {
           <input
             {...register('mobile')}
             id="rt-mobile"
-            className={`input-field ${errors.mobile ? 'input-error' : ''}`}
+            className={inputClass(!!errors.mobile)}
             inputMode="numeric"
             maxLength={10}
             placeholder="9876543210"
@@ -229,7 +234,7 @@ export function RaiseTicket() {
           <select
             {...register('complaintType')}
             id="rt-complaint-type"
-            className={`input-field ${errors.complaintType ? 'input-error' : ''}`}
+            className={`cursor-pointer ${inputClass(!!errors.complaintType)}`}
             disabled={!selectedDept}
           >
             <option value="">
@@ -248,16 +253,18 @@ export function RaiseTicket() {
             {...register('description')}
             id="rt-description"
             rows={4}
-            className={`input-field ${errors.description ? 'input-error' : ''}`}
+            className={`w-full rounded-lg border p-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+              errors.description ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+            }`}
             placeholder="What needs attention? Include the location if helpful."
           />
         </Field>
 
         {/* File attachment */}
-        <div className="form-field">
-          <p className="form-label">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-semibold text-[var(--ink)]">
             Attachment{' '}
-            <span className="text-xs font-normal" style={{ color: 'var(--ink-muted)' }}>
+            <span className="text-xs font-normal text-[var(--ink-muted)]">
               (photo or audio, optional)
             </span>
           </p>
@@ -267,11 +274,10 @@ export function RaiseTicket() {
             accept="image/*,audio/*"
             capture="environment"
             onChange={(e) => setAttachment(e.target.files?.[0] || null)}
-            className="block w-full text-sm"
-            style={{ color: 'var(--ink-muted)' }}
+            className="block w-full text-sm text-[var(--ink-muted)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--primary-blue-light)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--primary-blue)] cursor-pointer"
           />
           {attachment && (
-            <p className="mt-1 text-xs font-medium" style={{ color: 'var(--primary-blue)' }}>
+            <p className="mt-1 text-xs font-semibold text-[var(--primary-blue)]">
               ✓ {attachment.name}
             </p>
           )}

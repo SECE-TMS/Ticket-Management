@@ -62,16 +62,13 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
   }, [debouncedSearch, status, priority])
 
   return (
-    <div className="animate-fade-in">
+    <div>
       <PageHeader
         title={title}
         description={description}
         actions={
           total > 0 ? (
-            <span
-              className="badge"
-              style={{ background: 'var(--primary-blue)', color: 'var(--white)', fontSize: '0.8125rem', padding: '0.375rem 0.875rem' }}
-            >
+            <span className="inline-flex items-center rounded-full bg-[var(--primary-blue)] px-3.5 py-1 text-xs font-bold text-[var(--white)] shadow-xs">
               {total} ticket{total === 1 ? '' : 's'}
             </span>
           ) : undefined

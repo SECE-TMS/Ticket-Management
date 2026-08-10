@@ -83,11 +83,13 @@ export function ManagerEmployees() {
 
   if (!deptId) {
     return (
-      <div className="panel p-10 text-center">
-        <div className="empty-state">
-          <div className="empty-state-icon"><Users size={22} /></div>
-          <p className="empty-state-title">No department assigned</p>
-          <p className="empty-state-desc">Your account has no department assigned. Contact an admin to fix this.</p>
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-10 text-center shadow-xs">
+        <div className="flex flex-col items-center justify-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--primary-blue-light)] text-[var(--primary-blue)]">
+            <Users size={22} />
+          </div>
+          <p className="text-base font-bold text-[var(--ink)]">No department assigned</p>
+          <p className="max-w-xs text-sm text-[var(--ink-muted)]">Your account has no department assigned. Contact an admin to fix this.</p>
         </div>
       </div>
     )
@@ -95,8 +97,11 @@ export function ManagerEmployees() {
 
   if (loading) return <PageLoader />
 
+  const inputClass =
+    'h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20'
+
   return (
-    <div className="animate-fade-in">
+    <div>
       <PageHeader
         title="Employees"
         description="Manage technicians in your department."
@@ -114,39 +119,45 @@ export function ManagerEmployees() {
         }
       />
 
-      <div className="panel overflow-x-auto">
-        <table className="data-table" id="employees-table">
+      <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
+        <table className="w-full text-left text-sm border-collapse" id="employees-table">
           <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Status</th>
+            <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
+              <th className="px-4 py-3 first:rounded-tl-xl">Employee</th>
+              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Phone</th>
+              <th className="px-4 py-3 last:rounded-tr-xl">Status</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[var(--border)]">
             {employees.map((e) => (
-              <tr key={getId(e)}>
-                <td>
+              <tr key={getId(e)} className="transition-colors hover:bg-[var(--primary-blue-light)]">
+                <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
                     <div
-                      className="avatar"
-                      style={{
-                        background: e.isActive ? 'var(--primary-blue-light)' : 'var(--surface-2)',
-                        color: e.isActive ? 'var(--primary-blue)' : 'var(--ink-muted)',
-                      }}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${
+                        e.isActive
+                          ? 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]'
+                          : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
+                      }`}
                     >
                       {getInitials(e.name)}
                     </div>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--ink)' }}>
+                    <p className="font-semibold text-sm text-[var(--ink)]">
                       {e.name}
                     </p>
                   </div>
                 </td>
-                <td style={{ color: 'var(--ink-muted)' }}>{e.email}</td>
-                <td style={{ color: 'var(--ink-muted)' }}>{e.phone || '—'}</td>
-                <td>
-                  <Badge className={e.isActive ? 'status-resolved' : 'status-closed'}>
+                <td className="px-4 py-3.5 text-[var(--ink-muted)]">{e.email}</td>
+                <td className="px-4 py-3.5 text-[var(--ink-muted)]">{e.phone || '—'}</td>
+                <td className="px-4 py-3.5">
+                  <Badge
+                    className={
+                      e.isActive
+                        ? 'bg-[var(--success-light)] text-[var(--success)]'
+                        : 'bg-slate-100 text-slate-700'
+                    }
+                  >
                     {e.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </td>
@@ -154,12 +165,8 @@ export function ManagerEmployees() {
             ))}
             {!employees.length && (
               <tr>
-                <td colSpan={4}>
-                  <div className="empty-state">
-                    <div className="empty-state-icon"><Users size={22} /></div>
-                    <p className="empty-state-title">No employees yet</p>
-                    <p className="empty-state-desc">Add your first technician to start assigning tickets.</p>
-                  </div>
+                <td colSpan={4} className="py-8 text-center text-sm text-[var(--ink-muted)]">
+                  No employees yet. Add your first technician to start assigning tickets.
                 </td>
               </tr>
             )}
@@ -177,14 +184,14 @@ export function ManagerEmployees() {
               ['phone', 'Phone (optional)', 'text', '9876543210'],
             ] as const
           ).map(([key, label, type, placeholder]) => (
-            <div key={key} className="form-field">
-              <label htmlFor={`emp-${key}`} className="form-label">{label}</label>
+            <div key={key} className="flex flex-col gap-1.5">
+              <label htmlFor={`emp-${key}`} className="text-sm font-semibold text-[var(--ink)]">{label}</label>
               <input
                 id={`emp-${key}`}
                 type={type}
                 value={form[key]}
                 onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                className="input-field"
+                className={inputClass}
                 placeholder={placeholder}
               />
             </div>

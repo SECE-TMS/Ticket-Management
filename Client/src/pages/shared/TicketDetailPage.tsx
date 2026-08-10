@@ -23,10 +23,10 @@ interface TicketDetailPageProps {
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
         {label}
       </dt>
-      <dd className="mt-1 font-medium text-sm" style={{ color: 'var(--ink)' }}>
+      <dd className="mt-1 font-semibold text-sm text-[var(--ink)]">
         {value}
       </dd>
     </div>
@@ -82,12 +82,11 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   if (loading) return <PageLoader />
   if (!ticket) {
     return (
-      <div className="panel p-10 text-center">
-        <p className="font-medium" style={{ color: 'var(--ink)' }}>Ticket not found.</p>
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-10 text-center shadow-xs">
+        <p className="font-semibold text-[var(--ink)]">Ticket not found.</p>
         <Link
           to={backTo}
-          className="mt-3 inline-flex items-center gap-1 text-sm font-semibold hover:underline"
-          style={{ color: 'var(--primary-blue)' }}
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--primary-blue)] hover:underline"
         >
           <ArrowLeft size={14} /> Back to tickets
         </Link>
@@ -123,31 +122,27 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div>
       {/* Back link */}
       <Link
         to={backTo}
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium transition hover:opacity-80"
-        style={{ color: 'var(--primary-blue)' }}
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--primary-blue)] hover:underline"
       >
         <ArrowLeft size={15} />
         Back to tickets
       </Link>
 
       {/* Ticket header banner */}
-      <div
-        className="mb-5 rounded-xl p-5"
-        style={{ background: 'var(--primary-blue)', color: 'var(--white)' }}
-      >
+      <div className="mb-5 rounded-xl bg-[var(--primary-blue)] p-5 text-[var(--white)] shadow-md">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgb(255 255 255 / 0.65)' }}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-white/65">
               Ticket
             </p>
             <h1 className="mt-1 font-display text-2xl font-bold tracking-tight">
               {ticket.ticketCode}
             </h1>
-            <p className="mt-1 text-sm" style={{ color: 'rgb(255 255 255 / 0.75)' }}>
+            <p className="mt-1 text-sm text-white/75">
               {ticket.complaintType}
             </p>
           </div>
@@ -160,11 +155,8 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
 
       {/* Action buttons */}
       {(canAssign || canClose || canReopen || canAccept || canStart || canResolve) && (
-        <div
-          className="mb-5 flex flex-wrap gap-2 rounded-xl p-4"
-          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
-        >
-          <p className="w-full text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>
+        <div className="mb-5 flex flex-wrap gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+          <p className="w-full text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
             Actions
           </p>
           {canAssign && (
@@ -248,8 +240,8 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
         {/* Left column */}
         <div className="space-y-4 lg:col-span-3">
           {/* Details */}
-          <div className="panel p-5">
-            <h2 className="section-title mb-4">Ticket Details</h2>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
+            <h2 className="text-base font-bold text-[var(--ink)] mb-4">Ticket Details</h2>
             <dl className="grid gap-4 text-sm sm:grid-cols-2">
               <Info label="Requester" value={ticket.requester.name} />
               <Info label="Mobile" value={ticket.requester.mobile} />
@@ -270,25 +262,21 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
             </dl>
 
             {ticket.description && (
-              <div
-                className="mt-5 rounded-lg p-4 text-sm leading-relaxed"
-                style={{ background: 'var(--surface)', color: 'var(--ink)' }}
-              >
+              <div className="mt-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm leading-relaxed text-[var(--ink)]">
                 {ticket.description}
               </div>
             )}
 
             {ticket.userAttachment?.url && (
               <div className="mt-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
                   Requester attachment
                 </p>
                 {ticket.userAttachment.type === 'image' ? (
                   <img
                     src={ticket.userAttachment.url}
                     alt="Attachment"
-                    className="max-h-64 rounded-lg"
-                    style={{ border: '1px solid var(--border)' }}
+                    className="max-h-64 rounded-lg border border-[var(--border)]"
                   />
                 ) : (
                   <audio controls src={ticket.userAttachment.url} className="w-full" />
@@ -297,17 +285,11 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
             )}
 
             {ticket.resolution?.remarks && (
-              <div
-                className="mt-5 rounded-lg p-4 text-sm"
-                style={{
-                  background: 'var(--success-light)',
-                  border: '1px solid rgb(22 163 74 / 0.2)',
-                }}
-              >
-                <p className="font-semibold" style={{ color: 'var(--success)' }}>
+              <div className="mt-5 rounded-xl border border-[var(--success)]/20 bg-[var(--success-light)] p-4 text-sm">
+                <p className="font-bold text-[var(--success)]">
                   ✓ Resolution
                 </p>
-                <p className="mt-1" style={{ color: 'var(--ink)' }}>
+                <p className="mt-1 text-[var(--ink)]">
                   {ticket.resolution.remarks}
                 </p>
                 {ticket.resolution.attachment?.url && (
@@ -328,9 +310,9 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           </div>
 
           {/* Comments */}
-          <div className="panel p-5">
-            <h2 className="section-title mb-4 flex items-center gap-2">
-              <MessageSquare size={16} style={{ color: 'var(--primary-blue)' }} />
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
+            <h2 className="text-base font-bold text-[var(--ink)] mb-4 flex items-center gap-2">
+              <MessageSquare size={16} className="text-[var(--primary-blue)]" />
               Comments
             </h2>
             <form
@@ -348,7 +330,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Add an internal note…"
-                className="input-field flex-1"
+                className="h-10 flex-1 rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
                 id="ticket-comment-input"
               />
               <Button type="submit" loading={actionLoading} size="md">
@@ -361,26 +343,22 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                 {ticket.comments.map((c, idx) => (
                   <li
                     key={c._id || idx}
-                    className="rounded-lg p-3 text-sm"
-                    style={{ background: 'var(--surface)' }}
+                    className="rounded-xl bg-[var(--surface)] p-3 text-sm border border-[var(--border)]"
                   >
                     <div className="flex items-center gap-2.5 mb-2">
-                      <div
-                        className="avatar avatar-sm"
-                        style={{ background: 'var(--primary-blue-light)', color: 'var(--primary-blue)' }}
-                      >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-blue-light)] text-[var(--primary-blue)] text-xs font-bold uppercase">
                         {getInitials(getName(c.author, 'S'))}
                       </div>
                       <div>
-                        <p className="font-semibold" style={{ color: 'var(--ink)' }}>
+                        <p className="font-semibold text-xs text-[var(--ink)]">
                           {getName(c.author, 'Staff')}
                         </p>
-                        <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+                        <p className="text-[11px] text-[var(--ink-muted)]">
                           {format(new Date(c.createdAt), 'dd MMM, HH:mm')}
                         </p>
                       </div>
                     </div>
-                    <p style={{ color: 'var(--ink)' }}>{c.message}</p>
+                    <p className="text-[var(--ink)]">{c.message}</p>
                   </li>
                 ))}
               </ul>
@@ -389,8 +367,8 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
         </div>
 
         {/* Right column — Timeline */}
-        <div className="panel p-5 lg:col-span-2">
-          <h2 className="section-title mb-4">Activity Timeline</h2>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs lg:col-span-2">
+          <h2 className="text-base font-bold text-[var(--ink)] mb-4">Activity Timeline</h2>
           <TicketTimeline activities={activities} />
         </div>
       </div>

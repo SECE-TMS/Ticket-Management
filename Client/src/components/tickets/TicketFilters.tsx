@@ -23,19 +23,18 @@ export function TicketFilters({
 }: TicketFiltersProps) {
   return (
     <div
-      className="panel mb-5 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="mb-5 grid gap-3 rounded-xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-xs sm:grid-cols-2 lg:grid-cols-4"
       id="ticket-filters"
     >
       {/* Search with icon */}
-      <div className="form-field sm:col-span-2 lg:col-span-1">
-        <label htmlFor="tf-search" className="form-label">
+      <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+        <label htmlFor="tf-search" className="text-sm font-semibold text-[var(--ink)]">
           Search
         </label>
         <div className="relative">
           <Search
             size={15}
-            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
-            style={{ color: 'var(--ink-muted)' }}
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[var(--ink-muted)]"
           />
           <input
             id="tf-search"
@@ -43,22 +42,21 @@ export function TicketFilters({
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Code, name, mobile…"
-            className="input-field"
-            style={{ paddingLeft: '2.25rem' }}
+            className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--white)] pl-9 pr-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
           />
         </div>
       </div>
 
       {/* Status */}
-      <div className="form-field">
-        <label htmlFor="tf-status" className="form-label">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="tf-status" className="text-sm font-semibold text-[var(--ink)]">
           Status
         </label>
         <select
           id="tf-status"
           value={status}
           onChange={(e) => onStatusChange(e.target.value as TicketStatus | '')}
-          className="input-field"
+          className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none cursor-pointer transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
         >
           <option value="">All statuses</option>
           {STATUSES.map((s) => (
@@ -70,15 +68,15 @@ export function TicketFilters({
       </div>
 
       {/* Priority */}
-      <div className="form-field">
-        <label htmlFor="tf-priority" className="form-label">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="tf-priority" className="text-sm font-semibold text-[var(--ink)]">
           Priority
         </label>
         <select
           id="tf-priority"
           value={priority}
           onChange={(e) => onPriorityChange(e.target.value as TicketPriority | '')}
-          className="input-field"
+          className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none cursor-pointer transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
         >
           <option value="">All priorities</option>
           {PRIORITIES.map((p) => (
@@ -89,7 +87,7 @@ export function TicketFilters({
         </select>
       </div>
 
-      {extra && <div className="form-field">{extra}</div>}
+      {extra && <div className="flex flex-col gap-1.5">{extra}</div>}
     </div>
   )
 }

@@ -128,8 +128,11 @@ export function AdminDepartments() {
 
   if (loading) return <PageLoader />
 
+  const inputClass =
+    'h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20'
+
   return (
-    <div className="animate-fade-in">
+    <div>
       <PageHeader
         title="Departments"
         description="Configure facilities teams, complaint types, and SLA hours."
@@ -140,73 +143,76 @@ export function AdminDepartments() {
         }
       />
 
-      <div className="panel overflow-x-auto">
-        <table className="data-table" id="departments-table">
+      <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
+        <table className="w-full text-left text-sm border-collapse" id="departments-table">
           <thead>
-            <tr>
-              <th>Department</th>
-              <th>Complaint Types</th>
-              <th>SLA</th>
-              <th>Manager</th>
-              <th>Status</th>
-              <th>Actions</th>
+            <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
+              <th className="px-4 py-3 first:rounded-tl-xl">Department</th>
+              <th className="px-4 py-3">Complaint Types</th>
+              <th className="px-4 py-3">SLA</th>
+              <th className="px-4 py-3">Manager</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 last:rounded-tr-xl">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[var(--border)]">
             {departments.map((d) => (
-              <tr key={getId(d)}>
-                <td>
+              <tr key={getId(d)} className="transition-colors hover:bg-[var(--primary-blue-light)]">
+                <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
-                    <div
-                      className="flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0"
-                      style={{ background: 'var(--primary-blue-light)', color: 'var(--primary-blue)' }}
-                    >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-blue-light)] text-[var(--primary-blue)]">
                       <Building2 size={16} />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm" style={{ color: 'var(--ink)' }}>
+                      <p className="font-semibold text-sm text-[var(--ink)]">
                         {d.name}
                       </p>
                       {d.description && (
-                        <p
-                          className="max-w-xs truncate text-xs"
-                          style={{ color: 'var(--ink-muted)' }}
-                        >
+                        <p className="max-w-xs truncate text-xs text-[var(--ink-muted)]">
                           {d.description}
                         </p>
                       )}
                     </div>
                   </div>
                 </td>
-                <td>
+                <td className="px-4 py-3.5">
                   <div className="flex max-w-xs flex-wrap gap-1">
                     {(d.complaintTypes || []).slice(0, 3).map((t) => (
-                      <span key={t} className="chip chip-gold text-xs">
+                      <span
+                        key={t}
+                        className="inline-flex items-center rounded-full bg-[var(--gold-light)] px-2.5 py-0.5 text-xs font-semibold text-[var(--gold-dark)]"
+                      >
                         {t}
                       </span>
                     ))}
                     {(d.complaintTypes || []).length > 3 && (
-                      <span className="chip" style={{ fontSize: '0.7rem' }}>
+                      <span className="inline-flex items-center rounded-full bg-[var(--primary-blue-light)] px-2 py-0.5 text-[11px] font-semibold text-[var(--primary-blue)]">
                         +{d.complaintTypes.length - 3} more
                       </span>
                     )}
                     {!(d.complaintTypes || []).length && (
-                      <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>—</span>
+                      <span className="text-xs text-[var(--ink-muted)]">—</span>
                     )}
                   </div>
                 </td>
-                <td>
-                  <span className="font-medium" style={{ color: 'var(--ink)' }}>
+                <td className="px-4 py-3.5">
+                  <span className="font-semibold text-[var(--ink)]">
                     {d.slaHours}h
                   </span>
                 </td>
-                <td style={{ color: 'var(--ink-muted)' }}>{getName(d.manager, '—')}</td>
-                <td>
-                  <Badge className={d.isActive ? 'status-resolved' : 'status-closed'}>
+                <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(d.manager, '—')}</td>
+                <td className="px-4 py-3.5">
+                  <Badge
+                    className={
+                      d.isActive
+                        ? 'bg-[var(--success-light)] text-[var(--success)]'
+                        : 'bg-slate-100 text-slate-700'
+                    }
+                  >
                     {d.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </td>
-                <td>
+                <td className="px-4 py-3.5">
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" onClick={() => openEdit(d)}>
                       Edit
@@ -225,12 +231,8 @@ export function AdminDepartments() {
             ))}
             {!departments.length && (
               <tr>
-                <td colSpan={6}>
-                  <div className="empty-state">
-                    <div className="empty-state-icon"><Building2 size={22} /></div>
-                    <p className="empty-state-title">No departments yet</p>
-                    <p className="empty-state-desc">Add your first department to get started.</p>
-                  </div>
+                <td colSpan={6} className="py-8 text-center text-sm text-[var(--ink-muted)]">
+                  No departments found. Add your first department to get started.
                 </td>
               </tr>
             )}
@@ -246,39 +248,47 @@ export function AdminDepartments() {
         size="lg"
       >
         <div className="space-y-4">
-          <div className="form-field">
-            <label htmlFor="dept-name" className="form-label">Name</label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="dept-name" className="text-sm font-semibold text-[var(--ink)]">Name</label>
             <input
               id="dept-name"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="input-field"
+              className={inputClass}
               placeholder="Department name"
               required
             />
           </div>
 
-          <div className="form-field">
-            <label htmlFor="dept-desc" className="form-label">Description</label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="dept-desc" className="text-sm font-semibold text-[var(--ink)]">Description</label>
             <textarea
               id="dept-desc"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={3}
-              className="input-field"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--white)] p-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
               placeholder="Brief description…"
             />
           </div>
 
           {/* Complaint types */}
-          <div className="form-field">
-            <p className="form-label mb-2">Complaint Types</p>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-sm font-semibold text-[var(--ink)]">Complaint Types</p>
             {types.length > 0 && (
-              <div className="mb-3 flex flex-wrap gap-1.5">
+              <div className="mb-2 flex flex-wrap gap-1.5">
                 {types.map((t) => (
-                  <span key={t} className="chip chip-gold">
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gold-light)] px-3 py-1 text-xs font-semibold text-[var(--gold-dark)]"
+                  >
                     {t}
-                    <button type="button" onClick={() => removeChip(t)} aria-label={`Remove ${t}`}>
+                    <button
+                      type="button"
+                      onClick={() => removeChip(t)}
+                      aria-label={`Remove ${t}`}
+                      className="hover:text-black cursor-pointer"
+                    >
                       ×
                     </button>
                   </span>
@@ -296,25 +306,25 @@ export function AdminDepartments() {
                   }
                 }}
                 placeholder="Type and press Enter or Add"
-                className="input-field flex-1"
+                className={`flex-1 ${inputClass}`}
               />
               <Button type="button" variant="outline" size="sm" onClick={addChip}>
                 Add
               </Button>
             </div>
-            <p className="mt-1 text-xs" style={{ color: 'var(--ink-muted)' }}>
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">
               Or paste comma-separated values below.
             </p>
             <input
               value={form.complaintTypes}
               onChange={(e) => setForm((f) => ({ ...f, complaintTypes: e.target.value }))}
-              className="input-field mt-2"
+              className={`mt-1 ${inputClass}`}
               placeholder="Leak, Clogged drain, Electrical fault, …"
             />
           </div>
 
-          <div className="form-field">
-            <label htmlFor="dept-sla" className="form-label">SLA Hours</label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="dept-sla" className="text-sm font-semibold text-[var(--ink)]">SLA Hours</label>
             <input
               id="dept-sla"
               type="number"
@@ -322,7 +332,7 @@ export function AdminDepartments() {
               max={720}
               value={form.slaHours}
               onChange={(e) => setForm((f) => ({ ...f, slaHours: Number(e.target.value) }))}
-              className="input-field"
+              className={inputClass}
             />
           </div>
 

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
-import { Search } from 'lucide-react'
+import { ArrowLeft, Search } from 'lucide-react'
 import { ticketService } from '../../services/ticketService'
 import { Button } from '../../components/common/Button'
 import { StatusBadge, PriorityBadge } from '../../components/common/Badge'
@@ -50,11 +50,23 @@ export function TrackTicket() {
     }
   })
 
+  const inputClass = (hasError?: boolean) =>
+    `h-10 w-full rounded-lg border bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+      hasError ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+    }`
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+      <Link
+        to="/"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--primary-blue)] hover:underline"
+      >
+        <ArrowLeft size={15} />
+        Home
+      </Link>
       <div className="mb-8">
-        <h1 className="page-title">Track a Ticket</h1>
-        <p className="page-subtitle">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)]">Track a Ticket</h1>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">
           Enter the ticket code and the mobile number used when raising the request.
         </p>
       </div>
@@ -62,40 +74,40 @@ export function TrackTicket() {
       {/* Search form */}
       <form
         onSubmit={onSubmit}
-        className="panel p-6"
+        className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-6 shadow-xs"
         id="track-ticket-form"
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="form-field">
-            <label htmlFor="track-code" className="form-label">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="track-code" className="text-sm font-semibold text-[var(--ink)]">
               Ticket code
             </label>
             <input
               id="track-code"
               {...register('ticketCode')}
-              className={`input-field uppercase ${errors.ticketCode ? 'input-error' : ''}`}
+              className={`uppercase ${inputClass(!!errors.ticketCode)}`}
               placeholder="TMS-XXXX"
               autoComplete="off"
             />
             {errors.ticketCode && (
-              <span className="form-error">{errors.ticketCode.message}</span>
+              <span className="text-xs text-[var(--danger)]">{errors.ticketCode.message}</span>
             )}
           </div>
 
-          <div className="form-field">
-            <label htmlFor="track-mobile" className="form-label">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="track-mobile" className="text-sm font-semibold text-[var(--ink)]">
               Mobile number
             </label>
             <input
               id="track-mobile"
               {...register('mobile')}
-              className={`input-field ${errors.mobile ? 'input-error' : ''}`}
+              className={inputClass(!!errors.mobile)}
               inputMode="numeric"
               maxLength={10}
               placeholder="9876543210"
             />
             {errors.mobile && (
-              <span className="form-error">{errors.mobile.message}</span>
+              <span className="text-xs text-[var(--danger)]">{errors.mobile.message}</span>
             )}
           </div>
 
@@ -115,20 +127,17 @@ export function TrackTicket() {
 
       {/* Results */}
       {ticket && (
-        <div className="mt-8 space-y-4 animate-fade-in">
+        <div className="mt-8 space-y-4">
           {/* Ticket summary card */}
-          <div className="panel overflow-hidden">
+          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
             {/* Status color header */}
-            <div
-              className="px-6 py-4"
-              style={{ background: 'var(--primary-blue)', color: 'var(--white)' }}
-            >
+            <div className="bg-[var(--primary-blue)] px-6 py-4 text-[var(--white)]">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-mono text-xl font-bold tracking-wider">
                     {ticket.ticketCode}
                   </p>
-                  <p className="mt-1 text-sm" style={{ color: 'rgb(255 255 255 / 0.75)' }}>
+                  <p className="mt-1 text-sm text-white/75">
                     {ticket.complaintType}
                   </p>
                 </div>
@@ -149,10 +158,10 @@ export function TrackTicket() {
                   { label: 'Assignee', value: getName(ticket.assignedTo, 'Pending assignment') },
                 ].map(({ label, value }) => (
                   <div key={label}>
-                    <dt className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                       {label}
                     </dt>
-                    <dd className="mt-1 font-medium" style={{ color: 'var(--ink)' }}>
+                    <dd className="mt-1 font-semibold text-[var(--ink)]">
                       {value}
                     </dd>
                   </div>
@@ -160,11 +169,8 @@ export function TrackTicket() {
               </dl>
 
               {ticket.description && (
-                <div
-                  className="mt-5 rounded-lg p-4 text-sm"
-                  style={{ background: 'var(--surface)', color: 'var(--ink)' }}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--ink-muted)' }}>
+                <div className="mt-5 rounded-xl bg-[var(--surface)] p-4 text-sm text-[var(--ink)] border border-[var(--border)]">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)] mb-1">
                     Description
                   </p>
                   {ticket.description}
@@ -177,8 +183,7 @@ export function TrackTicket() {
                     <img
                       src={ticket.userAttachment.url}
                       alt="Ticket attachment"
-                      className="max-h-56 rounded-lg"
-                      style={{ border: '1px solid var(--border)' }}
+                      className="max-h-56 rounded-lg border border-[var(--border)]"
                     />
                   ) : (
                     <audio controls src={ticket.userAttachment.url} className="w-full" />
@@ -189,8 +194,8 @@ export function TrackTicket() {
           </div>
 
           {/* Timeline */}
-          <div className="panel p-6">
-            <h2 className="section-title mb-4">Status timeline</h2>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-6 shadow-xs">
+            <h2 className="text-base font-bold text-[var(--ink)] mb-4">Status timeline</h2>
             <TicketTimeline activities={activities} />
           </div>
         </div>

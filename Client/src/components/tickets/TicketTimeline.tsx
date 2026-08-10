@@ -5,7 +5,7 @@ import { formatLabel } from '../../lib/utils'
 export function TicketTimeline({ activities }: { activities: Activity[] }) {
   if (!activities.length) {
     return (
-      <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+      <p className="text-sm text-[var(--ink-muted)]">
         No activity recorded yet.
       </p>
     )
@@ -16,27 +16,28 @@ export function TicketTimeline({ activities }: { activities: Activity[] }) {
   )
 
   return (
-    <ol className="timeline-line space-y-0" aria-label="Ticket activity timeline">
+    <ol className="relative border-l-2 border-[var(--primary-blue-light)] pl-6 space-y-0" aria-label="Ticket activity timeline">
       {ordered.map((item, idx) => (
         <li key={item._id} className="relative pb-6 last:pb-0">
-          <span className="timeline-dot" aria-hidden />
+          {/* Timeline Dot */}
+          <span
+            className="absolute -left-[1.95rem] top-1.5 h-3 w-3 rounded-full bg-[var(--primary-blue)] border-2 border-[var(--white)] ring-2 ring-[var(--primary-blue-light)]"
+            aria-hidden
+          />
+
           <div
-            className="rounded-lg p-3 transition"
-            style={{
-              background: idx === ordered.length - 1 ? 'var(--primary-blue-light)' : 'var(--surface)',
-              border: '1px solid var(--border)',
-            }}
+            className={`rounded-xl p-3.5 border transition-all ${
+              idx === ordered.length - 1
+                ? 'bg-[var(--primary-blue-light)] border-[var(--primary-blue-muted)]'
+                : 'bg-[var(--surface)] border-[var(--border)]'
+            }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p
-                className="text-sm font-semibold"
-                style={{ color: 'var(--primary-blue)' }}
-              >
+              <p className="text-sm font-bold text-[var(--primary-blue)]">
                 {formatLabel(item.action)}
               </p>
               <time
-                className="text-xs font-medium"
-                style={{ color: 'var(--ink-muted)' }}
+                className="text-xs font-semibold text-[var(--ink-muted)]"
                 dateTime={item.createdAt}
               >
                 {format(new Date(item.createdAt), 'dd MMM yyyy, HH:mm')}
@@ -44,22 +45,19 @@ export function TicketTimeline({ activities }: { activities: Activity[] }) {
             </div>
 
             {item.message && (
-              <p className="mt-1 text-sm" style={{ color: 'var(--ink)' }}>
+              <p className="mt-1 text-sm text-[var(--ink)]">
                 {item.message}
               </p>
             )}
 
-            <div
-              className="mt-1.5 flex flex-wrap gap-2 text-xs"
-              style={{ color: 'var(--ink-muted)' }}
-            >
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--ink-muted)]">
               {item.fromStatus && item.toStatus && (
-                <span className="flex items-center gap-1">
-                  <span className="badge" style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: 'var(--surface-2)', color: 'var(--ink-muted)' }}>
+                <span className="inline-flex items-center gap-1">
+                  <span className="rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
                     {formatLabel(item.fromStatus)}
                   </span>
                   <span>→</span>
-                  <span className="badge" style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: 'var(--primary-blue-light)', color: 'var(--primary-blue)' }}>
+                  <span className="rounded-full bg-[var(--primary-blue-light)] px-2 py-0.5 text-[10px] font-bold text-[var(--primary-blue)]">
                     {formatLabel(item.toStatus)}
                   </span>
                 </span>

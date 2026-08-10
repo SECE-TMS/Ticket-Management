@@ -46,52 +46,41 @@ export function Login() {
   })
 
   return (
-    <div
-      className="flex min-h-[calc(100vh-3.5rem)]"
-      style={{ background: 'var(--surface)' }}
-    >
+    <div className="flex min-h-[calc(100vh-3.5rem)] bg-[var(--surface)]">
       {/* Left branding panel */}
-      <div
-        className="relative hidden flex-col justify-between overflow-hidden p-10 lg:flex lg:w-[45%]"
-        style={{ background: 'linear-gradient(160deg, var(--primary-blue-deeper) 0%, var(--primary-blue) 100%)' }}
-      >
+      <div className="relative hidden flex-col justify-between overflow-hidden p-10 lg:flex lg:w-[45%] bg-gradient-to-br from-[var(--primary-blue-deeper)] to-[var(--primary-blue)]">
         {/* Gold decoration */}
         <div
-          className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full opacity-20 blur-3xl"
-          style={{ background: 'var(--gold)' }}
+          className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full bg-[var(--gold)] opacity-20 blur-3xl"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute -bottom-10 -left-10 h-48 w-48 rounded-full opacity-15 blur-2xl"
-          style={{ background: 'var(--gold)' }}
+          className="pointer-events-none absolute -bottom-10 -left-10 h-48 w-48 rounded-full bg-[var(--gold)] opacity-15 blur-2xl"
           aria-hidden
         />
 
         {/* Logo */}
         <div className="relative flex items-center gap-3">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold"
-            style={{ background: 'var(--gold)', color: 'var(--primary-blue-deeper)' }}
-          >
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--gold)] text-[var(--primary-blue-deeper)] font-bold text-sm">
             TM
           </div>
-          <span className="text-lg font-bold text-white">TMS Portal</span>
+          <span className="text-lg font-bold text-[var(--white)]">TMS Portal</span>
         </div>
 
         {/* Main copy */}
         <div className="relative">
-          <p className="font-display text-3xl font-bold leading-snug text-white">
+          <p className="font-display text-3xl font-bold leading-snug text-[var(--white)]">
             Manage tickets,<br />
-            <span style={{ color: 'var(--gold)' }}>resolve issues faster.</span>
+            <span className="text-[var(--gold)]">resolve issues faster.</span>
           </p>
-          <p className="mt-4 text-sm leading-relaxed" style={{ color: 'rgb(255 255 255 / 0.65)' }}>
+          <p className="mt-4 text-sm leading-relaxed text-white/65">
             Sign in to your staff account to access tickets, manage assignments, and track
             department performance.
           </p>
         </div>
 
         {/* Bottom info */}
-        <p className="relative text-xs" style={{ color: 'rgb(255 255 255 / 0.4)' }}>
+        <p className="relative text-xs text-white/40">
           Secured staff portal · TMS v1.0
         </p>
       </div>
@@ -101,26 +90,23 @@ export function Login() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold"
-              style={{ background: 'var(--primary-blue)', color: 'var(--white)' }}
-            >
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--primary-blue)] text-[var(--white)] text-xs font-bold">
               TM
             </div>
-            <span className="font-bold" style={{ color: 'var(--ink)' }}>TMS Portal</span>
+            <span className="font-bold text-[var(--ink)]">TMS Portal</span>
           </div>
 
-          <h1 className="font-display text-2xl font-bold" style={{ color: 'var(--ink)' }}>
+          <h1 className="font-display text-2xl font-bold text-[var(--ink)]">
             Welcome back
           </h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
             Sign in with your work credentials to continue.
           </p>
 
           <form onSubmit={onSubmit} className="mt-8 space-y-5" noValidate>
             {/* Email */}
-            <div className="form-field">
-              <label htmlFor="login-email" className="form-label">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="login-email" className="text-sm font-semibold text-[var(--ink)]">
                 Email address
               </label>
               <input
@@ -128,17 +114,19 @@ export function Login() {
                 type="email"
                 autoComplete="email"
                 {...register('email')}
-                className={`input-field ${errors.email ? 'input-error' : ''}`}
+                className={`h-10 w-full rounded-lg border bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                  errors.email ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                }`}
                 placeholder="you@company.com"
               />
               {errors.email && (
-                <span className="form-error">{errors.email.message}</span>
+                <span className="text-xs text-[var(--danger)]">{errors.email.message}</span>
               )}
             </div>
 
             {/* Password */}
-            <div className="form-field">
-              <label htmlFor="login-password" className="form-label">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="login-password" className="text-sm font-semibold text-[var(--ink)]">
                 Password
               </label>
               <input
@@ -146,23 +134,20 @@ export function Login() {
                 type="password"
                 autoComplete="current-password"
                 {...register('password')}
-                className={`input-field ${errors.password ? 'input-error' : ''}`}
+                className={`h-10 w-full rounded-lg border bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                  errors.password ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                }`}
                 placeholder="••••••••"
               />
               {errors.password && (
-                <span className="form-error">{errors.password.message}</span>
+                <span className="text-xs text-[var(--danger)]">{errors.password.message}</span>
               )}
             </div>
 
             {/* Server error */}
             {error && (
               <div
-                className="rounded-lg px-4 py-3 text-sm"
-                style={{
-                  background: 'var(--danger-light)',
-                  color: 'var(--danger)',
-                  border: '1px solid rgb(220 38 38 / 0.2)',
-                }}
+                className="rounded-lg border border-[var(--danger)]/20 bg-[var(--danger-light)] px-4 py-3 text-sm text-[var(--danger)]"
                 role="alert"
               >
                 {error}
@@ -181,12 +166,11 @@ export function Login() {
             </Button>
           </form>
 
-          <p className="mt-8 text-center text-sm" style={{ color: 'var(--ink-muted)' }}>
+          <p className="mt-8 text-center text-sm text-[var(--ink-muted)]">
             Not a staff member?{' '}
             <Link
               to="/raise-ticket"
-              className="font-semibold hover:underline"
-              style={{ color: 'var(--primary-blue)' }}
+              className="font-semibold text-[var(--primary-blue)] hover:underline"
             >
               Raise a ticket
             </Link>

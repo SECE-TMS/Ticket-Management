@@ -19,11 +19,11 @@ export function KpiCard({
   className,
   accent = 'blue',
 }: KpiCardProps) {
-  const iconClass = {
-    blue: 'kpi-icon-wrap',
-    gold: 'kpi-icon-wrap gold',
-    success: 'kpi-icon-wrap success',
-    danger: 'kpi-icon-wrap danger',
+  const iconBgClass = {
+    blue: 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]',
+    gold: 'bg-[var(--gold-light)] text-[var(--gold-dark)]',
+    success: 'bg-[var(--success-light)] text-[var(--success)]',
+    danger: 'bg-[var(--danger-light)] text-[var(--danger)]',
   }[accent]
 
   const topBorderColor = {
@@ -35,31 +35,34 @@ export function KpiCard({
 
   return (
     <div
-      className={cn('kpi-card panel-hover', className)}
+      className={cn(
+        'rounded-xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
+        className
+      )}
       style={{ borderTop: `3px solid ${topBorderColor}` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p
-            className="text-xs font-semibold tracking-wide uppercase"
-            style={{ color: 'var(--ink-muted)' }}
-          >
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
             {label}
           </p>
-          <p
-            className="mt-2 font-display text-3xl font-bold tracking-tight"
-            style={{ color: 'var(--ink)' }}
-          >
+          <p className="mt-2 font-display text-3xl font-bold tracking-tight text-[var(--ink)]">
             {value}
           </p>
           {hint && (
-            <p className="mt-1 text-xs" style={{ color: 'var(--ink-muted)' }}>
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">
               {hint}
             </p>
           )}
         </div>
         {Icon && (
-          <div className={iconClass} aria-hidden>
+          <div
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+              iconBgClass
+            )}
+            aria-hidden
+          >
             <Icon size={20} />
           </div>
         )}
@@ -78,11 +81,15 @@ export function PageHeader({
   actions?: ReactNode
 }) {
   return (
-    <div className="page-header flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="page-title">{title}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
+          {title}
+        </h1>
         {description && (
-          <p className="page-subtitle">{description}</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+            {description}
+          </p>
         )}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}

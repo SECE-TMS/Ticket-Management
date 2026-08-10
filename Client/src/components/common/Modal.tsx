@@ -35,35 +35,44 @@ export function Modal({
   if (!open) return null
 
   const maxWidth = {
-    sm: '28rem',
-    md: '36rem',
-    lg: '48rem',
+    sm: 'max-w-md',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
   }[size]
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[#112f57]/55 backdrop-blur-xs p-0 sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 w-full h-full cursor-default"
+        className="absolute inset-0 h-full w-full cursor-default"
         aria-label="Close modal"
         onClick={onClose}
         tabIndex={-1}
       />
+
       {/* Modal box */}
       <div
-        className={cn('modal-box', className)}
-        style={{ maxWidth, width: '100%', position: 'relative' }}
+        className={cn(
+          'relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-[var(--white)] shadow-2xl sm:rounded-2xl',
+          maxWidth,
+          className
+        )}
       >
         {/* Header */}
-        <div className="modal-header">
-          <h2 id="modal-title" className="modal-title">
+        <div className="sticky top-0 z-1 flex items-center justify-between bg-[var(--primary-blue)] px-6 py-4 rounded-t-2xl text-[var(--white)]">
+          <h2 id="modal-title" className="text-base font-bold text-[var(--white)]">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="modal-close"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 text-white/80 hover:bg-white/25 hover:text-white transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X size={16} />
@@ -71,7 +80,7 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="modal-body">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   )

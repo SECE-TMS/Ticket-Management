@@ -41,8 +41,8 @@ function getInitials(name: string) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="form-field">
-      <label className="form-label">{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-semibold text-[var(--ink)]">{label}</label>
       {children}
     </div>
   )
@@ -129,8 +129,11 @@ export function AdminUsers() {
     }
   }
 
+  const inputClass =
+    'h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20'
+
   return (
-    <div className="animate-fade-in">
+    <div>
       <PageHeader
         title="Users"
         description="Create managers and employees, filter by role or department."
@@ -149,24 +152,24 @@ export function AdminUsers() {
       />
 
       {/* Filters */}
-      <div className="panel mb-5 grid gap-3 p-4 sm:grid-cols-3">
-        <div className="form-field">
-          <label htmlFor="user-search" className="form-label">Search</label>
+      <div className="mb-5 grid gap-3 rounded-xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-xs sm:grid-cols-3">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="user-search" className="text-sm font-semibold text-[var(--ink)]">Search</label>
           <input
             id="user-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-field"
+            className={inputClass}
             placeholder="Name or email…"
           />
         </div>
-        <div className="form-field">
-          <label htmlFor="user-role-filter" className="form-label">Role</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="user-role-filter" className="text-sm font-semibold text-[var(--ink)]">Role</label>
           <select
             id="user-role-filter"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value as Role | '')}
-            className="input-field"
+            className={`cursor-pointer ${inputClass}`}
           >
             <option value="">All roles</option>
             <option value="admin">Admin</option>
@@ -174,13 +177,13 @@ export function AdminUsers() {
             <option value="employee">Employee</option>
           </select>
         </div>
-        <div className="form-field">
-          <label htmlFor="user-dept-filter" className="form-label">Department</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="user-dept-filter" className="text-sm font-semibold text-[var(--ink)]">Department</label>
           <select
             id="user-dept-filter"
             value={deptFilter}
             onChange={(e) => setDeptFilter(e.target.value)}
-            className="input-field"
+            className={`cursor-pointer ${inputClass}`}
           >
             <option value="">All departments</option>
             {departments.map((d) => (
@@ -196,62 +199,59 @@ export function AdminUsers() {
         <PageLoader />
       ) : (
         <>
-          <div className="panel overflow-x-auto">
-            <table className="data-table" id="users-table">
+          <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
+            <table className="w-full text-left text-sm border-collapse" id="users-table">
               <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Department</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
+                  <th className="px-4 py-3 first:rounded-tl-xl">User</th>
+                  <th className="px-4 py-3">Role</th>
+                  <th className="px-4 py-3">Department</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 last:rounded-tr-xl">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-[var(--border)]">
                 {users.map((u) => (
-                  <tr key={getId(u)}>
-                    <td>
+                  <tr key={getId(u)} className="transition-colors hover:bg-[var(--primary-blue-light)]">
+                    <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
                         <div
-                          className="avatar"
-                          style={{
-                            background: u.isActive ? 'var(--primary-blue-light)' : 'var(--surface-2)',
-                            color: u.isActive ? 'var(--primary-blue)' : 'var(--ink-muted)',
-                          }}
+                          className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${
+                            u.isActive
+                              ? 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]'
+                              : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
+                          }`}
                         >
                           {getInitials(u.name)}
                         </div>
                         <div>
-                          <p className="font-semibold text-sm" style={{ color: 'var(--ink)' }}>
+                          <p className="font-semibold text-sm text-[var(--ink)]">
                             {u.name}
                           </p>
-                          <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+                          <p className="text-xs text-[var(--ink-muted)]">
                             {u.email}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td>
-                      <span
-                        className="badge"
-                        style={{ background: 'var(--surface-2)', color: 'var(--ink-muted)' }}
-                      >
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex rounded-full bg-[var(--surface-2)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
                         {formatLabel(u.role)}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--ink-muted)' }}>{getName(u.department, '—')}</td>
-                    <td>
+                    <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(u.department, '—')}</td>
+                    <td className="px-4 py-3.5">
                       <Badge
                         className={
                           u.isActive
-                            ? 'status-resolved'
-                            : 'status-closed'
+                            ? 'bg-[var(--success-light)] text-[var(--success)]'
+                            : 'bg-slate-100 text-slate-700'
                         }
                       >
                         {u.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
-                    <td>
+                    <td className="px-4 py-3.5">
                       {u.role !== 'admin' && (
                         <Button
                           type="button"
@@ -267,10 +267,8 @@ export function AdminUsers() {
                 ))}
                 {!users.length && (
                   <tr>
-                    <td colSpan={5}>
-                      <div className="empty-state">
-                        <p className="empty-state-desc">No users match your filters.</p>
-                      </div>
+                    <td colSpan={5} className="py-8 text-center text-sm text-[var(--ink-muted)]">
+                      No users match your filters.
                     </td>
                   </tr>
                 )}
@@ -291,7 +289,7 @@ export function AdminUsers() {
             <input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="input-field"
+              className={inputClass}
               placeholder="John Smith"
             />
           </Field>
@@ -300,7 +298,7 @@ export function AdminUsers() {
               type="email"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="input-field"
+              className={inputClass}
               placeholder="john@company.com"
             />
           </Field>
@@ -309,7 +307,7 @@ export function AdminUsers() {
               type="password"
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-              className="input-field"
+              className={inputClass}
               placeholder="Minimum 8 characters"
             />
           </Field>
@@ -319,7 +317,7 @@ export function AdminUsers() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, role: e.target.value as 'manager' | 'employee' }))
               }
-              className="input-field"
+              className={`cursor-pointer ${inputClass}`}
             >
               <option value="manager">Manager</option>
               <option value="employee">Employee</option>
@@ -329,7 +327,7 @@ export function AdminUsers() {
             <select
               value={form.department}
               onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-              className="input-field"
+              className={`cursor-pointer ${inputClass}`}
             >
               <option value="">Select department…</option>
               {departments
@@ -345,7 +343,7 @@ export function AdminUsers() {
             <input
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              className="input-field"
+              className={inputClass}
               placeholder="10-digit number"
             />
           </Field>

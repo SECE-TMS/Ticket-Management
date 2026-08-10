@@ -43,10 +43,10 @@ export function ResolveModal({ open, onClose, loading, onSubmit }: ResolveModalP
         }}
       >
         {/* Remarks */}
-        <div className="form-field">
-          <label htmlFor="resolve-remarks" className="form-label">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="resolve-remarks" className="text-sm font-semibold text-[var(--ink)]">
             Resolution remarks
-            <span className="ml-1 text-xs font-normal" style={{ color: 'var(--ink-muted)' }}>
+            <span className="ml-1 text-xs font-normal text-[var(--ink-muted)]">
               (required)
             </span>
           </label>
@@ -57,24 +57,28 @@ export function ResolveModal({ open, onClose, loading, onSubmit }: ResolveModalP
             rows={4}
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
-            className="input-field"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--white)] p-3 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
             placeholder="Describe the work completed and any notes for the requester…"
           />
-          <p className="mt-1 text-right text-xs" style={{ color: 'var(--ink-muted)' }}>
+          <p className="text-right text-xs text-[var(--ink-muted)]">
             {remarks.length} chars
           </p>
         </div>
 
         {/* File upload zone */}
-        <div className="form-field">
-          <p className="form-label mb-1">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-semibold text-[var(--ink)]">
             Proof attachment{' '}
-            <span className="text-xs font-normal" style={{ color: 'var(--ink-muted)' }}>
+            <span className="text-xs font-normal text-[var(--ink-muted)]">
               (optional)
             </span>
           </p>
           <div
-            className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
+            className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-all cursor-pointer ${
+              dragOver
+                ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)]'
+                : 'border-[var(--primary-blue-muted)] bg-[var(--white)] hover:border-[var(--primary-blue)] hover:bg-[var(--primary-blue-light)]/50'
+            }`}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
@@ -83,17 +87,17 @@ export function ResolveModal({ open, onClose, loading, onSubmit }: ResolveModalP
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
           >
-            <Upload size={24} style={{ color: 'var(--primary-blue)', margin: '0 auto 0.5rem' }} />
+            <Upload size={24} className="mb-2 text-[var(--primary-blue)]" />
             {file ? (
-              <p className="text-sm font-medium" style={{ color: 'var(--primary-blue)' }}>
+              <p className="text-sm font-semibold text-[var(--primary-blue)]">
                 {file.name}
               </p>
             ) : (
               <>
-                <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>
+                <p className="text-sm font-semibold text-[var(--ink)]">
                   Drop a photo or audio file here
                 </p>
-                <p className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>
+                <p className="mt-1 text-xs text-[var(--ink-muted)]">
                   or click to browse
                 </p>
               </>
@@ -110,8 +114,7 @@ export function ResolveModal({ open, onClose, loading, onSubmit }: ResolveModalP
           {file && (
             <button
               type="button"
-              className="mt-1 text-xs hover:underline"
-              style={{ color: 'var(--danger)' }}
+              className="self-start text-xs font-semibold text-[var(--danger)] hover:underline cursor-pointer"
               onClick={() => setFile(null)}
             >
               Remove file
@@ -119,7 +122,7 @@ export function ResolveModal({ open, onClose, loading, onSubmit }: ResolveModalP
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-1">
+        <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
