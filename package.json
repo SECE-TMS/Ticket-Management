@@ -1,0 +1,13 @@
+{
+  "name": "ticket-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TMS - MERN Ticket Management System",
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix Client",
+    "seed": "npm run seed --prefix server",
+    "build:client": "npm run build --prefix Client",
+    "start:server": "npm start --prefix server"
+  }
+}
