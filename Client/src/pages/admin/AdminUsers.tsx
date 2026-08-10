@@ -30,6 +30,24 @@ const emptyForm: UserForm = {
   phone: '',
 }
 
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="form-field">
+      <label className="form-label">{label}</label>
+      {children}
+    </div>
+  )
+}
+
 export function AdminUsers() {
   const toast = useToast()
   const [loading, setLoading] = useState(true)
@@ -90,7 +108,7 @@ export function AdminUsers() {
         ...form,
         phone: form.phone || undefined,
       })
-      toast.success('User created')
+      toast.success('User created successfully')
       setOpen(false)
       setForm(emptyForm)
       await load()
@@ -112,52 +130,57 @@ export function AdminUsers() {
   }
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <PageHeader
         title="Users"
         description="Create managers and employees, filter by role or department."
         actions={
           <Button
             type="button"
+            id="create-user-btn"
             onClick={() => {
               setForm(emptyForm)
               setOpen(true)
             }}
           >
-            Create user
+            + Create User
           </Button>
         }
       />
 
-      <div className="panel mb-4 grid gap-3 p-4 sm:grid-cols-3">
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-600">Search</span>
+      {/* Filters */}
+      <div className="panel mb-5 grid gap-3 p-4 sm:grid-cols-3">
+        <div className="form-field">
+          <label htmlFor="user-search" className="form-label">Search</label>
           <input
+            id="user-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
-            placeholder="Name or email"
+            className="input-field"
+            placeholder="Name or email…"
           />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-600">Role</span>
+        </div>
+        <div className="form-field">
+          <label htmlFor="user-role-filter" className="form-label">Role</label>
           <select
+            id="user-role-filter"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value as Role | '')}
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+            className="input-field"
           >
             <option value="">All roles</option>
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="employee">Employee</option>
           </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-600">Department</span>
+        </div>
+        <div className="form-field">
+          <label htmlFor="user-dept-filter" className="form-label">Department</label>
           <select
+            id="user-dept-filter"
             value={deptFilter}
             onChange={(e) => setDeptFilter(e.target.value)}
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+            className="input-field"
           >
             <option value="">All departments</option>
             {departments.map((d) => (
@@ -166,7 +189,7 @@ export function AdminUsers() {
               </option>
             ))}
           </select>
-        </label>
+        </div>
       </div>
 
       {loading ? (
@@ -174,40 +197,66 @@ export function AdminUsers() {
       ) : (
         <>
           <div className="panel overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50/80 text-xs tracking-wide text-slate-500 uppercase">
+            <table className="data-table" id="users-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Role</th>
-                  <th className="px-4 py-3">Department</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Actions</th>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={getId(u)} className="border-b border-slate-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-navy">{u.name}</p>
-                      <p className="text-xs text-slate-500">{u.email}</p>
+                  <tr key={getId(u)}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="avatar"
+                          style={{
+                            background: u.isActive ? 'var(--primary-blue-light)' : 'var(--surface-2)',
+                            color: u.isActive ? 'var(--primary-blue)' : 'var(--ink-muted)',
+                          }}
+                        >
+                          {getInitials(u.name)}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm" style={{ color: 'var(--ink)' }}>
+                            {u.name}
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+                            {u.email}
+                          </p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-4 py-3">{formatLabel(u.role)}</td>
-                    <td className="px-4 py-3">{getName(u.department, '—')}</td>
-                    <td className="px-4 py-3">
+                    <td>
+                      <span
+                        className="badge"
+                        style={{ background: 'var(--surface-2)', color: 'var(--ink-muted)' }}
+                      >
+                        {formatLabel(u.role)}
+                      </span>
+                    </td>
+                    <td style={{ color: 'var(--ink-muted)' }}>{getName(u.department, '—')}</td>
+                    <td>
                       <Badge
                         className={
-                          u.isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'
+                          u.isActive
+                            ? 'status-resolved'
+                            : 'status-closed'
                         }
                       >
                         {u.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {u.role !== 'admin' && (
                         <Button
                           type="button"
                           size="sm"
-                          variant="outline"
+                          variant={u.isActive ? 'outline' : 'primary'}
                           onClick={() => void toggleActive(u)}
                         >
                           {u.isActive ? 'Deactivate' : 'Activate'}
@@ -216,30 +265,43 @@ export function AdminUsers() {
                     </td>
                   </tr>
                 ))}
+                {!users.length && (
+                  <tr>
+                    <td colSpan={5}>
+                      <div className="empty-state">
+                        <p className="empty-state-desc">No users match your filters.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
+
           <div className="mt-4">
             <Pagination page={page} pages={pages} total={total} onPageChange={setPage} />
           </div>
         </>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Create user">
-        <div className="space-y-3">
-          <Field label="Name">
+      {/* Create user modal */}
+      <Modal open={open} onClose={() => setOpen(false)} title="Create User">
+        <div className="space-y-4">
+          <Field label="Full name">
             <input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="field"
+              className="input-field"
+              placeholder="John Smith"
             />
           </Field>
-          <Field label="Email">
+          <Field label="Email address">
             <input
               type="email"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="field"
+              className="input-field"
+              placeholder="john@company.com"
             />
           </Field>
           <Field label="Password">
@@ -247,7 +309,8 @@ export function AdminUsers() {
               type="password"
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-              className="field"
+              className="input-field"
+              placeholder="Minimum 8 characters"
             />
           </Field>
           <Field label="Role">
@@ -256,7 +319,7 @@ export function AdminUsers() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, role: e.target.value as 'manager' | 'employee' }))
               }
-              className="field"
+              className="input-field"
             >
               <option value="manager">Manager</option>
               <option value="employee">Employee</option>
@@ -266,9 +329,9 @@ export function AdminUsers() {
             <select
               value={form.department}
               onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-              className="field"
+              className="input-field"
             >
-              <option value="">Select department</option>
+              <option value="">Select department…</option>
               {departments
                 .filter((d) => d.isActive !== false)
                 .map((d) => (
@@ -278,15 +341,17 @@ export function AdminUsers() {
                 ))}
             </select>
           </Field>
-          <Field label="Phone">
+          <Field label="Phone (optional)">
             <input
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              className="field"
+              className="input-field"
+              placeholder="10-digit number"
             />
           </Field>
+
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -295,31 +360,11 @@ export function AdminUsers() {
               onClick={() => void save()}
               disabled={!form.name || !form.email || !form.password || !form.department}
             >
-              Create
+              Create User
             </Button>
           </div>
         </div>
-        <style>{`
-          .field {
-            width: 100%;
-            height: 2.5rem;
-            border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-            padding: 0 0.75rem;
-            outline: none;
-          }
-          .field:focus { border-color: #0d9488; }
-        `}</style>
       </Modal>
     </div>
-  )
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block text-sm">
-      <span className="mb-1 block text-slate-600">{label}</span>
-      {children}
-    </label>
   )
 }

@@ -34,40 +34,44 @@ export function Modal({
 
   if (!open) return null
 
+  const maxWidth = {
+    sm: '28rem',
+    md: '36rem',
+    lg: '48rem',
+  }[size]
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-navy/50 backdrop-blur-[2px]"
+        className="absolute inset-0 w-full h-full cursor-default"
         aria-label="Close modal"
         onClick={onClose}
+        tabIndex={-1}
       />
+      {/* Modal box */}
       <div
-        className={cn(
-          'relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl',
-          size === 'sm' && 'sm:max-w-md',
-          size === 'md' && 'sm:max-w-lg',
-          size === 'lg' && 'sm:max-w-2xl',
-          className
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
+        className={cn('modal-box', className)}
+        style={{ maxWidth, width: '100%', position: 'relative' }}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4">
-          <h2 id="modal-title" className="font-display text-lg font-semibold text-navy">
+        {/* Header */}
+        <div className="modal-header">
+          <h2 id="modal-title" className="modal-title">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+            className="modal-close"
             aria-label="Close"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+
+        {/* Body */}
+        <div className="modal-body">{children}</div>
       </div>
     </div>
   )

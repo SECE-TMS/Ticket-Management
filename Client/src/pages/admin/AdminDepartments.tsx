@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Building2 } from 'lucide-react'
 import { Button } from '../../components/common/Button'
 import { Modal } from '../../components/common/Modal'
 import { PageLoader } from '../../components/common/LoadingSpinner'
@@ -128,58 +129,84 @@ export function AdminDepartments() {
   if (loading) return <PageLoader />
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <PageHeader
         title="Departments"
         description="Configure facilities teams, complaint types, and SLA hours."
         actions={
-          <Button type="button" onClick={openCreate}>
-            Add department
+          <Button type="button" id="add-dept-btn" onClick={openCreate}>
+            + Add Department
           </Button>
         }
       />
 
       <div className="panel overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-slate-100 bg-slate-50/80 text-xs tracking-wide text-slate-500 uppercase">
+        <table className="data-table" id="departments-table">
+          <thead>
             <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Complaint types</th>
-              <th className="px-4 py-3">SLA</th>
-              <th className="px-4 py-3">Manager</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
+              <th>Department</th>
+              <th>Complaint Types</th>
+              <th>SLA</th>
+              <th>Manager</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {departments.map((d) => (
-              <tr key={getId(d)} className="border-b border-slate-50">
-                <td className="px-4 py-3">
-                  <p className="font-medium text-navy">{d.name}</p>
-                  <p className="max-w-xs truncate text-xs text-slate-500">{d.description}</p>
+              <tr key={getId(d)}>
+                <td>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0"
+                      style={{ background: 'var(--primary-blue-light)', color: 'var(--primary-blue)' }}
+                    >
+                      <Building2 size={16} />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm" style={{ color: 'var(--ink)' }}>
+                        {d.name}
+                      </p>
+                      {d.description && (
+                        <p
+                          className="max-w-xs truncate text-xs"
+                          style={{ color: 'var(--ink-muted)' }}
+                        >
+                          {d.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </td>
-                <td className="px-4 py-3">
+                <td>
                   <div className="flex max-w-xs flex-wrap gap-1">
-                    {(d.complaintTypes || []).slice(0, 4).map((t) => (
-                      <Badge key={t} className="bg-slate-100 text-slate-700">
+                    {(d.complaintTypes || []).slice(0, 3).map((t) => (
+                      <span key={t} className="chip chip-gold text-xs">
                         {t}
-                      </Badge>
+                      </span>
                     ))}
-                    {(d.complaintTypes || []).length > 4 && (
-                      <Badge className="bg-slate-100 text-slate-500">
-                        +{d.complaintTypes.length - 4}
-                      </Badge>
+                    {(d.complaintTypes || []).length > 3 && (
+                      <span className="chip" style={{ fontSize: '0.7rem' }}>
+                        +{d.complaintTypes.length - 3} more
+                      </span>
+                    )}
+                    {!(d.complaintTypes || []).length && (
+                      <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>—</span>
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3">{d.slaHours}h</td>
-                <td className="px-4 py-3">{getName(d.manager, '—')}</td>
-                <td className="px-4 py-3">
-                  <Badge className={d.isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}>
+                <td>
+                  <span className="font-medium" style={{ color: 'var(--ink)' }}>
+                    {d.slaHours}h
+                  </span>
+                </td>
+                <td style={{ color: 'var(--ink-muted)' }}>{getName(d.manager, '—')}</td>
+                <td>
+                  <Badge className={d.isActive ? 'status-resolved' : 'status-closed'}>
                     {d.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </td>
-                <td className="px-4 py-3">
+                <td>
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" onClick={() => openEdit(d)}>
                       Edit
@@ -187,7 +214,7 @@ export function AdminDepartments() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={d.isActive ? 'ghost' : 'secondary'}
+                      variant={d.isActive ? 'ghost' : 'primary'}
                       onClick={() => void toggleActive(d)}
                     >
                       {d.isActive ? 'Deactivate' : 'Activate'}
@@ -196,49 +223,68 @@ export function AdminDepartments() {
                 </td>
               </tr>
             ))}
+            {!departments.length && (
+              <tr>
+                <td colSpan={6}>
+                  <div className="empty-state">
+                    <div className="empty-state-icon"><Building2 size={22} /></div>
+                    <p className="empty-state-title">No departments yet</p>
+                    <p className="empty-state-desc">Add your first department to get started.</p>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
+      {/* Create/Edit modal */}
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title={editing ? 'Edit department' : 'Create department'}
+        title={editing ? 'Edit Department' : 'Create Department'}
         size="lg"
       >
         <div className="space-y-4">
-          <label className="block text-sm">
-            <span className="mb-1 block text-slate-600">Name</span>
+          <div className="form-field">
+            <label htmlFor="dept-name" className="form-label">Name</label>
             <input
+              id="dept-name"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+              className="input-field"
+              placeholder="Department name"
               required
             />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-slate-600">Description</span>
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="dept-desc" className="form-label">Description</label>
             <textarea
+              id="dept-desc"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={3}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:border-accent"
+              className="input-field"
+              placeholder="Brief description…"
             />
-          </label>
-          <div className="text-sm">
-            <span className="mb-1 block text-slate-600">Complaint types</span>
-            <div className="mb-2 flex flex-wrap gap-1">
-              {types.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => removeChip(t)}
-                  className="rounded-md bg-teal-50 px-2 py-1 text-xs text-accent hover:bg-teal-100"
-                >
-                  {t} ×
-                </button>
-              ))}
-            </div>
+          </div>
+
+          {/* Complaint types */}
+          <div className="form-field">
+            <p className="form-label mb-2">Complaint Types</p>
+            {types.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {types.map((t) => (
+                  <span key={t} className="chip chip-gold">
+                    {t}
+                    <button type="button" onClick={() => removeChip(t)} aria-label={`Remove ${t}`}>
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2">
               <input
                 value={chipInput}
@@ -249,38 +295,48 @@ export function AdminDepartments() {
                     addChip()
                   }
                 }}
-                placeholder="Type and press Enter"
-                className="h-10 flex-1 rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+                placeholder="Type and press Enter or Add"
+                className="input-field flex-1"
               />
-              <Button type="button" variant="outline" onClick={addChip}>
+              <Button type="button" variant="outline" size="sm" onClick={addChip}>
                 Add
               </Button>
             </div>
-            <p className="mt-1 text-xs text-slate-500">Or paste comma-separated values below.</p>
+            <p className="mt-1 text-xs" style={{ color: 'var(--ink-muted)' }}>
+              Or paste comma-separated values below.
+            </p>
             <input
               value={form.complaintTypes}
               onChange={(e) => setForm((f) => ({ ...f, complaintTypes: e.target.value }))}
-              className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
-              placeholder="Leak, Clogged drain, …"
+              className="input-field mt-2"
+              placeholder="Leak, Clogged drain, Electrical fault, …"
             />
           </div>
-          <label className="block text-sm">
-            <span className="mb-1 block text-slate-600">SLA hours</span>
+
+          <div className="form-field">
+            <label htmlFor="dept-sla" className="form-label">SLA Hours</label>
             <input
+              id="dept-sla"
               type="number"
               min={1}
               max={720}
               value={form.slaHours}
               onChange={(e) => setForm((f) => ({ ...f, slaHours: Number(e.target.value) }))}
-              className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+              className="input-field"
             />
-          </label>
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="button" loading={saving} onClick={() => void save()} disabled={!form.name.trim()}>
-              Save
+            <Button
+              type="button"
+              loading={saving}
+              onClick={() => void save()}
+              disabled={!form.name.trim()}
+            >
+              {editing ? 'Save Changes' : 'Create Department'}
             </Button>
           </div>
         </div>

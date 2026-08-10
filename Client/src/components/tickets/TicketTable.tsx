@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
+import { Inbox } from 'lucide-react'
 import type { Ticket } from '../../types'
 import { getName } from '../../types'
 import { PriorityBadge, StatusBadge } from '../common/Badge'
@@ -12,53 +13,74 @@ interface TicketTableProps {
 export function TicketTable({ tickets, detailBase }: TicketTableProps) {
   if (!tickets.length) {
     return (
-      <div className="panel px-4 py-12 text-center text-sm text-slate-500">
-        No tickets match your filters.
+      <div className="panel">
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Inbox size={24} />
+          </div>
+          <p className="empty-state-title">No tickets found</p>
+          <p className="empty-state-desc">
+            No tickets match your current filters. Try adjusting your search or clearing the filters.
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="panel overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
-        <thead className="border-b border-slate-100 bg-slate-50/80 text-xs tracking-wide text-slate-500 uppercase">
+      <table className="data-table" id="tickets-table">
+        <thead>
           <tr>
-            <th className="px-4 py-3 font-medium">Ticket</th>
-            <th className="px-4 py-3 font-medium">Requester</th>
-            <th className="px-4 py-3 font-medium">Department</th>
-            <th className="px-4 py-3 font-medium">Status</th>
-            <th className="px-4 py-3 font-medium">Priority</th>
-            <th className="px-4 py-3 font-medium">Assignee</th>
-            <th className="px-4 py-3 font-medium">Created</th>
+            <th>Ticket</th>
+            <th>Requester</th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Assignee</th>
+            <th>Created</th>
           </tr>
         </thead>
         <tbody>
           {tickets.map((t) => (
-            <tr key={t._id} className="border-b border-slate-50 hover:bg-slate-50/60">
-              <td className="px-4 py-3">
+            <tr key={t._id}>
+              <td>
                 <Link
                   to={`${detailBase}/${t._id}`}
-                  className="font-medium text-accent hover:underline"
+                  className="font-semibold hover:underline"
+                  style={{ color: 'var(--primary-blue)' }}
                 >
                   {t.ticketCode}
                 </Link>
-                <p className="mt-0.5 max-w-[14rem] truncate text-xs text-slate-500">
+                <p
+                  className="mt-0.5 max-w-[14rem] truncate text-xs"
+                  style={{ color: 'var(--ink-muted)' }}
+                >
                   {t.complaintType}
                 </p>
               </td>
-              <td className="px-4 py-3">
-                <p>{t.requester.name}</p>
-                <p className="text-xs text-slate-500">{t.requester.mobile}</p>
+              <td>
+                <p className="font-medium" style={{ color: 'var(--ink)' }}>
+                  {t.requester.name}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+                  {t.requester.mobile}
+                </p>
               </td>
-              <td className="px-4 py-3">{getName(t.department)}</td>
-              <td className="px-4 py-3">
+              <td style={{ color: 'var(--ink-muted)' }}>{getName(t.department)}</td>
+              <td>
                 <StatusBadge status={t.status} />
               </td>
-              <td className="px-4 py-3">
+              <td>
                 <PriorityBadge priority={t.priority} />
               </td>
-              <td className="px-4 py-3">{getName(t.assignedTo, 'Unassigned')}</td>
-              <td className="px-4 py-3 whitespace-nowrap text-slate-600">
+              <td style={{ color: 'var(--ink-muted)' }}>
+                {getName(t.assignedTo, 'Unassigned')}
+              </td>
+              <td
+                className="whitespace-nowrap text-xs"
+                style={{ color: 'var(--ink-muted)' }}
+              >
                 {format(new Date(t.createdAt), 'dd MMM yyyy')}
               </td>
             </tr>

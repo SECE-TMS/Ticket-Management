@@ -4,7 +4,11 @@ import { formatLabel } from '../../lib/utils'
 
 export function TicketTimeline({ activities }: { activities: Activity[] }) {
   if (!activities.length) {
-    return <p className="text-sm text-slate-500">No activity recorded yet.</p>
+    return (
+      <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+        No activity recorded yet.
+      </p>
+    )
   }
 
   const ordered = [...activities].sort(
@@ -12,24 +16,58 @@ export function TicketTimeline({ activities }: { activities: Activity[] }) {
   )
 
   return (
-    <ol className="relative space-y-0 border-l border-slate-200 pl-6">
-      {ordered.map((item) => (
+    <ol className="timeline-line space-y-0" aria-label="Ticket activity timeline">
+      {ordered.map((item, idx) => (
         <li key={item._id} className="relative pb-6 last:pb-0">
-          <span className="absolute -left-[1.55rem] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-accent" />
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-sm font-medium text-navy">{formatLabel(item.action)}</p>
-            <time className="text-xs text-slate-500">
-              {format(new Date(item.createdAt), 'dd MMM yyyy, HH:mm')}
-            </time>
-          </div>
-          {item.message && <p className="mt-1 text-sm text-slate-600">{item.message}</p>}
-          <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-            {item.fromStatus && item.toStatus && (
-              <span>
-                {formatLabel(item.fromStatus)} → {formatLabel(item.toStatus)}
-              </span>
+          <span className="timeline-dot" aria-hidden />
+          <div
+            className="rounded-lg p-3 transition"
+            style={{
+              background: idx === ordered.length - 1 ? 'var(--primary-blue-light)' : 'var(--surface)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: 'var(--primary-blue)' }}
+              >
+                {formatLabel(item.action)}
+              </p>
+              <time
+                className="text-xs font-medium"
+                style={{ color: 'var(--ink-muted)' }}
+                dateTime={item.createdAt}
+              >
+                {format(new Date(item.createdAt), 'dd MMM yyyy, HH:mm')}
+              </time>
+            </div>
+
+            {item.message && (
+              <p className="mt-1 text-sm" style={{ color: 'var(--ink)' }}>
+                {item.message}
+              </p>
             )}
-            {item.actor?.name && <span>by {item.actor.name}</span>}
+
+            <div
+              className="mt-1.5 flex flex-wrap gap-2 text-xs"
+              style={{ color: 'var(--ink-muted)' }}
+            >
+              {item.fromStatus && item.toStatus && (
+                <span className="flex items-center gap-1">
+                  <span className="badge" style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: 'var(--surface-2)', color: 'var(--ink-muted)' }}>
+                    {formatLabel(item.fromStatus)}
+                  </span>
+                  <span>→</span>
+                  <span className="badge" style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: 'var(--primary-blue-light)', color: 'var(--primary-blue)' }}>
+                    {formatLabel(item.toStatus)}
+                  </span>
+                </span>
+              )}
+              {item.actor?.name && (
+                <span className="italic">by {item.actor.name}</span>
+              )}
+            </div>
           </div>
         </li>
       ))}

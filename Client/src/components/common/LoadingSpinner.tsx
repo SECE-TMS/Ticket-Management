@@ -15,10 +15,14 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
   return (
     <div
       className={cn(
-        'animate-spin rounded-full border-slate-300 border-t-accent',
+        'animate-spin rounded-full',
         sizes[size],
         className
       )}
+      style={{
+        borderColor: 'var(--primary-blue-muted)',
+        borderTopColor: 'var(--primary-blue)',
+      }}
       role="status"
       aria-label="Loading"
     />
@@ -27,8 +31,27 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
 
 export function PageLoader() {
   return (
-    <div className="flex min-h-[40vh] items-center justify-center">
-      <LoadingSpinner size="lg" />
+    <div
+      className="flex min-h-[40vh] flex-col items-center justify-center gap-4"
+      role="status"
+      aria-live="polite"
+    >
+      {/* Animated logo mark */}
+      <div
+        className="animate-pulse-ring flex h-14 w-14 items-center justify-center rounded-xl font-bold text-lg"
+        style={{
+          background: 'var(--primary-blue)',
+          color: 'var(--white)',
+        }}
+      >
+        TM
+      </div>
+      <div className="flex flex-col items-center gap-1">
+        <LoadingSpinner size="md" />
+        <p className="text-sm font-medium" style={{ color: 'var(--ink-muted)' }}>
+          Loading…
+        </p>
+      </div>
     </div>
   )
 }

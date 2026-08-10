@@ -30,95 +30,130 @@ export function ManagerDashboard() {
   if (loading) return <PageLoader />
   if (!data) return null
 
+  const maxOpen = Math.max(...data.workload.map((w) => w.openCount), 1)
+
   return (
-    <div>
+    <div className="animate-fade-in">
       <PageHeader
-        title="Manager dashboard"
+        title="Manager Dashboard"
         description="Department workload, unassigned requests, and team capacity."
         actions={
-          <div className="flex gap-2">
-            <Link
-              to="/manager/tickets"
-              className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-teal-700"
-            >
-              View tickets
+          <>
+            <Link to="/manager/tickets" className="btn btn-primary btn-sm">
+              View Tickets
             </Link>
-            <Link
-              to="/manager/employees"
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-navy"
-            >
+            <Link to="/manager/employees" className="btn btn-outline btn-sm">
               Employees
             </Link>
-          </div>
+          </>
         }
       />
 
+      {/* KPI Grid */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Open tickets" value={data.totals.open} icon={Ticket} />
-        <KpiCard label="Unassigned" value={data.totals.unassigned} icon={UserRound} />
-        <KpiCard label="Overdue" value={data.totals.overdue} icon={AlertTriangle} />
-        <KpiCard label="Employees" value={data.totals.employees} icon={Users} />
+        <KpiCard label="Open Tickets" value={data.totals.open} icon={Ticket} accent="blue" />
+        <KpiCard label="Unassigned" value={data.totals.unassigned} icon={UserRound} accent="gold" />
+        <KpiCard label="Overdue" value={data.totals.overdue} icon={AlertTriangle} accent="danger" />
+        <KpiCard label="Employees" value={data.totals.employees} icon={Users} accent="success" />
       </div>
 
+      {/* Workload + Status row */}
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        {/* Team workload with progress bars */}
         <div className="panel p-5">
-          <h2 className="font-display text-lg font-semibold text-navy">Team workload</h2>
-          <ul className="mt-4 space-y-2">
-            {data.workload.map((w) => (
-              <li
-                key={w.employeeId}
-                className="flex items-center justify-between rounded-lg bg-surface px-3 py-2 text-sm"
-              >
-                <span className="font-medium text-navy">{w.name}</span>
-                <span className="text-slate-600">{w.openCount} open</span>
-              </li>
-            ))}
-            {!data.workload.length && (
-              <li className="text-sm text-slate-500">No open assigned work.</li>
-            )}
-          </ul>
+          <h2 className="section-title mb-4">Team Workload</h2>
+          {data.workload.length ? (
+            <ul className="space-y-4">
+              {data.workload.map((w) => (
+                <li key={w.employeeId}>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="font-medium" style={{ color: 'var(--ink)' }}>
+                      {w.name}
+                    </span>
+                    <span className="font-semibold tabular-nums" style={{ color: 'var(--primary-blue)' }}>
+                      {w.openCount} open
+                    </span>
+                  </div>
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill"
+                      style={{
+                        width: `${Math.round((w.openCount / maxOpen) * 100)}%`,
+                        background: w.openCount === maxOpen
+                          ? 'var(--danger)'
+                          : 'var(--primary-blue)',
+                      }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+              No open assigned work yet.
+            </p>
+          )}
         </div>
 
+        {/* Status breakdown */}
         <div className="panel p-5">
-          <h2 className="font-display text-lg font-semibold text-navy">By status</h2>
-          <ul className="mt-4 space-y-2">
+          <h2 className="section-title mb-4">By Status</h2>
+          <ul className="space-y-3">
             {Object.entries(data.byStatus).map(([status, count]) => (
               <li key={status} className="flex items-center justify-between text-sm">
                 <StatusBadge status={status as never} />
-                <span className="font-semibold text-navy">{count}</span>
+                <span className="font-bold tabular-nums" style={{ color: 'var(--ink)' }}>
+                  {count}
+                </span>
               </li>
             ))}
+            {!Object.keys(data.byStatus).length && (
+              <li className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+                No tickets yet.
+              </li>
+            )}
           </ul>
         </div>
       </div>
 
+      {/* Recent tickets */}
       <div className="panel mt-6 overflow-x-auto">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <h2 className="font-display text-lg font-semibold text-navy">Recent tickets</h2>
+        <div className="section-header">
+          <h2 className="section-title">Recent Tickets</h2>
+          <Link
+            to="/manager/tickets"
+            className="text-xs font-semibold hover:underline"
+            style={{ color: 'var(--primary-blue)' }}
+          >
+            View all →
+          </Link>
         </div>
-        <table className="min-w-full text-left text-sm">
-          <thead className="text-xs tracking-wide text-slate-500 uppercase">
+        <table className="data-table">
+          <thead>
             <tr>
-              <th className="px-5 py-3">Code</th>
-              <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3">Assignee</th>
+              <th>Code</th>
+              <th>Status</th>
+              <th>Assignee</th>
             </tr>
           </thead>
           <tbody>
             {data.recent.map((t) => (
-              <tr key={t._id} className="border-t border-slate-50">
-                <td className="px-5 py-3">
+              <tr key={t._id}>
+                <td>
                   <Link
                     to={`/manager/tickets/${t._id}`}
-                    className="font-medium text-accent hover:underline"
+                    className="font-semibold hover:underline"
+                    style={{ color: 'var(--primary-blue)' }}
                   >
                     {t.ticketCode}
                   </Link>
                 </td>
-                <td className="px-5 py-3">
+                <td>
                   <StatusBadge status={t.status} />
                 </td>
-                <td className="px-5 py-3">{getName(t.assignedTo, 'Unassigned')}</td>
+                <td style={{ color: 'var(--ink-muted)' }}>
+                  {getName(t.assignedTo, 'Unassigned')}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Upload } from 'lucide-react'
 import { Modal } from '../common/Modal'
 import { Button } from '../common/Button'
 
@@ -12,16 +13,28 @@ interface ResolveModalProps {
 export function ResolveModal({ open, onClose, loading, onSubmit }: ResolveModalProps) {
   const [remarks, setRemarks] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
       setRemarks('')
       setFile(null)
+      setDragOver(false)
     }
   }, [open])
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const dropped = e.dataTransfer.files[0]
+    if (dropped && (dropped.type.startsWith('image/') || dropped.type.startsWith('audio/'))) {
+      setFile(dropped)
+    }
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title="Resolve ticket">
+    <Modal open={open} onClose={onClose} title="Resolve Ticket" size="sm">
       <form
         className="space-y-4"
         onSubmit={(e) => {
@@ -29,34 +42,89 @@ export function ResolveModal({ open, onClose, loading, onSubmit }: ResolveModalP
           void onSubmit({ remarks, file })
         }}
       >
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-600">Resolution remarks</span>
+        {/* Remarks */}
+        <div className="form-field">
+          <label htmlFor="resolve-remarks" className="form-label">
+            Resolution remarks
+            <span className="ml-1 text-xs font-normal" style={{ color: 'var(--ink-muted)' }}>
+              (required)
+            </span>
+          </label>
           <textarea
+            id="resolve-remarks"
             required
             minLength={3}
             rows={4}
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:border-accent"
-            placeholder="Describe the work completed…"
+            className="input-field"
+            placeholder="Describe the work completed and any notes for the requester…"
           />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-600">Proof attachment (optional)</span>
-          <input
-            type="file"
-            accept="image/*,audio/*"
-            capture="environment"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-accent"
-          />
-        </label>
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <p className="mt-1 text-right text-xs" style={{ color: 'var(--ink-muted)' }}>
+            {remarks.length} chars
+          </p>
+        </div>
+
+        {/* File upload zone */}
+        <div className="form-field">
+          <p className="form-label mb-1">
+            Proof attachment{' '}
+            <span className="text-xs font-normal" style={{ color: 'var(--ink-muted)' }}>
+              (optional)
+            </span>
+          </p>
+          <div
+            className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => inputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+          >
+            <Upload size={24} style={{ color: 'var(--primary-blue)', margin: '0 auto 0.5rem' }} />
+            {file ? (
+              <p className="text-sm font-medium" style={{ color: 'var(--primary-blue)' }}>
+                {file.name}
+              </p>
+            ) : (
+              <>
+                <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>
+                  Drop a photo or audio file here
+                </p>
+                <p className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>
+                  or click to browse
+                </p>
+              </>
+            )}
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*,audio/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </div>
+          {file && (
+            <button
+              type="button"
+              className="mt-1 text-xs hover:underline"
+              style={{ color: 'var(--danger)' }}
+              onClick={() => setFile(null)}
+            >
+              Remove file
+            </button>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" loading={loading}>
-            Mark resolved
+          <Button type="submit" loading={loading} disabled={!remarks.trim()}>
+            Mark Resolved
           </Button>
         </div>
       </form>

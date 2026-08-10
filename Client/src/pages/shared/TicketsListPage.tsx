@@ -62,8 +62,22 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
   }, [debouncedSearch, status, priority])
 
   return (
-    <div>
-      <PageHeader title={title} description={description} />
+    <div className="animate-fade-in">
+      <PageHeader
+        title={title}
+        description={description}
+        actions={
+          total > 0 ? (
+            <span
+              className="badge"
+              style={{ background: 'var(--primary-blue)', color: 'var(--white)', fontSize: '0.8125rem', padding: '0.375rem 0.875rem' }}
+            >
+              {total} ticket{total === 1 ? '' : 's'}
+            </span>
+          ) : undefined
+        }
+      />
+
       <TicketFilters
         search={search}
         status={status}
@@ -72,6 +86,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
         onStatusChange={setStatus}
         onPriorityChange={setPriority}
       />
+
       {loading ? (
         <PageLoader />
       ) : (

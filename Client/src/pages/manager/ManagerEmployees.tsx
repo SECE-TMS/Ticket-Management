@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Users } from 'lucide-react'
 import { Button } from '../../components/common/Button'
 import { Modal } from '../../components/common/Modal'
 import { PageLoader } from '../../components/common/LoadingSpinner'
@@ -19,6 +20,15 @@ interface EmpForm {
 }
 
 const emptyForm: EmpForm = { name: '', email: '', password: '', phone: '' }
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+}
 
 export function ManagerEmployees() {
   const toast = useToast()
@@ -73,8 +83,12 @@ export function ManagerEmployees() {
 
   if (!deptId) {
     return (
-      <div className="panel p-8 text-center text-sm text-slate-600">
-        Your account has no department assigned. Contact an admin.
+      <div className="panel p-10 text-center">
+        <div className="empty-state">
+          <div className="empty-state-icon"><Users size={22} /></div>
+          <p className="empty-state-title">No department assigned</p>
+          <p className="empty-state-desc">Your account has no department assigned. Contact an admin to fix this.</p>
+        </div>
       </div>
     )
   }
@@ -82,45 +96,57 @@ export function ManagerEmployees() {
   if (loading) return <PageLoader />
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <PageHeader
         title="Employees"
         description="Manage technicians in your department."
         actions={
           <Button
             type="button"
+            id="add-employee-btn"
             onClick={() => {
               setForm(emptyForm)
               setOpen(true)
             }}
           >
-            Add employee
+            + Add Employee
           </Button>
         }
       />
 
       <div className="panel overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-slate-100 bg-slate-50/80 text-xs tracking-wide text-slate-500 uppercase">
+        <table className="data-table" id="employees-table">
+          <thead>
             <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Phone</th>
-              <th className="px-4 py-3">Status</th>
+              <th>Employee</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {employees.map((e) => (
-              <tr key={getId(e)} className="border-b border-slate-50">
-                <td className="px-4 py-3 font-medium text-navy">{e.name}</td>
-                <td className="px-4 py-3">{e.email}</td>
-                <td className="px-4 py-3">{e.phone || '—'}</td>
-                <td className="px-4 py-3">
-                  <Badge
-                    className={
-                      e.isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'
-                    }
-                  >
+              <tr key={getId(e)}>
+                <td>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="avatar"
+                      style={{
+                        background: e.isActive ? 'var(--primary-blue-light)' : 'var(--surface-2)',
+                        color: e.isActive ? 'var(--primary-blue)' : 'var(--ink-muted)',
+                      }}
+                    >
+                      {getInitials(e.name)}
+                    </div>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--ink)' }}>
+                      {e.name}
+                    </p>
+                  </div>
+                </td>
+                <td style={{ color: 'var(--ink-muted)' }}>{e.email}</td>
+                <td style={{ color: 'var(--ink-muted)' }}>{e.phone || '—'}</td>
+                <td>
+                  <Badge className={e.isActive ? 'status-resolved' : 'status-closed'}>
                     {e.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </td>
@@ -128,8 +154,12 @@ export function ManagerEmployees() {
             ))}
             {!employees.length && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
-                  No employees yet. Add your first technician.
+                <td colSpan={4}>
+                  <div className="empty-state">
+                    <div className="empty-state-icon"><Users size={22} /></div>
+                    <p className="empty-state-title">No employees yet</p>
+                    <p className="empty-state-desc">Add your first technician to start assigning tickets.</p>
+                  </div>
                 </td>
               </tr>
             )}
@@ -137,28 +167,30 @@ export function ManagerEmployees() {
         </table>
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add employee">
-        <div className="space-y-3">
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Employee" size="sm">
+        <div className="space-y-4">
           {(
             [
-              ['name', 'Name', 'text'],
-              ['email', 'Email', 'email'],
-              ['password', 'Password', 'password'],
-              ['phone', 'Phone', 'text'],
+              ['name', 'Full name', 'text', 'John Smith'],
+              ['email', 'Email address', 'email', 'john@company.com'],
+              ['password', 'Password', 'password', 'Minimum 8 characters'],
+              ['phone', 'Phone (optional)', 'text', '9876543210'],
             ] as const
-          ).map(([key, label, type]) => (
-            <label key={key} className="block text-sm">
-              <span className="mb-1 block text-slate-600">{label}</span>
+          ).map(([key, label, type, placeholder]) => (
+            <div key={key} className="form-field">
+              <label htmlFor={`emp-${key}`} className="form-label">{label}</label>
               <input
+                id={`emp-${key}`}
                 type={type}
                 value={form[key]}
                 onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+                className="input-field"
+                placeholder={placeholder}
               />
-            </label>
+            </div>
           ))}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -167,7 +199,7 @@ export function ManagerEmployees() {
               disabled={!form.name || !form.email || !form.password}
               onClick={() => void save()}
             >
-              Create
+              Create Employee
             </Button>
           </div>
         </div>

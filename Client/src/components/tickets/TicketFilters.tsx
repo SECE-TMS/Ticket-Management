@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react'
 import { PRIORITIES, STATUSES, formatLabel } from '../../lib/utils'
 import type { TicketPriority, TicketStatus } from '../../types'
 
@@ -21,22 +22,43 @@ export function TicketFilters({
   extra,
 }: TicketFiltersProps) {
   return (
-    <div className="panel mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
-      <label className="block text-sm">
-        <span className="mb-1 block text-slate-600">Search</span>
-        <input
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Code, name, mobile…"
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
-        />
-      </label>
-      <label className="block text-sm">
-        <span className="mb-1 block text-slate-600">Status</span>
+    <div
+      className="panel mb-5 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4"
+      id="ticket-filters"
+    >
+      {/* Search with icon */}
+      <div className="form-field sm:col-span-2 lg:col-span-1">
+        <label htmlFor="tf-search" className="form-label">
+          Search
+        </label>
+        <div className="relative">
+          <Search
+            size={15}
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+            style={{ color: 'var(--ink-muted)' }}
+          />
+          <input
+            id="tf-search"
+            type="search"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Code, name, mobile…"
+            className="input-field"
+            style={{ paddingLeft: '2.25rem' }}
+          />
+        </div>
+      </div>
+
+      {/* Status */}
+      <div className="form-field">
+        <label htmlFor="tf-status" className="form-label">
+          Status
+        </label>
         <select
+          id="tf-status"
           value={status}
           onChange={(e) => onStatusChange(e.target.value as TicketStatus | '')}
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+          className="input-field"
         >
           <option value="">All statuses</option>
           {STATUSES.map((s) => (
@@ -45,13 +67,18 @@ export function TicketFilters({
             </option>
           ))}
         </select>
-      </label>
-      <label className="block text-sm">
-        <span className="mb-1 block text-slate-600">Priority</span>
+      </div>
+
+      {/* Priority */}
+      <div className="form-field">
+        <label htmlFor="tf-priority" className="form-label">
+          Priority
+        </label>
         <select
+          id="tf-priority"
           value={priority}
           onChange={(e) => onPriorityChange(e.target.value as TicketPriority | '')}
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+          className="input-field"
         >
           <option value="">All priorities</option>
           {PRIORITIES.map((p) => (
@@ -60,8 +87,9 @@ export function TicketFilters({
             </option>
           ))}
         </select>
-      </label>
-      {extra}
+      </div>
+
+      {extra && <div className="form-field">{extra}</div>}
     </div>
   )
 }

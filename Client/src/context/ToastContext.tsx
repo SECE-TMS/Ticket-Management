@@ -6,8 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { X } from 'lucide-react'
-import { cn } from '../lib/utils'
+import { CheckCircle2, Info, X, XCircle } from 'lucide-react'
 
 type ToastType = 'success' | 'error' | 'info'
 
@@ -25,6 +24,13 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null)
 
+const ToastIcon = ({ type }: { type: ToastType }) => {
+  const iconProps = { size: 15 }
+  if (type === 'success') return <CheckCircle2 {...iconProps} />
+  if (type === 'error')   return <XCircle {...iconProps} />
+  return <Info {...iconProps} />
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
 
@@ -36,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (message: string, type: ToastType = 'info') => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
       setItems((prev) => [...prev, { id, message, type }])
-      window.setTimeout(() => remove(id), 4200)
+      window.setTimeout(() => remove(id), 4500)
     },
     [remove]
   )
@@ -53,25 +59,30 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-4 bottom-4 z-[100] flex w-[min(100%,22rem)] flex-col gap-2">
+      <div
+        className="pointer-events-none fixed right-4 bottom-4 z-[100] flex w-[min(100%,22rem)] flex-col gap-2"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {items.map((item) => (
           <div
             key={item.id}
-            className={cn(
-              'pointer-events-auto flex items-start gap-3 rounded-lg px-4 py-3 text-sm text-white shadow-lg',
-              item.type === 'success' && 'bg-teal-700',
-              item.type === 'error' && 'bg-red-700',
-              item.type === 'info' && 'bg-navy'
-            )}
+            className={`toast-item toast-${item.type}`}
+            role="alert"
           >
-            <p className="flex-1 leading-snug">{item.message}</p>
+            <div className="toast-icon-wrap" aria-hidden>
+              <ToastIcon type={item.type} />
+            </div>
+            <div className="toast-content">
+              <p className="toast-message">{item.message}</p>
+            </div>
             <button
               type="button"
               onClick={() => remove(item.id)}
-              className="rounded p-0.5 opacity-80 hover:opacity-100"
+              className="toast-dismiss"
               aria-label="Dismiss"
             >
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
         ))}

@@ -12,17 +12,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-accent text-white hover:bg-teal-700 shadow-sm',
-  secondary: 'bg-navy text-white hover:bg-steel',
-  ghost: 'bg-transparent text-ink hover:bg-slate-200/70',
-  danger: 'bg-red-600 text-white hover:bg-red-700',
-  outline: 'border border-slate-300 bg-white text-ink hover:bg-slate-50',
+  primary: 'btn-primary',
+  secondary: 'btn-gold',
+  ghost: 'btn-ghost',
+  danger: 'btn-danger',
+  outline: 'btn-outline',
 }
 
 const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3 text-xs',
-  md: 'h-10 px-4 text-sm',
-  lg: 'h-12 px-6 text-base',
+  sm: 'btn-sm',
+  md: 'btn-md',
+  lg: 'btn-lg',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -40,16 +40,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => (
     <button
       ref={ref}
-      className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60',
-        variants[variant],
-        sizes[size],
-        className
-      )}
+      className={cn('btn', variants[variant], sizes[size], className)}
       disabled={disabled || loading}
       {...props}
     >
-      {loading && <LoadingSpinner size="sm" className="border-white/30 border-t-white" />}
+      {loading && (
+        <LoadingSpinner
+          size="sm"
+          className="border-white/30 border-t-white"
+        />
+      )}
       {children}
     </button>
   )

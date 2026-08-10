@@ -35,7 +35,7 @@ export function AssignModal({
   }, [open, initialPriority])
 
   return (
-    <Modal open={open} onClose={onClose} title="Assign ticket">
+    <Modal open={open} onClose={onClose} title="Assign Ticket" size="sm">
       <form
         className="space-y-4"
         onSubmit={(e) => {
@@ -44,29 +44,42 @@ export function AssignModal({
           void onSubmit({ assignedTo, priority })
         }}
       >
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-600">Employee</span>
+        {/* Employee select */}
+        <div className="form-field">
+          <label htmlFor="assign-employee" className="form-label">
+            Employee
+          </label>
           <select
+            id="assign-employee"
             required
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+            className="input-field"
           >
-            <option value="">Select employee</option>
+            <option value="">Select employee…</option>
             {employees.map((emp) => (
               <option key={getId(emp)} value={getId(emp)}>
-                {emp.name} ({emp.email})
+                {emp.name} · {emp.email}
               </option>
             ))}
           </select>
-        </label>
+          {!employees.length && (
+            <p className="form-error mt-1">
+              No active employees in this department.
+            </p>
+          )}
+        </div>
 
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-600">Priority</span>
+        {/* Priority */}
+        <div className="form-field">
+          <label htmlFor="assign-priority" className="form-label">
+            Priority
+          </label>
           <select
+            id="assign-priority"
             value={priority}
             onChange={(e) => setPriority(e.target.value as TicketPriority)}
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
+            className="input-field"
           >
             {PRIORITIES.map((p) => (
               <option key={p} value={p}>
@@ -74,22 +87,31 @@ export function AssignModal({
               </option>
             ))}
           </select>
-        </label>
+        </div>
 
-        <div className="rounded-lg bg-surface px-3 py-2 text-sm text-slate-600">
-          <p className="font-medium text-navy">Expected resolution</p>
-          <p className="mt-0.5">
+        {/* SLA info */}
+        <div
+          className="rounded-lg px-4 py-3 text-sm"
+          style={{
+            background: 'var(--primary-blue-light)',
+            border: '1px solid var(--primary-blue-muted)',
+          }}
+        >
+          <p className="font-semibold" style={{ color: 'var(--primary-blue)' }}>
+            Expected resolution
+          </p>
+          <p className="mt-0.5" style={{ color: 'var(--ink-muted)' }}>
             {expectedResolutionAt
               ? new Date(expectedResolutionAt).toLocaleString()
               : 'Based on department SLA after creation'}
           </p>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={onClose}>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" loading={loading}>
+          <Button type="submit" loading={loading} disabled={!assignedTo}>
             Assign
           </Button>
         </div>

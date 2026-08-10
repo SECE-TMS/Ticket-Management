@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
+import { Search } from 'lucide-react'
 import { ticketService } from '../../services/ticketService'
 import { Button } from '../../components/common/Button'
 import { StatusBadge, PriorityBadge } from '../../components/common/Badge'
@@ -43,7 +44,7 @@ export function TrackTicket() {
     } catch (err) {
       setTicket(null)
       setActivities([])
-      toast.error(getErrorMessage(err, 'Ticket not found'))
+      toast.error(getErrorMessage(err, 'Ticket not found — check your code and mobile number'))
     } finally {
       setLoading(false)
     }
@@ -51,97 +52,146 @@ export function TrackTicket() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
-      <h1 className="font-display text-3xl font-semibold text-navy">Track a ticket</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Enter the ticket code and the mobile number used when the request was submitted.
-      </p>
+      <div className="mb-8">
+        <h1 className="page-title">Track a Ticket</h1>
+        <p className="page-subtitle">
+          Enter the ticket code and the mobile number used when raising the request.
+        </p>
+      </div>
 
-      <form onSubmit={onSubmit} className="panel mt-6 grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
-        <label className="block text-sm sm:col-span-1">
-          <span className="mb-1 block font-medium text-slate-700">Ticket code</span>
-          <input
-            {...register('ticketCode')}
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 uppercase outline-none focus:border-accent"
-            placeholder="TMS-XXXX"
-          />
-          {errors.ticketCode && (
-            <span className="mt-1 block text-xs text-red-600">{errors.ticketCode.message}</span>
-          )}
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-slate-700">Mobile</span>
-          <input
-            {...register('mobile')}
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-accent"
-            inputMode="numeric"
-            maxLength={10}
-            placeholder="9876543210"
-          />
-          {errors.mobile && (
-            <span className="mt-1 block text-xs text-red-600">{errors.mobile.message}</span>
-          )}
-        </label>
-        <div className="sm:col-span-2">
-          <Button type="submit" loading={loading} className="w-full sm:w-auto">
-            Track status
-          </Button>
-        </div>
-      </form>
-
-      {ticket && (
-        <div className="mt-8 space-y-4">
-          <div className="panel p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-mono text-lg font-semibold text-navy">{ticket.ticketCode}</p>
-                <p className="mt-1 text-sm text-slate-600">{ticket.complaintType}</p>
-              </div>
-              <div className="flex gap-2">
-                <StatusBadge status={ticket.status} />
-                <PriorityBadge priority={ticket.priority} />
-              </div>
-            </div>
-            <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-slate-500">Requester</dt>
-                <dd className="font-medium text-navy">{ticket.requester.name}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Department</dt>
-                <dd className="font-medium text-navy">{getName(ticket.department)}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Created</dt>
-                <dd className="font-medium text-navy">
-                  {format(new Date(ticket.createdAt), 'dd MMM yyyy, HH:mm')}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Assignee</dt>
-                <dd className="font-medium text-navy">{getName(ticket.assignedTo, 'Pending')}</dd>
-              </div>
-            </dl>
-            <p className="mt-4 text-sm text-slate-700">{ticket.description}</p>
-            {ticket.userAttachment?.url && (
-              <div className="mt-4">
-                {ticket.userAttachment.type === 'image' ? (
-                  <img
-                    src={ticket.userAttachment.url}
-                    alt="Ticket attachment"
-                    className="max-h-56 rounded-lg border border-slate-100"
-                  />
-                ) : (
-                  <audio controls src={ticket.userAttachment.url} className="w-full" />
-                )}
-              </div>
+      {/* Search form */}
+      <form
+        onSubmit={onSubmit}
+        className="panel p-6"
+        id="track-ticket-form"
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="form-field">
+            <label htmlFor="track-code" className="form-label">
+              Ticket code
+            </label>
+            <input
+              id="track-code"
+              {...register('ticketCode')}
+              className={`input-field uppercase ${errors.ticketCode ? 'input-error' : ''}`}
+              placeholder="TMS-XXXX"
+              autoComplete="off"
+            />
+            {errors.ticketCode && (
+              <span className="form-error">{errors.ticketCode.message}</span>
             )}
           </div>
 
-          <div className="panel p-5 sm:p-6">
-            <h2 className="font-display text-lg font-semibold text-navy">Status timeline</h2>
-            <div className="mt-4">
-              <TicketTimeline activities={activities} />
+          <div className="form-field">
+            <label htmlFor="track-mobile" className="form-label">
+              Mobile number
+            </label>
+            <input
+              id="track-mobile"
+              {...register('mobile')}
+              className={`input-field ${errors.mobile ? 'input-error' : ''}`}
+              inputMode="numeric"
+              maxLength={10}
+              placeholder="9876543210"
+            />
+            {errors.mobile && (
+              <span className="form-error">{errors.mobile.message}</span>
+            )}
+          </div>
+
+          <div className="sm:col-span-2">
+            <Button
+              id="track-submit"
+              type="submit"
+              loading={loading}
+              className="w-full sm:w-auto"
+            >
+              <Search size={15} />
+              Track status
+            </Button>
+          </div>
+        </div>
+      </form>
+
+      {/* Results */}
+      {ticket && (
+        <div className="mt-8 space-y-4 animate-fade-in">
+          {/* Ticket summary card */}
+          <div className="panel overflow-hidden">
+            {/* Status color header */}
+            <div
+              className="px-6 py-4"
+              style={{ background: 'var(--primary-blue)', color: 'var(--white)' }}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono text-xl font-bold tracking-wider">
+                    {ticket.ticketCode}
+                  </p>
+                  <p className="mt-1 text-sm" style={{ color: 'rgb(255 255 255 / 0.75)' }}>
+                    {ticket.complaintType}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <StatusBadge status={ticket.status} />
+                  <PriorityBadge priority={ticket.priority} />
+                </div>
+              </div>
             </div>
+
+            {/* Details */}
+            <div className="p-6">
+              <dl className="grid gap-4 text-sm sm:grid-cols-2">
+                {[
+                  { label: 'Requester', value: ticket.requester.name },
+                  { label: 'Department', value: getName(ticket.department) },
+                  { label: 'Raised on', value: format(new Date(ticket.createdAt), 'dd MMM yyyy, HH:mm') },
+                  { label: 'Assignee', value: getName(ticket.assignedTo, 'Pending assignment') },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <dt className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>
+                      {label}
+                    </dt>
+                    <dd className="mt-1 font-medium" style={{ color: 'var(--ink)' }}>
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+
+              {ticket.description && (
+                <div
+                  className="mt-5 rounded-lg p-4 text-sm"
+                  style={{ background: 'var(--surface)', color: 'var(--ink)' }}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--ink-muted)' }}>
+                    Description
+                  </p>
+                  {ticket.description}
+                </div>
+              )}
+
+              {ticket.userAttachment?.url && (
+                <div className="mt-4">
+                  {ticket.userAttachment.type === 'image' ? (
+                    <img
+                      src={ticket.userAttachment.url}
+                      alt="Ticket attachment"
+                      className="max-h-56 rounded-lg"
+                      style={{ border: '1px solid var(--border)' }}
+                    />
+                  ) : (
+                    <audio controls src={ticket.userAttachment.url} className="w-full" />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Timeline */}
+          <div className="panel p-6">
+            <h2 className="section-title mb-4">Status timeline</h2>
+            <TicketTimeline activities={activities} />
           </div>
         </div>
       )}

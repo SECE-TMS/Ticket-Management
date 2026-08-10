@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Copy } from 'lucide-react'
 import { departmentService } from '../../services/departmentService'
 import { ticketService } from '../../services/ticketService'
 import { Button } from '../../components/common/Button'
@@ -23,6 +23,24 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string
+  error?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="form-field">
+      <label className="form-label">{label}</label>
+      {children}
+      {error && <span className="form-error">{error}</span>}
+    </div>
+  )
+}
+
 export function RaiseTicket() {
   const toast = useToast()
   const [departments, setDepartments] = useState<Department[]>([])
@@ -30,6 +48,7 @@ export function RaiseTicket() {
   const [submitting, setSubmitting] = useState(false)
   const [ticketCode, setTicketCode] = useState<string | null>(null)
   const [attachment, setAttachment] = useState<File | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const {
     register,
@@ -84,7 +103,7 @@ export function RaiseTicket() {
 
       const ticket = await ticketService.create(formData)
       setTicketCode(ticket.ticketCode)
-      toast.success('Ticket submitted successfully')
+      toast.success('Ticket submitted successfully!')
     } catch (err) {
       toast.error(getErrorMessage(err, 'Could not create ticket'))
     } finally {
@@ -94,24 +113,62 @@ export function RaiseTicket() {
 
   if (loadingDepts) return <PageLoader />
 
+  // ── Success state ──────────────────────────────────────────────────
   if (ticketCode) {
+    const handleCopy = () => {
+      void navigator.clipboard.writeText(ticketCode)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+
     return (
       <div className="mx-auto max-w-lg px-4 py-12 sm:px-6">
-        <div className="panel p-6 text-center sm:p-8">
-          <CheckCircle2 className="mx-auto text-accent" size={48} />
-          <h1 className="mt-4 font-display text-2xl font-semibold text-navy">Ticket raised</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Save your ticket code to track progress later.
+        <div className="panel p-8 text-center animate-fade-in">
+          <div
+            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+            style={{ background: 'var(--success-light)' }}
+          >
+            <CheckCircle2 size={36} style={{ color: 'var(--success)' }} />
+          </div>
+          <h1 className="font-display text-2xl font-bold" style={{ color: 'var(--ink)' }}>
+            Ticket raised!
+          </h1>
+          <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>
+            Save your ticket code to track progress later. We'll assign it shortly.
           </p>
-          <p className="mt-6 rounded-lg bg-surface px-4 py-3 font-mono text-2xl font-semibold tracking-wide text-navy">
-            {ticketCode}
-          </p>
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+
+          {/* Ticket code card */}
+          <div
+            className="mt-6 rounded-xl px-6 py-5"
+            style={{ background: 'var(--primary-blue-light)', border: '1.5px solid var(--primary-blue-muted)' }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--primary-blue)' }}>
+              Your ticket code
+            </p>
+            <p className="mt-2 font-mono text-3xl font-bold tracking-widest" style={{ color: 'var(--primary-blue-deeper)' }}>
+              {ticketCode}
+            </p>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+              style={{
+                background: copied ? 'var(--success-light)' : 'var(--white)',
+                color: copied ? 'var(--success)' : 'var(--primary-blue)',
+                border: '1px solid currentColor',
+              }}
+            >
+              <Copy size={12} />
+              {copied ? 'Copied!' : 'Copy code'}
+            </button>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button type="button" onClick={() => setTicketCode(null)}>
               Raise another
             </Button>
-            <Link to="/track-ticket" className="block w-full sm:inline-block sm:w-auto">
-              <Button type="button" variant="outline" className="w-full">
+            <Link to="/track-ticket">
+              <Button type="button" variant="outline" className="w-full sm:w-auto">
                 Track ticket
               </Button>
             </Link>
@@ -121,26 +178,34 @@ export function RaiseTicket() {
     )
   }
 
+  // ── Form ───────────────────────────────────────────────────────────
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
-      <h1 className="font-display text-3xl font-semibold text-navy">Raise a ticket</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Report a facility or maintenance issue. Fields marked required must be completed.
-      </p>
+      <div className="mb-8">
+        <h1 className="page-title">Raise a Ticket</h1>
+        <p className="page-subtitle">
+          Report a facility or maintenance issue. Your request will be assigned to the right team.
+        </p>
+      </div>
 
-      <form onSubmit={onSubmit} className="panel mt-6 space-y-4 p-5 sm:p-6">
-        <Field label="Your name" error={errors.name?.message}>
+      <form onSubmit={onSubmit} className="panel space-y-5 p-6" id="raise-ticket-form">
+        <Field label="Your full name" error={errors.name?.message}>
           <input
             {...register('name')}
-            className="input"
+            id="rt-name"
+            className={`input-field ${errors.name ? 'input-error' : ''}`}
             placeholder="Full name"
             autoComplete="name"
           />
         </Field>
 
         <Field label="Department" error={errors.department?.message}>
-          <select {...register('department')} className="input">
-            <option value="">Select department</option>
+          <select
+            {...register('department')}
+            id="rt-department"
+            className={`input-field ${errors.department ? 'input-error' : ''}`}
+          >
+            <option value="">Select department…</option>
             {departments.map((d) => (
               <option key={getId(d)} value={getId(d)}>
                 {d.name}
@@ -149,10 +214,11 @@ export function RaiseTicket() {
           </select>
         </Field>
 
-        <Field label="Mobile (10 digits)" error={errors.mobile?.message}>
+        <Field label="Mobile number (10 digits)" error={errors.mobile?.message}>
           <input
             {...register('mobile')}
-            className="input"
+            id="rt-mobile"
+            className={`input-field ${errors.mobile ? 'input-error' : ''}`}
             inputMode="numeric"
             maxLength={10}
             placeholder="9876543210"
@@ -160,8 +226,15 @@ export function RaiseTicket() {
         </Field>
 
         <Field label="Complaint type" error={errors.complaintType?.message}>
-          <select {...register('complaintType')} className="input" disabled={!selectedDept}>
-            <option value="">Select type</option>
+          <select
+            {...register('complaintType')}
+            id="rt-complaint-type"
+            className={`input-field ${errors.complaintType ? 'input-error' : ''}`}
+            disabled={!selectedDept}
+          >
+            <option value="">
+              {selectedDept ? 'Select complaint type…' : 'Select a department first'}
+            </option>
             {(selectedDept?.complaintTypes || []).map((type) => (
               <option key={type} value={type}>
                 {type}
@@ -173,63 +246,47 @@ export function RaiseTicket() {
         <Field label="Description" error={errors.description?.message}>
           <textarea
             {...register('description')}
+            id="rt-description"
             rows={4}
-            className="input"
-            placeholder="What needs attention? Include location if helpful."
+            className={`input-field ${errors.description ? 'input-error' : ''}`}
+            placeholder="What needs attention? Include the location if helpful."
           />
         </Field>
 
-        <Field label="Attachment (photo or audio)" error={undefined}>
+        {/* File attachment */}
+        <div className="form-field">
+          <p className="form-label">
+            Attachment{' '}
+            <span className="text-xs font-normal" style={{ color: 'var(--ink-muted)' }}>
+              (photo or audio, optional)
+            </span>
+          </p>
           <input
+            id="rt-attachment"
             type="file"
             accept="image/*,audio/*"
             capture="environment"
             onChange={(e) => setAttachment(e.target.files?.[0] || null)}
-            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-accent"
+            className="block w-full text-sm"
+            style={{ color: 'var(--ink-muted)' }}
           />
-        </Field>
+          {attachment && (
+            <p className="mt-1 text-xs font-medium" style={{ color: 'var(--primary-blue)' }}>
+              ✓ {attachment.name}
+            </p>
+          )}
+        </div>
 
-        <Button type="submit" className="w-full" loading={submitting} size="lg">
-          Submit ticket
+        <Button
+          id="rt-submit"
+          type="submit"
+          className="w-full"
+          loading={submitting}
+          size="lg"
+        >
+          Submit Ticket
         </Button>
       </form>
-
-      <style>{`
-        .input {
-          width: 100%;
-          height: 2.5rem;
-          border-radius: 0.5rem;
-          border: 1px solid #e2e8f0;
-          padding: 0 0.75rem;
-          outline: none;
-        }
-        textarea.input {
-          height: auto;
-          padding-top: 0.5rem;
-          padding-bottom: 0.5rem;
-        }
-        .input:focus {
-          border-color: #0d9488;
-        }
-      `}</style>
     </div>
-  )
-}
-
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string
-  error?: string
-  children: React.ReactNode
-}) {
-  return (
-    <label className="block text-sm">
-      <span className="mb-1 block font-medium text-slate-700">{label}</span>
-      {children}
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
-    </label>
   )
 }
