@@ -4,16 +4,16 @@ import type { TicketPriority, TicketStatus } from '../../types'
 
 const statusStyles: Record<TicketStatus, string> = {
   new: 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]',
-  assigned: 'bg-blue-100 text-blue-800',
-  accepted: 'bg-sky-100 text-sky-800',
+  assigned: 'bg-[var(--primary-purple-light)] text-[var(--primary-purple-dark)]',
+  accepted: 'bg-[var(--surface-2)] text-[var(--primary-purple)]',
   in_progress: 'bg-[var(--gold-light)] text-[var(--gold-dark)]',
   resolved: 'bg-[var(--success-light)] text-[var(--success)]',
-  closed: 'bg-slate-100 text-slate-700',
+  closed: 'bg-[var(--surface-2)] text-[var(--ink-muted)]',
   reopened: 'bg-[var(--danger-light)] text-[var(--danger)]',
 }
 
 const priorityStyles: Record<TicketPriority, string> = {
-  low: 'bg-slate-100 text-slate-600',
+  low: 'bg-[var(--surface-2)] text-[var(--ink-muted)]',
   medium: 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]',
   high: 'bg-orange-100 text-orange-800',
   urgent: 'bg-[var(--danger-light)] text-[var(--danger)]',

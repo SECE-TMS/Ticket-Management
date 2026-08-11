@@ -206,7 +206,7 @@ export function AdminDepartments() {
                     className={
                       d.isActive
                         ? 'bg-[var(--success-light)] text-[var(--success)]'
-                        : 'bg-slate-100 text-slate-700'
+                        : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
                     }
                   >
                     {d.isActive ? 'Active' : 'Inactive'}

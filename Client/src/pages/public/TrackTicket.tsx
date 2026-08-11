@@ -98,7 +98,7 @@ export function TrackTicket() {
       </Link>
 
       {/* Top Banner Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[#1a4885] p-6 text-[var(--white)] shadow-lg sm:p-8">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[var(--primary-blue-dark)] p-6 text-[var(--white)] shadow-lg sm:p-8">
         <div
           className="pointer-events-none absolute -top-10 -right-10 h-60 w-60 rounded-full bg-[var(--gold)] opacity-15 blur-3xl"
           aria-hidden
@@ -194,7 +194,7 @@ export function TrackTicket() {
         <div className="mt-8 space-y-6 animate-fade-in">
           {/* Main Status & Progress Header */}
           <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--white)] shadow-md">
-            <div className="bg-gradient-to-r from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[#1e4f99] p-6 text-[var(--white)] sm:p-8">
+            <div className="bg-gradient-to-r from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[var(--primary-blue-dark)] p-6 text-[var(--white)] sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">

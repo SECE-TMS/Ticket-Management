@@ -24,7 +24,7 @@ export function Landing() {
     <div className="min-h-screen bg-[var(--surface)]">
       {/* ── Hero Section ─────────────────────────────────────────────── */}
       <section
-        className="relative overflow-hidden bg-gradient-to-br from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[#1e4f99] min-h-screen text-[var(--white)] flex flex-col"
+        className="relative overflow-hidden bg-gradient-to-br from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[var(--primary-blue-dark)] min-h-screen text-[var(--white)] flex flex-col"
         aria-label="Hero"
       >
         {/* Background Grid Pattern */}

@@ -155,7 +155,7 @@ export function ManagerEmployees() {
                     className={
                       e.isActive
                         ? 'bg-[var(--success-light)] text-[var(--success)]'
-                        : 'bg-slate-100 text-slate-700'
+                        : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
                     }
                   >
                     {e.isActive ? 'Active' : 'Inactive'}

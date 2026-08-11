@@ -196,7 +196,7 @@ export function RaiseTicket() {
 
       <div className="grid gap-8 lg:grid-cols-12">
         {/* Left Column: Visual Brand Card & Step Info (Desktop only) */}
-        <div className="hidden lg:flex flex-col justify-between rounded-2xl bg-gradient-to-br from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[#1e4f99] p-6 text-[var(--white)] shadow-md sm:p-8 lg:col-span-4">
+        <div className="hidden lg:flex flex-col justify-between rounded-2xl bg-gradient-to-br from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[var(--primary-blue-dark)] p-6 text-[var(--white)] shadow-md sm:p-8 lg:col-span-4">
           <div>
             {/* Header Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-[var(--gold)]/15 px-3.5 py-1 text-xs font-bold text-[var(--gold)]">
