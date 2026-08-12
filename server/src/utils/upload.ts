@@ -4,7 +4,7 @@ import type { UploadApiResponse } from 'cloudinary';
 import { cloudinary, configureCloudinary, isCloudinaryConfigured } from '../config/cloudinary';
 import ApiError from './apiError';
 
-export type AttachmentType = 'image' | 'audio';
+export type AttachmentType = 'image' | 'audio' | 'video';
 
 export interface UploadedAttachment {
   url: string;
@@ -31,7 +31,8 @@ export const getAttachmentType = (mimetype: string): AttachmentType | null => {
   if (!mimetype) return null;
   const cleanMime = mimetype.split(';')[0].toLowerCase().trim();
   if (cleanMime.startsWith('image/')) return 'image';
-  if (cleanMime.startsWith('audio/') || cleanMime.startsWith('video/')) return 'audio';
+  if (cleanMime.startsWith('audio/')) return 'audio';
+  if (cleanMime.startsWith('video/')) return 'video';
   return null;
 };
 
@@ -44,15 +45,22 @@ export const uploadBuffer = async (
   const type = getAttachmentType(file.mimetype);
   if (!type) {
     throw ApiError.badRequest(
-      'Invalid file type. Only image and audio files are allowed.',
+      'Invalid file type. Only image, audio, and video files are allowed.',
       'INVALID_FILE_TYPE'
     );
   }
 
-  const maxBytes = type === 'image' ? 10 * 1024 * 1024 : 25 * 1024 * 1024;
+  const maxBytes =
+    type === 'image'
+      ? 15 * 1024 * 1024
+      : type === 'audio'
+      ? 30 * 1024 * 1024
+      : 100 * 1024 * 1024;
   if (file.size > maxBytes) {
     throw ApiError.badRequest(
-      type === 'image' ? 'Image file size must be <= 10MB' : 'Audio file size must be <= 25MB',
+      `File size exceeds maximum allowed limit (${
+        type === 'image' ? '15MB' : type === 'audio' ? '30MB' : '100MB'
+      })`,
       'FILE_TOO_LARGE'
     );
   }

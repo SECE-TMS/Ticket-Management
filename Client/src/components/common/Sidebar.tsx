@@ -41,55 +41,82 @@ export function Sidebar({ items, title }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Top Header (Visible ONLY on mobile < lg) */}
-      <header className="sticky top-0 z-20 flex h-14 w-full items-center justify-between border-b border-[var(--border)] bg-[var(--white)] px-4 shadow-xs lg:hidden">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--ink)] cursor-pointer hover:bg-[var(--primary-blue-light)] hover:text-[var(--primary-blue)] transition-colors"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open menu"
-          >
-            <Menu size={20} />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--primary-blue)] text-[var(--gold)] font-bold text-xs">
-              TM
+      {/* ── Mobile Sticky Top Header (Visible only on < lg screens) ──────────── */}
+      <header className="sticky top-0 z-40 flex flex-col w-full border-b border-[var(--border)] bg-[var(--white)] shadow-xs lg:hidden">
+        {/* Top bar with logo, menu toggle, user badge */}
+        <div className="flex h-14 w-full items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--ink)] cursor-pointer hover:bg-[var(--primary-blue-light)] hover:text-[var(--primary-blue)] transition-colors"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--primary-blue)] text-[var(--gold)] font-bold text-xs shadow-xs">
+                TM
+              </div>
+              <span className="font-bold text-sm text-[var(--ink)]">TMS Portal</span>
             </div>
-            <span className="font-bold text-sm text-[var(--ink)]">TMS Portal</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--gold)] text-[var(--primary-blue-deeper)] text-xs font-bold uppercase shadow-xs">
+              {getInitials(user?.name)}
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-colors cursor-pointer"
+              aria-label="Logout"
+              title="Logout"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--gold)] text-[var(--primary-blue-deeper)] text-xs font-bold uppercase">
-            {getInitials(user?.name)}
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="p-1 text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors cursor-pointer"
-            aria-label="Logout"
-            title="Logout"
-          >
-            <LogOut size={16} />
-          </button>
+        {/* Scrollable quick nav pills for mobile */}
+        <div className="flex items-center gap-1.5 overflow-x-auto px-4 py-2 border-t border-[var(--border)] bg-[var(--surface)] no-scrollbar">
+          {items.map((item) => {
+            const Icon = item.icon
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all border',
+                    isActive
+                      ? 'bg-[var(--primary-blue)] text-[var(--white)] border-[var(--primary-blue)] shadow-xs'
+                      : 'bg-[var(--white)] text-[var(--ink-muted)] border-[var(--border)] hover:bg-[var(--primary-blue-light)] hover:text-[var(--primary-blue)]'
+                  )
+                }
+              >
+                <Icon size={13} />
+                <span>{item.label}</span>
+              </NavLink>
+            )
+          })}
         </div>
       </header>
 
-      {/* Backdrop overlay for mobile drawer */}
+      {/* ── Mobile Backdrop Overlay ────────────────────────────────────────── */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity"
           onClick={() => setMobileOpen(false)}
           aria-hidden
         />
       )}
 
-      {/* Full-Height Desktop Sidebar & Mobile Drawer */}
+      {/* ── Sidebar (Desktop fixed left & Mobile slide-out drawer) ─────────── */}
       <aside
         className={cn(
           'fixed top-0 left-0 bottom-0 z-50 flex w-[260px] min-h-screen flex-col shrink-0 transition-transform duration-300 lg:z-30 lg:translate-x-0',
-          'bg-gradient-to-b from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[var(--primary-blue-dark)] shadow-xl lg:shadow-none text-[var(--white)]',
+          'bg-gradient-to-b from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[var(--primary-blue-dark)] shadow-2xl lg:shadow-none text-[var(--white)]',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
         aria-label="Main navigation"
@@ -187,29 +214,6 @@ export function Sidebar({ items, title }: SidebarProps) {
   )
 }
 
-export function MobileNav({ items }: { items: SidebarItem[] }) {
-  return (
-    <nav className="flex gap-1.5 overflow-x-auto bg-[var(--white)] px-4 py-2.5 border-b border-[var(--border)] lg:hidden no-scrollbar">
-      {items.map((item) => {
-        const Icon = item.icon
-        return (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all border',
-                isActive
-                  ? 'bg-[var(--primary-blue)] text-[var(--white)] border-[var(--primary-blue)] shadow-xs'
-                  : 'bg-transparent text-[var(--ink-muted)] border-transparent hover:bg-[var(--primary-blue-light)] hover:text-[var(--primary-blue)]'
-              )
-            }
-          >
-            <Icon size={14} />
-            {item.label}
-          </NavLink>
-        )
-      })}
-    </nav>
-  )
-}
+// export function MobileNav({ items }: { items: SidebarItem[] }) {
+//   return null
+// }

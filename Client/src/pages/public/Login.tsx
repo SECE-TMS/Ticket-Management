@@ -46,7 +46,7 @@ export function Login() {
   })
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] bg-[var(--surface)]">
+    <div className="flex min-h-screen bg-[var(--surface)]">
       {/* Left branding panel */}
       <div className="relative hidden flex-col justify-between overflow-hidden p-10 lg:flex lg:w-[45%] bg-gradient-to-br from-[var(--primary-blue-deeper)] to-[var(--primary-blue)]">
         {/* Gold decoration */}

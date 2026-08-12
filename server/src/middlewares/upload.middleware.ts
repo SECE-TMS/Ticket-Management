@@ -23,14 +23,14 @@ const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 25 * 1024 * 1024, files: 10 }, // Up to 10 files, max 25MB each
+  limits: { fileSize: 100 * 1024 * 1024, files: 10 }, // Up to 10 files, max 100MB each
 });
 
 export const anyAttachment = (req: AuthRequest, _res: Response, next: NextFunction): void => {
   upload.any()(req, _res, (err: unknown) => {
     if (err instanceof MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        next(ApiError.badRequest('File too large (max 25MB per file)', 'FILE_TOO_LARGE'));
+        next(ApiError.badRequest('File too large (max 100MB per file)', 'FILE_TOO_LARGE'));
         return;
       }
       if (err.code === 'LIMIT_FILE_COUNT') {
@@ -48,11 +48,18 @@ export const anyAttachment = (req: AuthRequest, _res: Response, next: NextFuncti
     const files = (req.files as Express.Multer.File[]) || [];
     for (const f of files) {
       const type = getAttachmentType(f.mimetype);
-      const max = type === 'image' ? 10 * 1024 * 1024 : 25 * 1024 * 1024;
+      const max =
+        type === 'image'
+          ? 15 * 1024 * 1024
+          : type === 'audio'
+          ? 30 * 1024 * 1024
+          : 100 * 1024 * 1024;
       if (f.size > max) {
         next(
           ApiError.badRequest(
-            type === 'image' ? 'Image must be <= 10MB' : 'Audio must be <= 25MB',
+            `File size exceeds maximum allowed limit (${
+              type === 'image' ? '15MB' : type === 'audio' ? '30MB' : '100MB'
+            })`,
             'FILE_TOO_LARGE'
           )
         );

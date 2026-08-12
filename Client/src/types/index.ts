@@ -67,7 +67,7 @@ export interface User {
 
 export interface Attachment {
   url: string
-  type: 'image' | 'audio'
+  type: 'image' | 'audio' | 'video'
   publicId?: string | null
 }
 
@@ -78,6 +78,8 @@ export interface Ticket {
     name: string
     mobile: string
     email?: string
+    userType?: 'student' | 'staff' | 'guest'
+    rollNumber?: string
   }
   department: Department | string
   complaintType: string

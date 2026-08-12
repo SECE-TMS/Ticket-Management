@@ -63,8 +63,18 @@ export function TicketTable({ tickets, detailBase }: TicketTableProps) {
                 </p>
               </td>
               <td className="px-4 py-3.5">
-                <p className="font-semibold text-[var(--ink)]">{t.requester.name}</p>
-                <p className="text-xs text-[var(--ink-muted)]">{t.requester.mobile}</p>
+                <p className="font-semibold text-[var(--ink)]">
+                  {t.requester.name}
+                  {t.requester.rollNumber && (
+                    <span className="ml-1.5 inline-block rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
+                      {t.requester.rollNumber}
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-[var(--ink-muted)]">
+                  {t.requester.mobile}
+                  {t.requester.userType && ` • ${t.requester.userType}`}
+                </p>
               </td>
               <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
               <td className="px-4 py-3.5">

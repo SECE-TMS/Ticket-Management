@@ -25,6 +25,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<TicketStatus | ''>('')
   const [priority, setPriority] = useState<TicketPriority | ''>('')
+  const [limit, setLimit] = useState(10)
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
     try {
       const params: TicketListParams = {
         page,
-        limit: 20,
+        limit,
         search: debouncedSearch || undefined,
         status: status || undefined,
         priority: priority || undefined,
@@ -51,7 +52,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
     } finally {
       setLoading(false)
     }
-  }, [page, debouncedSearch, status, priority, toast])
+  }, [page, limit, debouncedSearch, status, priority, toast])
 
   useEffect(() => {
     void load()
@@ -59,7 +60,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, status, priority])
+  }, [debouncedSearch, status, priority, limit])
 
   return (
     <div>
@@ -90,7 +91,17 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
         <>
           <TicketTable tickets={tickets} detailBase={detailBase} />
           <div className="mt-4">
-            <Pagination page={page} pages={pages} total={total} onPageChange={setPage} />
+            <Pagination
+              page={page}
+              pages={pages}
+              total={total}
+              limit={limit}
+              onPageChange={setPage}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit)
+                setPage(1)
+              }}
+            />
           </div>
         </>
       )}

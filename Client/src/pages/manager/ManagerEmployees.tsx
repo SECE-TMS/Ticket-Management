@@ -5,6 +5,7 @@ import { Modal } from '../../components/common/Modal'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { PageHeader } from '../../components/common/KpiCard'
 import { Badge } from '../../components/common/Badge'
+import { Pagination } from '../../components/common/Pagination'
 import { userService } from '../../services/userService'
 import { useAppSelector } from '../../store/hooks'
 import { useToast } from '../../context/ToastContext'
@@ -38,7 +39,10 @@ export function ManagerEmployees() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [employees, setEmployees] = useState<User[]>([])
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<User | null>(null)
   const [form, setForm] = useState<EmpForm>(emptyForm)
 
   const load = useCallback(async () => {
@@ -61,18 +65,59 @@ export function ManagerEmployees() {
     void load()
   }, [load])
 
+  const openCreate = () => {
+    setEditing(null)
+    setForm(emptyForm)
+    setOpen(true)
+  }
+
+  const openEdit = (emp: User) => {
+    setEditing(emp)
+    setForm({
+      name: emp.name,
+      email: emp.email,
+      password: '',
+      phone: emp.phone || '',
+    })
+    setOpen(true)
+  }
+
+  const toggleActive = async (emp: User) => {
+    try {
+      await userService.updateStatus(getId(emp), !emp.isActive)
+      toast.success(emp.isActive ? 'Employee deactivated' : 'Employee activated')
+      await load()
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    }
+  }
+
   const save = async () => {
     setSaving(true)
     try {
-      await userService.createEmployee({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        phone: form.phone || undefined,
-      })
-      toast.success('Employee created')
+      if (editing) {
+        const payload: Record<string, unknown> = {
+          name: form.name,
+          email: form.email,
+          phone: form.phone || '',
+        }
+        if (form.password) {
+          payload.password = form.password
+        }
+        await userService.update(getId(editing), payload as Parameters<typeof userService.update>[1])
+        toast.success('Employee details updated successfully')
+      } else {
+        await userService.createEmployee({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          phone: form.phone || undefined,
+        })
+        toast.success('Employee created successfully')
+      }
       setOpen(false)
       setForm(emptyForm)
+      setEditing(null)
       await load()
     } catch (err) {
       toast.error(getErrorMessage(err))
@@ -104,16 +149,9 @@ export function ManagerEmployees() {
     <div>
       <PageHeader
         title="Employees"
-        description="Manage technicians in your department."
+        description="Manage technicians and staff in your department."
         actions={
-          <Button
-            type="button"
-            id="add-employee-btn"
-            onClick={() => {
-              setForm(emptyForm)
-              setOpen(true)
-            }}
-          >
+          <Button type="button" id="add-employee-btn" onClick={openCreate}>
             + Add Employee
           </Button>
         }
@@ -126,46 +164,69 @@ export function ManagerEmployees() {
               <th className="px-4 py-3 first:rounded-tl-xl">Employee</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Phone</th>
-              <th className="px-4 py-3 last:rounded-tr-xl">Status</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 last:rounded-tr-xl">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
-            {employees.map((e) => (
-              <tr key={getId(e)} className="transition-colors hover:bg-[var(--primary-blue-light)]">
-                <td className="px-4 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${
-                        e.isActive
-                          ? 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]'
-                          : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
-                      }`}
-                    >
-                      {getInitials(e.name)}
+            {employees
+              .slice((page - 1) * limit, page * limit)
+              .map((e) => (
+                <tr key={getId(e)} className="transition-colors hover:bg-[var(--primary-blue-light)]">
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${
+                          e.isActive
+                            ? 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]'
+                            : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
+                        }`}
+                      >
+                        {getInitials(e.name)}
+                      </div>
+                      <p className="font-semibold text-sm text-[var(--ink)]">
+                        {e.name}
+                      </p>
                     </div>
-                    <p className="font-semibold text-sm text-[var(--ink)]">
-                      {e.name}
-                    </p>
-                  </div>
-                </td>
-                <td className="px-4 py-3.5 text-[var(--ink-muted)]">{e.email}</td>
-                <td className="px-4 py-3.5 text-[var(--ink-muted)]">{e.phone || '—'}</td>
-                <td className="px-4 py-3.5">
-                  <Badge
-                    className={
-                      e.isActive
-                        ? 'bg-[var(--success-light)] text-[var(--success)]'
-                        : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
-                    }
-                  >
-                    {e.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-3.5 text-[var(--ink-muted)]">{e.email}</td>
+                  <td className="px-4 py-3.5 text-[var(--ink-muted)]">{e.phone || '—'}</td>
+                  <td className="px-4 py-3.5">
+                    <Badge
+                      className={
+                        e.isActive
+                          ? 'bg-[var(--success-light)] text-[var(--success)]'
+                          : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
+                      }
+                    >
+                      {e.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEdit(e)}
+                      >
+                        Edit Details
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={e.isActive ? 'ghost' : 'primary'}
+                        onClick={() => void toggleActive(e)}
+                      >
+                        {e.isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             {!employees.length && (
               <tr>
-                <td colSpan={4} className="py-8 text-center text-sm text-[var(--ink-muted)]">
+                <td colSpan={5} className="py-8 text-center text-sm text-[var(--ink-muted)]">
                   No employees yet. Add your first technician to start assigning tickets.
                 </td>
               </tr>
@@ -174,39 +235,107 @@ export function ManagerEmployees() {
         </table>
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Employee" size="sm">
+      {employees.length > 0 && (
+        <div className="mt-4">
+          <Pagination
+            page={page}
+            pages={Math.max(1, Math.ceil(employees.length / limit))}
+            total={employees.length}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
+        </div>
+      )}
+
+      {/* Add / Edit Employee Modal */}
+      <Modal
+        open={open}
+        onClose={() => {
+          setOpen(false)
+          setEditing(null)
+        }}
+        title={editing ? `Edit Employee: ${editing.name}` : 'Add Employee'}
+        size="sm"
+      >
         <div className="space-y-4">
-          {(
-            [
-              ['name', 'Full name', 'text', 'John Smith'],
-              ['email', 'Email address', 'email', 'john@company.com'],
-              ['password', 'Password', 'password', 'Minimum 8 characters'],
-              ['phone', 'Phone (optional)', 'text', '9876543210'],
-            ] as const
-          ).map(([key, label, type, placeholder]) => (
-            <div key={key} className="flex flex-col gap-1.5">
-              <label htmlFor={`emp-${key}`} className="text-sm font-semibold text-[var(--ink)]">{label}</label>
-              <input
-                id={`emp-${key}`}
-                type={type}
-                value={form[key]}
-                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                className={inputClass}
-                placeholder={placeholder}
-              />
-            </div>
-          ))}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="emp-name" className="text-sm font-semibold text-[var(--ink)]">
+              Full Name
+            </label>
+            <input
+              id="emp-name"
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              className={inputClass}
+              placeholder="e.g. Rahul Sharma"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="emp-email" className="text-sm font-semibold text-[var(--ink)]">
+              Email Address
+            </label>
+            <input
+              id="emp-email"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              className={inputClass}
+              placeholder="e.g. rahul@isaii.in"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="emp-phone" className="text-sm font-semibold text-[var(--ink)]">
+              Phone Number
+            </label>
+            <input
+              id="emp-phone"
+              type="text"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              className={inputClass}
+              placeholder="10-digit mobile"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="emp-password" className="text-sm font-semibold text-[var(--ink)]">
+              {editing ? 'New Password (leave blank to keep current)' : 'Password'}
+            </label>
+            <input
+              id="emp-password"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              className={inputClass}
+              placeholder={editing ? 'Enter new password if changing...' : 'Minimum 8 characters'}
+            />
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setOpen(false)
+                setEditing(null)
+              }}
+            >
               Cancel
             </Button>
             <Button
               type="button"
               loading={saving}
-              disabled={!form.name || !form.email || !form.password}
+              disabled={!form.name || !form.email || (!editing && !form.password)}
               onClick={() => void save()}
             >
-              Create Employee
+              {editing ? 'Save Changes' : 'Create Employee'}
             </Button>
           </div>
         </div>

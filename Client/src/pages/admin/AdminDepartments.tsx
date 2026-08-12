@@ -5,6 +5,7 @@ import { Modal } from '../../components/common/Modal'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { PageHeader } from '../../components/common/KpiCard'
 import { Badge } from '../../components/common/Badge'
+import { Pagination } from '../../components/common/Pagination'
 import { departmentService } from '../../services/departmentService'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage } from '../../lib/utils'
@@ -30,6 +31,8 @@ export function AdminDepartments() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [departments, setDepartments] = useState<Department[]>([])
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Department | null>(null)
   const [form, setForm] = useState<DeptForm>(emptyForm)
@@ -156,79 +159,81 @@ export function AdminDepartments() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
-            {departments.map((d) => (
-              <tr key={getId(d)} className="transition-colors hover:bg-[var(--primary-blue-light)]">
-                <td className="px-4 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-blue-light)] text-[var(--primary-blue)]">
-                      <Building2 size={16} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-[var(--ink)]">
-                        {d.name}
-                      </p>
-                      {d.description && (
-                        <p className="max-w-xs truncate text-xs text-[var(--ink-muted)]">
-                          {d.description}
+            {departments
+              .slice((page - 1) * limit, page * limit)
+              .map((d) => (
+                <tr key={getId(d)} className="transition-colors hover:bg-[var(--primary-blue-light)]">
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-blue-light)] text-[var(--primary-blue)]">
+                        <Building2 size={16} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-[var(--ink)]">
+                          {d.name}
                         </p>
+                        {d.description && (
+                          <p className="max-w-xs truncate text-xs text-[var(--ink-muted)]">
+                            {d.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <div className="flex max-w-xs flex-wrap gap-1">
+                      {(d.complaintTypes || []).slice(0, 3).map((t) => (
+                        <span
+                          key={t}
+                          className="inline-flex items-center rounded-full bg-[var(--gold-light)] px-2.5 py-0.5 text-xs font-semibold text-[var(--gold-dark)]"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                      {(d.complaintTypes || []).length > 3 && (
+                        <span className="inline-flex items-center rounded-full bg-[var(--primary-blue-light)] px-2 py-0.5 text-[11px] font-semibold text-[var(--primary-blue)]">
+                          +{d.complaintTypes.length - 3} more
+                        </span>
+                      )}
+                      {!(d.complaintTypes || []).length && (
+                        <span className="text-xs text-[var(--ink-muted)]">—</span>
                       )}
                     </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3.5">
-                  <div className="flex max-w-xs flex-wrap gap-1">
-                    {(d.complaintTypes || []).slice(0, 3).map((t) => (
-                      <span
-                        key={t}
-                        className="inline-flex items-center rounded-full bg-[var(--gold-light)] px-2.5 py-0.5 text-xs font-semibold text-[var(--gold-dark)]"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                    {(d.complaintTypes || []).length > 3 && (
-                      <span className="inline-flex items-center rounded-full bg-[var(--primary-blue-light)] px-2 py-0.5 text-[11px] font-semibold text-[var(--primary-blue)]">
-                        +{d.complaintTypes.length - 3} more
-                      </span>
-                    )}
-                    {!(d.complaintTypes || []).length && (
-                      <span className="text-xs text-[var(--ink-muted)]">—</span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3.5">
-                  <span className="font-semibold text-[var(--ink)]">
-                    {d.slaHours}h
-                  </span>
-                </td>
-                <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(d.manager, '—')}</td>
-                <td className="px-4 py-3.5">
-                  <Badge
-                    className={
-                      d.isActive
-                        ? 'bg-[var(--success-light)] text-[var(--success)]'
-                        : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
-                    }
-                  >
-                    {d.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3.5">
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" size="sm" variant="outline" onClick={() => openEdit(d)}>
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={d.isActive ? 'ghost' : 'primary'}
-                      onClick={() => void toggleActive(d)}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <span className="font-semibold text-[var(--ink)]">
+                      {d.slaHours}h
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(d.manager, '—')}</td>
+                  <td className="px-4 py-3.5">
+                    <Badge
+                      className={
+                        d.isActive
+                          ? 'bg-[var(--success-light)] text-[var(--success)]'
+                          : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
+                      }
                     >
-                      {d.isActive ? 'Deactivate' : 'Activate'}
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      {d.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" size="sm" variant="outline" onClick={() => openEdit(d)}>
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={d.isActive ? 'ghost' : 'primary'}
+                        onClick={() => void toggleActive(d)}
+                      >
+                        {d.isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             {!departments.length && (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-sm text-[var(--ink-muted)]">
@@ -239,6 +244,22 @@ export function AdminDepartments() {
           </tbody>
         </table>
       </div>
+
+      {departments.length > 0 && (
+        <div className="mt-4">
+          <Pagination
+            page={page}
+            pages={Math.max(1, Math.ceil(departments.length / limit))}
+            total={departments.length}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
+        </div>
+      )}
 
       {/* Create/Edit modal */}
       <Modal
@@ -324,7 +345,7 @@ export function AdminDepartments() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="dept-sla" className="text-sm font-semibold text-[var(--ink)]">SLA Hours</label>
+            <label htmlFor="dept-sla" className="text-sm font-semibold text-[var(--ink)]">Maximum deadline in hours</label>
             <input
               id="dept-sla"
               type="number"

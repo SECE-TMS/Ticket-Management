@@ -20,7 +20,7 @@ export type OpenTicketStatus = (typeof OPEN_STATUSES)[number];
 
 export interface IAttachment {
   url: string;
-  type: 'image' | 'audio';
+  type: 'image' | 'audio' | 'video';
   publicId: string | null;
 }
 
@@ -41,6 +41,8 @@ export interface IRequester {
   name: string;
   mobile: string;
   email: string;
+  userType?: 'student' | 'staff' | 'guest';
+  rollNumber?: string;
 }
 
 export interface ITicket {
@@ -70,7 +72,7 @@ export type ITicketDocument = HydratedDocument<ITicket>;
 const attachmentSchema = new Schema<IAttachment>(
   {
     url: { type: String, required: true },
-    type: { type: String, enum: ['image', 'audio'], required: true },
+    type: { type: String, enum: ['image', 'audio', 'video'], required: true },
     publicId: { type: String, default: null },
   },
   { _id: false }
@@ -83,6 +85,8 @@ const ticketSchema = new Schema<ITicket>(
       name: { type: String, required: true, trim: true },
       mobile: { type: String, required: true, trim: true },
       email: { type: String, trim: true, default: '' },
+      userType: { type: String, enum: ['student', 'staff', 'guest'], default: 'guest' },
+      rollNumber: { type: String, trim: true, default: '' },
     },
     department: {
       type: Schema.Types.ObjectId,

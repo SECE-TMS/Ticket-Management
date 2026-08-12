@@ -77,6 +77,7 @@ const buildListFilter = (actor: IUserDocument, query: Record<string, unknown>) =
       { ticketCode: { $regex: query.search, $options: 'i' } },
       { 'requester.name': { $regex: query.search, $options: 'i' } },
       { 'requester.mobile': { $regex: query.search, $options: 'i' } },
+      { 'requester.rollNumber': { $regex: query.search, $options: 'i' } },
       { complaintType: { $regex: query.search, $options: 'i' } },
       { description: { $regex: query.search, $options: 'i' } },
     ];
@@ -121,6 +122,8 @@ export const createPublicTicket = async (
       name: body.name as string,
       mobile: body.mobile as string,
       email: (body.email as string) || '',
+      userType: (body.userType as 'student' | 'staff' | 'guest') || 'guest',
+      rollNumber: (body.rollNumber as string) || '',
     },
     department: department._id,
     complaintType: body.complaintType as string,

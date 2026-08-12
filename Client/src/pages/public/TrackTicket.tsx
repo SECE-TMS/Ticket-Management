@@ -325,40 +325,64 @@ export function TrackTicket() {
                         </span>
                       </div>
 
-                      {ticket.userAttachment?.url ? (
-                        ticket.userAttachment.type === 'image' ? (
-                          <div
-                            className="group relative cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] bg-black/5"
-                            onClick={() => setActiveImageModal(ticket.userAttachment!.url!)}
-                          >
-                            <img
-                              src={getAttachmentUrl(ticket.userAttachment.url)}
-                              alt="Initial Issue Proof"
-                              className="h-48 w-full object-cover transition-all duration-200 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-all group-hover:opacity-100">
-                              <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-[var(--ink)] shadow-md">
-                                <ExternalLink size={13} /> View Full Photo
-                              </span>
+                      {(() => {
+                        const allAtts = ticket.userAttachments?.length
+                          ? ticket.userAttachments
+                          : ticket.userAttachment?.url
+                          ? [ticket.userAttachment]
+                          : []
+
+                        if (!allAtts.length) {
+                          return (
+                            <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border)] bg-[var(--white)] p-4 text-center">
+                              <Camera size={24} className="mb-2 text-[var(--ink-muted)] opacity-50" />
+                              <p className="text-xs font-semibold text-[var(--ink-muted)]">
+                                No media attached during ticket submission.
+                              </p>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-4">
-                            <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[var(--ink)]">
-                              <Volume2 size={15} className="text-[var(--primary-blue)]" />
-                              Voice Note Attachment
-                            </div>
-                            <audio controls src={getAttachmentUrl(ticket.userAttachment.url)} className="w-full h-10" />
+                          )
+                        }
+
+                        return (
+                          <div className="space-y-3">
+                            {allAtts.map((att, idx) => (
+                              <div key={idx} className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-2">
+                                {att.type === 'image' && (
+                                  <div
+                                    className="group relative cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] bg-black/5"
+                                    onClick={() => setActiveImageModal(att.url)}
+                                  >
+                                    <img
+                                      src={getAttachmentUrl(att.url)}
+                                      alt={`Attachment ${idx + 1}`}
+                                      className="h-48 w-full object-cover transition-all duration-200 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-all group-hover:opacity-100">
+                                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-[var(--ink)] shadow-md">
+                                        <ExternalLink size={13} /> View Full Photo
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                                {att.type === 'video' && (
+                                  <div className="overflow-hidden rounded-xl bg-black">
+                                    <video controls src={getAttachmentUrl(att.url)} className="w-full max-h-56 rounded-xl object-contain" />
+                                  </div>
+                                )}
+                                {att.type === 'audio' && (
+                                  <div className="p-1">
+                                    <div className="flex items-center gap-2 mb-1.5 text-xs font-bold text-[var(--ink)]">
+                                      <Volume2 size={15} className="text-[var(--primary-blue)]" />
+                                      Voice Note Attachment {allAtts.length > 1 ? `#${idx + 1}` : ''}
+                                    </div>
+                                    <audio controls src={getAttachmentUrl(att.url)} className="w-full h-10" />
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         )
-                      ) : (
-                        <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border)] bg-[var(--white)] p-4 text-center">
-                          <Camera size={24} className="mb-2 text-[var(--ink-muted)] opacity-50" />
-                          <p className="text-xs font-semibold text-[var(--ink-muted)]">
-                            No photo attached during ticket submission.
-                          </p>
-                        </div>
-                      )}
+                      })()}
                     </div>
                   </div>
 

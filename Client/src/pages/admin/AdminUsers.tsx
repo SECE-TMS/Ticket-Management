@@ -57,11 +57,13 @@ export function AdminUsers() {
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const [limit, setLimit] = useState(10)
   const [roleFilter, setRoleFilter] = useState<Role | ''>('')
   const [deptFilter, setDeptFilter] = useState('')
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<User | null>(null)
   const [form, setForm] = useState<UserForm>(emptyForm)
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export function AdminUsers() {
       const [userData, deptData] = await Promise.all([
         userService.list({
           page,
-          limit: 20,
+          limit,
           role: roleFilter || undefined,
           department: deptFilter || undefined,
           search: debouncedSearch || undefined,
@@ -101,15 +103,50 @@ export function AdminUsers() {
     setPage(1)
   }, [roleFilter, deptFilter, debouncedSearch])
 
+  const openCreate = () => {
+    setEditing(null)
+    setForm(emptyForm)
+    setOpen(true)
+  }
+
+  const openEdit = (u: User) => {
+    setEditing(u)
+    setForm({
+      name: u.name,
+      email: u.email,
+      password: '',
+      role: u.role === 'admin' ? 'manager' : u.role,
+      department: getId(u.department),
+      phone: u.phone || '',
+    })
+    setOpen(true)
+  }
+
   const save = async () => {
     setSaving(true)
     try {
-      await userService.create({
-        ...form,
-        phone: form.phone || undefined,
-      })
-      toast.success('User created successfully')
+      if (editing) {
+        const payload: Record<string, unknown> = {
+          name: form.name,
+          email: form.email,
+          role: form.role,
+          department: form.department,
+          phone: form.phone || '',
+        }
+        if (form.password) {
+          payload.password = form.password
+        }
+        await userService.update(getId(editing), payload as Parameters<typeof userService.update>[1])
+        toast.success('User updated successfully')
+      } else {
+        await userService.create({
+          ...form,
+          phone: form.phone || undefined,
+        })
+        toast.success('User created successfully')
+      }
       setOpen(false)
+      setEditing(null)
       setForm(emptyForm)
       await load()
     } catch (err) {
@@ -141,10 +178,7 @@ export function AdminUsers() {
           <Button
             type="button"
             id="create-user-btn"
-            onClick={() => {
-              setForm(emptyForm)
-              setOpen(true)
-            }}
+            onClick={openCreate}
           >
             + Create User
           </Button>
@@ -252,16 +286,26 @@ export function AdminUsers() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3.5">
-                      {u.role !== 'admin' && (
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           type="button"
                           size="sm"
-                          variant={u.isActive ? 'outline' : 'primary'}
-                          onClick={() => void toggleActive(u)}
+                          variant="outline"
+                          onClick={() => openEdit(u)}
                         >
-                          {u.isActive ? 'Deactivate' : 'Activate'}
+                          Edit
                         </Button>
-                      )}
+                        {u.role !== 'admin' && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={u.isActive ? 'ghost' : 'primary'}
+                            onClick={() => void toggleActive(u)}
+                          >
+                            {u.isActive ? 'Deactivate' : 'Activate'}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -277,13 +321,30 @@ export function AdminUsers() {
           </div>
 
           <div className="mt-4">
-            <Pagination page={page} pages={pages} total={total} onPageChange={setPage} />
+            <Pagination
+              page={page}
+              pages={pages}
+              total={total}
+              limit={limit}
+              onPageChange={setPage}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit)
+                setPage(1)
+              }}
+            />
           </div>
         </>
       )}
 
-      {/* Create user modal */}
-      <Modal open={open} onClose={() => setOpen(false)} title="Create User">
+      {/* Create / Edit user modal */}
+      <Modal
+        open={open}
+        onClose={() => {
+          setOpen(false)
+          setEditing(null)
+        }}
+        title={editing ? `Edit User: ${editing.name}` : 'Create User'}
+      >
         <div className="space-y-4">
           <Field label="Full name">
             <input
@@ -302,13 +363,13 @@ export function AdminUsers() {
               placeholder="john@company.com"
             />
           </Field>
-          <Field label="Password">
+          <Field label={editing ? 'New Password (optional)' : 'Password'}>
             <input
               type="password"
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               className={inputClass}
-              placeholder="Minimum 8 characters"
+              placeholder={editing ? 'Enter new password if changing...' : 'Minimum 8 characters'}
             />
           </Field>
           <Field label="Role">
@@ -349,16 +410,23 @@ export function AdminUsers() {
           </Field>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setOpen(false)
+                setEditing(null)
+              }}
+            >
               Cancel
             </Button>
             <Button
               type="button"
               loading={saving}
               onClick={() => void save()}
-              disabled={!form.name || !form.email || !form.password || !form.department}
+              disabled={!form.name || !form.email || (!editing && !form.password) || !form.department}
             >
-              Create User
+              {editing ? 'Save Changes' : 'Create User'}
             </Button>
           </div>
         </div>

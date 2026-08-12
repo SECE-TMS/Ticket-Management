@@ -1,24 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft,
   Building2,
-  Check,
+  // Check,
   CheckCircle2,
   Clock,
   Copy,
   FileText,
+  GraduationCap,
   Headset,
+  IdCard,
   Phone,
+  QrCode,
+  RefreshCw,
   ShieldCheck,
   User,
+  UserCheck,
   Zap,
 } from 'lucide-react'
 import { departmentService } from '../../services/departmentService'
 import { ticketService } from '../../services/ticketService'
+import { otpService } from '../../services/otpService'
 import { Button } from '../../components/common/Button'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { MediaAttachmentInput } from '../../components/common/MediaAttachmentInput'
@@ -27,24 +33,53 @@ import { getErrorMessage } from '../../lib/utils'
 import type { Department } from '../../types'
 import { getId } from '../../types'
 
-const schema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  department: z.string().min(1, 'Select a department'),
-  mobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
-  complaintType: z.string().min(1, 'Select a complaint type'),
-  description: z.string().min(5, 'Describe the issue (min 5 characters)'),
-})
+const schema = z
+  .object({
+    userType: z.enum(['student', 'staff', 'guest']),
+    rollNumber: z.string().optional(),
+    name: z.string().min(2, 'Name is required'),
+    department: z.string().min(1, 'Select a department'),
+    mobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
+    complaintType: z.string().min(1, 'Select a complaint type'),
+    description: z.string().min(5, 'Describe the issue (min 5 characters)'),
+  })
+  .refine(
+    (data) => {
+      if (data.userType === 'student') {
+        return !!data.rollNumber && data.rollNumber.trim().length >= 2
+      }
+      return true
+    },
+    {
+      message: 'Roll number is required for students',
+      path: ['rollNumber'],
+    }
+  )
 
 type FormValues = z.infer<typeof schema>
 
 export function RaiseTicket() {
   const toast = useToast()
+  const [searchParams] = useSearchParams()
+
   const [departments, setDepartments] = useState<Department[]>([])
   const [loadingDepts, setLoadingDepts] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [ticketCode, setTicketCode] = useState<string | null>(null)
-  const [attachment, setAttachment] = useState<File | null>(null)
+  const [attachments, setAttachments] = useState<File[]>([])
   const [copied, setCopied] = useState(false)
+
+  // QR prefill banner state
+  const [qrPrefillInfo, setQrPrefillInfo] = useState<{ location?: string; department?: string } | null>(null)
+
+  // OTP Verification state
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpSending, setOtpSending] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [otpValue, setOtpValue] = useState('')
+  const [otpVerifying, setOtpVerifying] = useState(false)
+  const [isVerified, setIsVerified] = useState(false)
+  const [countdown, setCountdown] = useState(0)
 
   const {
     register,
@@ -55,6 +90,8 @@ export function RaiseTicket() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      userType: 'student',
+      rollNumber: '',
       name: '',
       department: '',
       mobile: '',
@@ -63,41 +100,184 @@ export function RaiseTicket() {
     },
   })
 
+  const selectedUserType = watch('userType')
   const selectedDeptId = watch('department')
+  const mobileValue = watch('mobile')
+  const descriptionValue = watch('description') || ''
+
   const selectedDept = useMemo(
     () => departments.find((d) => getId(d) === selectedDeptId),
     [departments, selectedDeptId]
   )
 
-  const descriptionValue = watch('description') || ''
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (countdown <= 0) return
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [countdown])
 
+  // Reset verification if mobile number changes
+  useEffect(() => {
+    if (isVerified || otpSent) {
+      setIsVerified(false)
+      setOtpSent(false)
+      setSessionId(null)
+      setOtpValue('')
+    }
+  }, [mobileValue])
+
+  // Fetch departments & handle QR code query prefilling
   useEffect(() => {
     void (async () => {
       try {
         const data = await departmentService.listActive()
         setDepartments(data)
+
+        // Parse query params for QR code prefill
+        const deptParam =
+          searchParams.get('department') || searchParams.get('dept') || searchParams.get('departmentId')
+        const locationParam = searchParams.get('location') || searchParams.get('area')
+        const complaintTypeParam = searchParams.get('complaintType') || searchParams.get('type')
+        const descParam = searchParams.get('description') || searchParams.get('desc')
+
+        let matchedDeptId = ''
+
+        if (deptParam) {
+          const lowerParam = deptParam.toLowerCase()
+          const matched = data.find(
+            (d) =>
+              getId(d) === deptParam ||
+              d.name.toLowerCase() === lowerParam ||
+              d.name.toLowerCase().includes(lowerParam) ||
+              lowerParam.includes(d.name.toLowerCase())
+          )
+          if (matched) {
+            matchedDeptId = getId(matched)
+            setValue('department', matchedDeptId, { shouldValidate: true })
+          }
+        }
+
+        if (locationParam || deptParam) {
+          setQrPrefillInfo({
+            location: locationParam || undefined,
+            department: deptParam || undefined,
+          })
+        }
+
+        // Prefill description with location if present
+        if (locationParam) {
+          const locationPrefix = `[Location: ${locationParam}]`
+          if (!descParam) {
+            setValue('description', `${locationPrefix} Issue reported via location QR code. `)
+          } else {
+            setValue('description', `${locationPrefix} ${descParam}`)
+          }
+        } else if (descParam) {
+          setValue('description', descParam)
+        }
+
+        // Auto-select complaint type if matched
+        if (complaintTypeParam && matchedDeptId) {
+          const targetDept = data.find((d) => getId(d) === matchedDeptId)
+          if (targetDept?.complaintTypes) {
+            const matchedType = targetDept.complaintTypes.find(
+              (ct) => ct.toLowerCase() === complaintTypeParam.toLowerCase()
+            )
+            if (matchedType) {
+              setValue('complaintType', matchedType, { shouldValidate: true })
+            }
+          }
+        }
       } catch (err) {
         toast.error(getErrorMessage(err, 'Failed to load departments'))
       } finally {
         setLoadingDepts(false)
       }
     })()
-  }, [toast])
+  }, [searchParams, setValue, toast])
 
   useEffect(() => {
-    setValue('complaintType', '')
-  }, [selectedDeptId, setValue])
+    // Reset complaint type when user manually switches department
+    // only if department doesn't match current complaintType
+    if (selectedDept && !selectedDept.complaintTypes?.includes(watch('complaintType'))) {
+      setValue('complaintType', '')
+    }
+  }, [selectedDeptId, selectedDept, setValue, watch])
+
+  // OTP Send Handler
+  const handleSendOtp = async () => {
+    if (!mobileValue || !/^\d{10}$/.test(mobileValue)) {
+      toast.error('Please enter a valid 10-digit mobile number first')
+      return
+    }
+
+    setOtpSending(true)
+    try {
+      const res = await otpService.sendOtp(mobileValue)
+      setSessionId(res.sessionId)
+      setOtpSent(true)
+      setCountdown(60)
+      toast.success('OTP sent successfully to your mobile number!')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to send OTP via 2Factor'))
+    } finally {
+      setOtpSending(false)
+    }
+  }
+
+  // OTP Verify Handler
+  const handleVerifyOtp = async () => {
+    if (!sessionId) {
+      toast.error('Please request OTP first')
+      return
+    }
+    if (!otpValue || otpValue.trim().length < 4) {
+      toast.error('Please enter the OTP sent to your phone')
+      return
+    }
+
+    setOtpVerifying(true)
+    try {
+      const res = await otpService.verifyOtp(sessionId, otpValue)
+      if (res.verified) {
+        setIsVerified(true)
+        toast.success('Mobile number verified successfully!')
+      } else {
+        toast.error('Invalid OTP. Please try again.')
+      }
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'OTP verification failed'))
+    } finally {
+      setOtpVerifying(false)
+    }
+  }
 
   const onSubmit = handleSubmit(async (values) => {
+    if (!isVerified) {
+      toast.error('Please verify your mobile number with OTP before submitting')
+      return
+    }
+
     setSubmitting(true)
     try {
       const formData = new FormData()
+      formData.append('userType', values.userType)
+      if (values.userType === 'student' && values.rollNumber) {
+        formData.append('rollNumber', values.rollNumber.trim())
+      }
       formData.append('name', values.name)
       formData.append('department', values.department)
       formData.append('mobile', values.mobile)
       formData.append('complaintType', values.complaintType)
       formData.append('description', values.description)
-      if (attachment) formData.append('attachment', attachment)
+      if (attachments.length > 0) {
+        attachments.forEach((file) => {
+          formData.append('attachment', file)
+        })
+      }
 
       const ticket = await ticketService.create(formData)
       setTicketCode(ticket.ticketCode)
@@ -122,7 +302,6 @@ export function RaiseTicket() {
     return (
       <div className="mx-auto max-w-xl px-4 py-12 sm:px-6">
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-8 text-center shadow-lg animate-fade-in">
-          {/* Animated check badge */}
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--success-light)] text-[var(--success)] shadow-inner">
             <CheckCircle2 size={48} />
           </div>
@@ -134,7 +313,6 @@ export function RaiseTicket() {
             Your maintenance request has been logged and queued for assignment.
           </p>
 
-          {/* Ticket code card */}
           <div className="mt-6 rounded-2xl border border-[var(--primary-blue-muted)] bg-gradient-to-br from-[var(--primary-blue-light)] to-[var(--surface-2)] p-6 shadow-xs">
             <p className="text-xs font-bold uppercase tracking-wider text-[var(--primary-blue)]">
               Your Unique Ticket Reference
@@ -167,6 +345,10 @@ export function RaiseTicket() {
               onClick={() => {
                 setTicketCode(null)
                 setAttachment(null)
+                setIsVerified(false)
+                setOtpSent(false)
+                setSessionId(null)
+                setOtpValue('')
               }}
             >
               Raise Another Ticket
@@ -198,17 +380,16 @@ export function RaiseTicket() {
         {/* Left Column: Visual Brand Card & Step Info (Desktop only) */}
         <div className="hidden lg:flex flex-col justify-between rounded-2xl bg-gradient-to-br from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[var(--primary-blue-dark)] p-6 text-[var(--white)] shadow-md sm:p-8 lg:col-span-4">
           <div>
-            {/* Header Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-[var(--gold)]/15 px-3.5 py-1 text-xs font-bold text-[var(--gold)]">
               <Headset size={13} />
-              24/7 Facility Desk
+              24/7 Campus Helpdesk
             </div>
 
             <h1 className="mt-4 font-display text-2xl font-bold text-[var(--white)] sm:text-3xl">
               Report an Issue
             </h1>
             <p className="mt-2 text-xs leading-relaxed text-white/75 sm:text-sm">
-              Fast, tracked resolution for campus maintenance, plumbing, electrical, and facility requests.
+              Fast, verified facility support for students, staff, and campus guests.
             </p>
 
             {/* Visual Step Guide */}
@@ -218,8 +399,8 @@ export function RaiseTicket() {
                   1
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[var(--white)]">Contact Info</p>
-                  <p className="text-[11px] text-white/60">Your name &amp; 10-digit mobile</p>
+                  <p className="text-xs font-bold text-[var(--white)]">Identify Yourself</p>
+                  <p className="text-[11px] text-white/60">Role (Student/Staff/Guest) &amp; Name</p>
                 </div>
               </div>
 
@@ -228,8 +409,8 @@ export function RaiseTicket() {
                   2
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[var(--white)]">Category Selection</p>
-                  <p className="text-[11px] text-white/60">Choose department &amp; complaint type</p>
+                  <p className="text-xs font-bold text-[var(--white)]">2Factor OTP Verification</p>
+                  <p className="text-[11px] text-white/60">Verify 10-digit mobile via SMS OTP</p>
                 </div>
               </div>
 
@@ -238,43 +419,101 @@ export function RaiseTicket() {
                   3
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[var(--white)]">Details &amp; Attachment</p>
-                  <p className="text-[11px] text-white/60">Describe issue &amp; add optional photo</p>
+                  <p className="text-xs font-bold text-[var(--white)]">Department &amp; Issue</p>
+                  <p className="text-[11px] text-white/60">Select target department &amp; category</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--gold)] text-xs font-bold text-[var(--primary-blue-deeper)]">
+                  4
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[var(--white)]">Details &amp; Proof</p>
+                  <p className="text-[11px] text-white/60">Describe issue &amp; add photo/voice</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Guarantee Badges */}
           <div className="mt-10 border-t border-white/10 pt-6 space-y-3">
             <div className="flex items-center gap-2 text-xs text-white/80">
               <Zap size={14} className="text-[var(--gold)]" />
-              <span>Instant assignment to department team</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-white/80">
-              <Clock size={14} className="text-[var(--gold)]" />
-              <span>Response within department SLA</span>
+              <span>Instant routing to department staff</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-white/80">
               <ShieldCheck size={14} className="text-[var(--gold)]" />
-              <span>Track progress anytime using Ticket Code</span>
+              <span>2Factor SMS OTP verification protected</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-white/80">
+              <Clock size={14} className="text-[var(--gold)]" />
+              <span>Track resolution status in real-time</span>
             </div>
           </div>
         </div>
 
         {/* Right Column: High-End Form */}
         <div className="col-span-12 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-6 shadow-sm sm:p-8 lg:col-span-8">
+          {/* QR Code Banner Notification */}
+          {qrPrefillInfo && (
+            <div className="mb-6 flex items-center gap-3 rounded-xl border border-[var(--primary-blue)]/30 bg-[var(--primary-blue-light)] p-3.5 text-xs text-[var(--primary-blue-deeper)] animate-fade-in">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-blue)] text-white">
+                <QrCode size={18} />
+              </div>
+              <div>
+                <p className="font-bold">QR Location Detected</p>
+                <p className="text-[11px] text-[var(--ink-muted)]">
+                  {qrPrefillInfo.location ? `Scanned Location: "${qrPrefillInfo.location}". ` : ''}
+                  Department and location details have been automatically prefilled for you.
+                </p>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={onSubmit} className="space-y-6" id="raise-ticket-form">
-            {/* Step 1: Requester Details */}
+            {/* Step 1: Role & Identity */}
             <div>
               <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-2">
                 <User size={18} className="text-[var(--primary-blue)]" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)]">
-                  1. Your Contact Information
+                  1. Your Identity &amp; Role
                 </h2>
               </div>
 
+              {/* Role Selection Radio Cards */}
+              <div className="mb-4 flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[var(--ink)]">
+                  I am a <span className="text-[var(--danger)]">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { id: 'student', label: 'Student', icon: GraduationCap },
+                    { id: 'staff', label: 'Staff', icon: UserCheck },
+                    { id: 'guest', label: 'Guest', icon: User },
+                  ].map((role) => {
+                    const IconComp = role.icon
+                    const isSelected = selectedUserType === role.id
+                    return (
+                      <button
+                        key={role.id}
+                        type="button"
+                        onClick={() => setValue('userType', role.id as 'student' | 'staff' | 'guest')}
+                        className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-3.5 text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-bold shadow-xs ring-2 ring-[var(--primary-blue)]/20'
+                            : 'border-[var(--border)] bg-[var(--white)] text-[var(--ink-muted)] hover:border-[var(--primary-blue-muted)] hover:bg-[var(--surface)]'
+                        }`}
+                      >
+                        <IconComp size={20} className={isSelected ? 'text-[var(--primary-blue)]' : 'text-[var(--ink-muted)]'} />
+                        <span className="text-xs font-bold">{role.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
+                {/* Full Name */}
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="rt-name" className="text-xs font-bold text-[var(--ink)]">
                     Full Name <span className="text-[var(--danger)]">*</span>
@@ -295,71 +534,177 @@ export function RaiseTicket() {
                   )}
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="rt-mobile" className="text-xs font-bold text-[var(--ink)]">
-                    Mobile Number <span className="text-[var(--danger)]">*</span>
-                  </label>
-                  <div className="relative">
-                    <Phone
-                      size={15}
-                      className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--ink-muted)]"
-                    />
-                    <input
-                      {...register('mobile')}
-                      id="rt-mobile"
-                      inputMode="numeric"
-                      maxLength={10}
-                      className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                        errors.mobile ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                      }`}
-                      placeholder="10-digit mobile"
-                    />
+                {/* Roll Number (Conditional for Student) */}
+                {selectedUserType === 'student' && (
+                  <div className="flex flex-col gap-1.5 animate-fade-in">
+                    <label htmlFor="rt-roll" className="text-xs font-bold text-[var(--ink)]">
+                      Student Roll Number <span className="text-[var(--danger)]">*</span>
+                    </label>
+                    <div className="relative">
+                      <IdCard
+                        size={15}
+                        className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--ink-muted)]"
+                      />
+                      <input
+                        {...register('rollNumber')}
+                        id="rt-roll"
+                        className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] uppercase outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                          errors.rollNumber ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                        }`}
+                        placeholder="e.g. 21CS045"
+                      />
+                    </div>
+                    {errors.rollNumber && (
+                      <span className="text-xs text-[var(--danger)]">{errors.rollNumber.message}</span>
+                    )}
                   </div>
-                  {errors.mobile && (
-                    <span className="text-xs text-[var(--danger)]">{errors.mobile.message}</span>
-                  )}
-                </div>
+                )}
               </div>
             </div>
 
-            {/* Step 2: Department & Category */}
+            {/* Step 2: Mobile Number & 2Factor OTP Verification */}
+            <div>
+              <div className="mb-4 flex items-center justify-between border-b border-[var(--border)] pb-2">
+                <div className="flex items-center gap-2">
+                  <Phone size={18} className="text-[var(--primary-blue)]" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)]">
+                    2. Mobile Number &amp; OTP Verification
+                  </h2>
+                </div>
+                {isVerified && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success-light)] px-3 py-1 text-xs font-bold text-[var(--success)] shadow-xs">
+                    <CheckCircle2 size={13} />
+                    Verified
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <label htmlFor="rt-mobile" className="text-xs font-bold text-[var(--ink)]">
+                      Mobile Number <span className="text-[var(--danger)]">*</span>
+                    </label>
+                    <div className="relative">
+                      <Phone
+                        size={15}
+                        className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--ink-muted)]"
+                      />
+                      <input
+                        {...register('mobile')}
+                        id="rt-mobile"
+                        inputMode="numeric"
+                        maxLength={10}
+                        disabled={isVerified}
+                        className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                          isVerified
+                            ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
+                            : errors.mobile
+                              ? 'border-[var(--danger)]'
+                              : 'border-[var(--border)]'
+                        }`}
+                        placeholder="10-digit mobile"
+                      />
+                    </div>
+                    {errors.mobile && (
+                      <span className="text-xs text-[var(--danger)]">{errors.mobile.message}</span>
+                    )}
+                  </div>
+
+                  {!isVerified && (
+                    <div className="mt-1 sm:mt-6 sm:w-auto">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="md"
+                        onClick={handleSendOtp}
+                        loading={otpSending}
+                        disabled={!mobileValue || mobileValue.length !== 10 || countdown > 0}
+                        className="w-full sm:w-auto whitespace-nowrap h-11"
+                      >
+                        {countdown > 0 ? (
+                          <span className="flex items-center gap-1.5">
+                            <Clock size={14} /> Resend in {countdown}s
+                          </span>
+                        ) : otpSent ? (
+                          <span className="flex items-center gap-1.5">
+                            <RefreshCw size={14} /> Resend OTP
+                          </span>
+                        ) : (
+                          'Send OTP via SMS'
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* OTP Input Card (Shown after OTP is sent) */}
+                {otpSent && !isVerified && (
+                  <div className="rounded-xl border border-[var(--primary-blue-muted)] bg-[var(--primary-blue-light)]/50 p-4 animate-fade-in space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="rt-otp" className="text-xs font-bold text-[var(--primary-blue-deeper)]">
+                        Enter 6-Digit SMS OTP sent to +91 {mobileValue}
+                      </label>
+                      <span className="text-[11px] text-[var(--ink-muted)]">2Factor Verification</span>
+                    </div>
+
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <input
+                        id="rt-otp"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={otpValue}
+                        onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ''))}
+                        className="h-11 flex-1 rounded-xl border border-[var(--primary-blue)] bg-[var(--white)] px-4 font-mono text-lg font-bold tracking-widest text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--primary-blue)]/30"
+                        placeholder="••••••"
+                      />
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="md"
+                        onClick={handleVerifyOtp}
+                        loading={otpVerifying}
+                        disabled={otpValue.length < 4}
+                        className="h-11 shadow-sm"
+                      >
+                        Verify OTP
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Step 3: Department & Category */}
             <div>
               <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-2">
                 <Building2 size={18} className="text-[var(--primary-blue)]" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)]">
-                  2. Department &amp; Issue Category
+                  3. Department &amp; Issue Category
                 </h2>
               </div>
 
-              {/* Department Cards Selector */}
+              {/* Department Dropdown Selector */}
               <div className="mb-4 flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[var(--ink)]">
+                <label htmlFor="rt-department" className="text-xs font-bold text-[var(--ink)]">
                   Select Department <span className="text-[var(--danger)]">*</span>
                 </label>
-                <div className="grid gap-2.5 sm:grid-cols-3">
-                  {departments.map((d) => {
-                    const deptId = getId(d)
-                    const isSelected = selectedDeptId === deptId
-                    return (
-                      <button
-                        key={deptId}
-                        type="button"
-                        onClick={() => setValue('department', deptId, { shouldValidate: true })}
-                        className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all cursor-pointer ${
-                          isSelected
-                            ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-bold shadow-xs ring-2 ring-[var(--primary-blue)]/20'
-                            : 'border-[var(--border)] bg-[var(--white)] text-[var(--ink)] hover:border-[var(--primary-blue-muted)] hover:bg-[var(--surface)]'
-                        }`}
-                      >
-                        <span className="truncate text-xs font-semibold">{d.name}</span>
-                        {isSelected && (
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--primary-blue)] text-white">
-                            <Check size={12} />
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
+                <div className="relative">
+                  <select
+                    {...register('department')}
+                    id="rt-department"
+                    className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                      errors.department ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                    }`}
+                  >
+                    <option value="">Select target department…</option>
+                    {departments.map((d) => (
+                      <option key={getId(d)} value={getId(d)}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 {errors.department && (
                   <span className="text-xs text-[var(--danger)]">{errors.department.message}</span>
@@ -395,12 +740,12 @@ export function RaiseTicket() {
               )}
             </div>
 
-            {/* Step 3: Description & Drag/Drop Upload */}
+            {/* Step 4: Description & Proof Attachment */}
             <div>
               <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-2">
                 <FileText size={18} className="text-[var(--primary-blue)]" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)]">
-                  3. Description &amp; Proof Attachment
+                  4. Description &amp; Proof Attachment
                 </h2>
               </div>
 
@@ -428,12 +773,12 @@ export function RaiseTicket() {
                 )}
               </div>
 
-              {/* Media Attachment Component with Camera, Mic & Preview */}
+              {/* Media Attachment Component with Multi-file, Video, Camera & Mic Support */}
               <MediaAttachmentInput
-                file={attachment}
-                onChange={setAttachment}
-                label="Photo / Audio Attachment"
-                hint="Take live camera photo, record mic voice note, or drop file"
+                files={attachments}
+                onChange={setAttachments}
+                label="Media Attachments"
+                hint="Upload photos, video clips, voice notes, or capture live camera/mic"
               />
             </div>
 

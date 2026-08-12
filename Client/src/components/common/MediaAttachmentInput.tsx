@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Image as ImageIcon, Mic, RefreshCw, Square, Trash2, Upload, Volume2, X } from 'lucide-react'
+import { Camera, Film, Image as ImageIcon, Mic, Plus, RefreshCw, Square, Trash2, Upload, Volume2, X } from 'lucide-react'
 
 interface MediaAttachmentInputProps {
-  file: File | null
-  onChange: (file: File | null) => void
+  files?: File[]
+  onChange?: (files: File[]) => void
+  file?: File | null
+  onSingleChange?: (file: File | null) => void
   label?: string
   hint?: string
 }
@@ -11,7 +13,7 @@ interface MediaAttachmentInputProps {
 function formatBytes(bytes: number) {
   if (bytes === 0) return '0 B'
   const k = 1024
-  const sizes = ['B', 'KB', 'MB']
+  const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
 }
@@ -23,12 +25,48 @@ function formatTimer(seconds: number) {
 }
 
 export function MediaAttachmentInput({
-  file,
+  files: propsFiles,
   onChange,
-  label = 'Attachment',
-  hint = 'Photo proof or voice note (optional)',
+  file: propsSingleFile,
+  onSingleChange,
+  label = 'Media Attachments',
+  hint = 'Upload images, videos, audio notes, or capture live photo/voice',
 }: MediaAttachmentInputProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  // Internal normalized file list
+  const currentFiles: File[] = propsFiles
+    ? propsFiles
+    : propsSingleFile
+    ? [propsSingleFile]
+    : []
+
+  const updateFiles = (newFiles: File[]) => {
+    if (onChange) {
+      onChange(newFiles)
+    }
+    if (onSingleChange) {
+      onSingleChange(newFiles.length ? newFiles[0] : null)
+    }
+  }
+
+  const addFiles = (incoming: File[]) => {
+    const valid = incoming.filter(
+      (f) =>
+        f.type.startsWith('image/') ||
+        f.type.startsWith('audio/') ||
+        f.type.startsWith('video/')
+    )
+    updateFiles([...currentFiles, ...valid])
+  }
+
+  const removeFileAt = (index: number) => {
+    const next = currentFiles.filter((_, i) => i !== index)
+    updateFiles(next)
+  }
+
+  const clearAll = () => {
+    updateFiles([])
+  }
+
   const [dragOver, setDragOver] = useState(false)
   const [recording, setRecording] = useState(false)
   const [recordSecs, setRecordSecs] = useState(0)
@@ -47,18 +85,29 @@ export function MediaAttachmentInput({
   const audioChunksRef = useRef<Blob[]>([])
   const timerRef = useRef<number | null>(null)
 
-  // Generate object URL for image/audio preview when file changes
+  // Object URLs for previewing files
+  const [previewUrls, setPreviewUrls] = useState<{ url: string; type: 'image' | 'audio' | 'video'; name: string; size: number }[]>([])
+
   useEffect(() => {
-    if (!file) {
-      setPreviewUrl(null)
-      return
-    }
-    const url = URL.createObjectURL(file)
-    setPreviewUrl(url)
+    const urls = currentFiles.map((f) => {
+      const type: 'image' | 'audio' | 'video' = f.type.startsWith('image/')
+        ? 'image'
+        : f.type.startsWith('video/')
+        ? 'video'
+        : 'audio'
+      return {
+        url: URL.createObjectURL(f),
+        type,
+        name: f.name,
+        size: f.size,
+      }
+    })
+    setPreviewUrls(urls)
+
     return () => {
-      URL.revokeObjectURL(url)
+      urls.forEach((u) => URL.revokeObjectURL(u.url))
     }
-  }, [file])
+  }, [currentFiles])
 
   // Manage Live Webcam Video Stream when Camera Modal is open
   useEffect(() => {
@@ -124,7 +173,7 @@ export function MediaAttachmentInput({
             const photoFile = new File([blob], `camera_snap_${Date.now()}.jpg`, {
               type: 'image/jpeg',
             })
-            onChange(photoFile)
+            addFiles([photoFile])
             setCameraOpen(false)
           }
         },
@@ -154,9 +203,9 @@ export function MediaAttachmentInput({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
-    const dropped = e.dataTransfer.files[0]
-    if (dropped && (dropped.type.startsWith('image/') || dropped.type.startsWith('audio/'))) {
-      onChange(dropped)
+    const dropped = Array.from(e.dataTransfer.files)
+    if (dropped.length) {
+      addFiles(dropped)
     }
   }
 
@@ -179,10 +228,10 @@ export function MediaAttachmentInput({
           type: recorder.mimeType || 'audio/webm',
         })
         const ext = recorder.mimeType.includes('mp4') ? 'm4a' : 'webm'
-        const audioFile = new File([audioBlob], `voice_record_${Date.now()}.${ext}`, {
+        const audioFile = new File([audioBlob], `voice_note_${Date.now()}.${ext}`, {
           type: audioBlob.type,
         })
-        onChange(audioFile)
+        addFiles([audioFile])
         stream.getTracks().forEach((track) => track.stop())
       }
 
@@ -201,8 +250,7 @@ export function MediaAttachmentInput({
     }
   }
 
-  const isImage = file?.type.startsWith('image/')
-  const isAudio = file?.type.startsWith('audio/')
+  const totalSize = currentFiles.reduce((acc, f) => acc + f.size, 0)
 
   return (
     <div className="flex flex-col gap-2">
@@ -211,13 +259,13 @@ export function MediaAttachmentInput({
           {label} <span className="font-normal text-[var(--ink-muted)]">({hint})</span>
         </label>
 
-        {file && (
+        {currentFiles.length > 0 && (
           <button
             type="button"
-            onClick={() => onChange(null)}
+            onClick={clearAll}
             className="inline-flex items-center gap-1 text-xs font-bold text-[var(--danger)] hover:underline cursor-pointer"
           >
-            <Trash2 size={13} /> Remove
+            <Trash2 size={13} /> Clear All ({currentFiles.length})
           </button>
         )}
       </div>
@@ -226,11 +274,13 @@ export function MediaAttachmentInput({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,audio/*"
+        multiple
+        accept="image/*,audio/*,video/*"
         className="hidden"
         onChange={(e) => {
-          const picked = e.target.files?.[0]
-          if (picked) onChange(picked)
+          const picked = Array.from(e.target.files || [])
+          if (picked.length) addFiles(picked)
+          e.target.value = ''
         }}
       />
 
@@ -252,75 +302,13 @@ export function MediaAttachmentInput({
             <Square size={14} /> Stop Recording
           </button>
         </div>
-      ) : file && previewUrl ? (
-        /* Case 2: File Selected -> Visual Preview Screen */
-        <div className="overflow-hidden rounded-2xl border border-[var(--primary-blue-muted)] bg-[var(--surface)] p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {isImage ? (
-                <ImageIcon size={18} className="text-[var(--primary-blue)]" />
-              ) : (
-                <Volume2 size={18} className="text-[var(--primary-blue)]" />
-              )}
-              <span className="truncate text-xs font-bold text-[var(--ink)]">
-                {file.name}
-              </span>
-            </div>
-            <span className="text-[11px] font-semibold text-[var(--ink-muted)]">
-              {formatBytes(file.size)}
-            </span>
-          </div>
-
-          {/* Visual Image Preview */}
-          {isImage && (
-            <div className="relative overflow-hidden rounded-xl border border-[var(--border)] bg-black/5 max-h-56 flex items-center justify-center">
-              <img
-                src={previewUrl}
-                alt="Selected attachment preview"
-                className="max-h-56 w-full object-contain rounded-xl"
-              />
-            </div>
-          )}
-
-          {/* Visual Audio Player Preview */}
-          {isAudio && (
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-3">
-              <audio controls src={previewUrl} className="w-full h-10" />
-            </div>
-          )}
-
-          {/* Retake / Choose Different Action Bar */}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setCameraOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 py-1.5 text-xs font-bold text-[var(--ink)] hover:bg-[var(--surface-2)] cursor-pointer"
-            >
-              <Camera size={13} /> Retake Photo
-            </button>
-            <button
-              type="button"
-              onClick={startRecording}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 py-1.5 text-xs font-bold text-[var(--ink)] hover:bg-[var(--surface-2)] cursor-pointer"
-            >
-              <Mic size={13} /> Record Mic
-            </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 py-1.5 text-xs font-bold text-[var(--ink)] hover:bg-[var(--surface-2)] cursor-pointer"
-            >
-              <Upload size={13} /> Browse File
-            </button>
-          </div>
-        </div>
       ) : (
-        /* Case 3: Empty State -> Pick, Record, or Camera Dropzone */
+        /* Dropzone / Action Header Bar */
         <div
-          className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
+          className={`flex flex-col gap-3 rounded-2xl border-2 border-dashed p-4 transition-all ${
             dragOver
               ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)]'
-              : 'border-[var(--primary-blue-muted)] bg-[var(--white)] hover:border-[var(--primary-blue)]'
+              : 'border-[var(--primary-blue-muted)] bg-[var(--white)]'
           }`}
           onDragOver={(e) => {
             e.preventDefault()
@@ -329,39 +317,116 @@ export function MediaAttachmentInput({
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
         >
-          <p className="text-xs font-bold text-[var(--ink)] mb-1">
-            Upload or Capture Attachment
-          </p>
-          <p className="text-[11px] text-[var(--ink-muted)] mb-4 max-w-xs">
-            Take a live webcam photo, record a voice note, or drop a file.
-          </p>
+          {/* Top Quick Actions Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-[var(--ink)]">
+                {currentFiles.length === 0
+                  ? 'Add Attachments'
+                  : `Attached Files (${currentFiles.length} file${currentFiles.length > 1 ? 's' : ''}, ${formatBytes(totalSize)})`}
+              </span>
+            </div>
 
-          {/* Action Buttons Row */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCameraOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--primary-blue)] px-4 py-2.5 text-xs font-bold text-[var(--white)] shadow-md hover:bg-[var(--primary-blue-dark)] cursor-pointer transition-all hover:scale-105"
-            >
-              <Camera size={16} /> Take Live Photo
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCameraOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary-blue-light)] px-3 py-1.5 text-xs font-bold text-[var(--primary-blue)] hover:bg-[var(--primary-blue)] hover:text-white transition-all cursor-pointer"
+              >
+                <Camera size={14} /> Take Photo
+              </button>
 
-            <button
-              type="button"
-              onClick={startRecording}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--gold)] px-4 py-2.5 text-xs font-bold text-[var(--primary-blue-deeper)] shadow-md hover:bg-[var(--gold-dark)] cursor-pointer transition-all hover:scale-105"
-            >
-              <Mic size={16} /> Record Mic
-            </button>
+              <button
+                type="button"
+                onClick={startRecording}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--gold-light)] px-3 py-1.5 text-xs font-bold text-[var(--gold-dark)] hover:bg-[var(--gold)] hover:text-[var(--primary-blue-deeper)] transition-all cursor-pointer"
+              >
+                <Mic size={14} /> Record Audio
+              </button>
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--white)] px-4 py-2.5 text-xs font-bold text-[var(--ink)] shadow-sm hover:bg-[var(--surface-2)] cursor-pointer"
-            >
-              <Upload size={16} /> Browse File
-            </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 py-1.5 text-xs font-bold text-[var(--ink)] hover:bg-[var(--surface-2)] shadow-xs cursor-pointer"
+              >
+                <Upload size={14} /> Browse Files (Photos, Videos, Audio)
+              </button>
+            </div>
           </div>
+
+          {/* Render List of Attachment Cards */}
+          {previewUrls.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {previewUrls.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-col justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 transition-all hover:border-[var(--primary-blue-muted)]"
+                >
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {item.type === 'image' && (
+                        <ImageIcon size={16} className="text-[var(--primary-blue)] shrink-0" />
+                      )}
+                      {item.type === 'audio' && (
+                        <Volume2 size={16} className="text-[var(--gold-dark)] shrink-0" />
+                      )}
+                      {item.type === 'video' && (
+                        <Film size={16} className="text-purple-600 shrink-0" />
+                      )}
+                      <span className="truncate text-xs font-bold text-[var(--ink)]">
+                        {item.name}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] font-semibold text-[var(--ink-muted)]">
+                        {formatBytes(item.size)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeFileAt(idx)}
+                        className="rounded-md p-1 text-[var(--ink-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-colors cursor-pointer"
+                        title="Remove file"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Render Visual Preview */}
+                  {item.type === 'image' && (
+                    <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-black/5 max-h-40 flex items-center justify-center">
+                      <img
+                        src={item.url}
+                        alt={item.name}
+                        className="max-h-40 w-full object-contain rounded-lg"
+                      />
+                    </div>
+                  )}
+
+                  {item.type === 'audio' && (
+                    <div className="rounded-lg border border-[var(--border)] bg-[var(--white)] p-2">
+                      <audio controls src={item.url} className="w-full h-8" />
+                    </div>
+                  )}
+
+                  {item.type === 'video' && (
+                    <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-black max-h-44 flex items-center justify-center">
+                      <video
+                        controls
+                        src={item.url}
+                        className="w-full max-h-44 rounded-lg object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-6 text-center text-xs text-[var(--ink-muted)]">
+              Drag &amp; drop photos, video clips, or audio files here, or use the buttons above to record live.
+            </div>
+          )}
         </div>
       )}
 

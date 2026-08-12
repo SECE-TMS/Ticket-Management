@@ -23,6 +23,8 @@ import { ManagerDashboard } from '../pages/manager/ManagerDashboard'
 import { ManagerEmployees } from '../pages/manager/ManagerEmployees'
 import { EmployeeDashboard } from '../pages/employee/EmployeeDashboard'
 
+import { QrGeneratorPage } from '../pages/shared/QrGeneratorPage'
+
 export function AppRoutes() {
   return (
     <BrowserRouter>
@@ -43,6 +45,7 @@ export function AppRoutes() {
               <Route path="users" element={<AdminUsers />} />
               <Route path="tickets" element={<AdminTickets />} />
               <Route path="tickets/:id" element={<AdminTicketDetail />} />
+              <Route path="qr-generator" element={<QrGeneratorPage />} />
             </Route>
           </Route>
 
