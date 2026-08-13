@@ -85,6 +85,7 @@ export interface Ticket {
   complaintType: string
   description: string
   userAttachment?: Attachment | null
+  userAttachments?: Attachment[]
   priority: TicketPriority
   status: TicketStatus
   assignedTo?: UserRef | string | null

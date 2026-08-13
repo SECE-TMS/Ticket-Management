@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Film, Image as ImageIcon, Mic, Plus, RefreshCw, Square, Trash2, Upload, Volume2, X } from 'lucide-react'
+import { Camera, Film, Image as ImageIcon, Mic, RefreshCw, Square, Trash2, Upload, Volume2, X } from 'lucide-react'
 
 interface MediaAttachmentInputProps {
   files?: File[]

@@ -56,7 +56,7 @@ export function ResolveModal({ open, onClose, loading, onSubmit }: ResolveModalP
         {/* Media Attachment with Live Camera, Mic & Preview */}
         <MediaAttachmentInput
           file={file}
-          onChange={setFile}
+          onSingleChange={setFile}
           label="Proof attachment"
           hint="Photo proof or audio voice note (optional)"
         />
