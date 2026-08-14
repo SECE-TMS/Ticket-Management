@@ -28,7 +28,7 @@ import { getId } from '../../types'
 
 import sriEshwarLogo from '../../assets/Sri Eshwar.png'
 import isaiiLogo from '../../assets/isaii.jpg'
-import qrCenterLogo from '../../assets/logo_remove-removebg-preview.png'
+// import qrCenterLogo from '../../assets/logo_remove-removebg-preview.png'
 
 /** Standard Card (4" x 6" 300DPI) dimensions */
 const POSTCARD_W = 1200
@@ -117,31 +117,63 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 function knockoutBlackBackground(img: HTMLImageElement): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
-  canvas.width = img.naturalWidth || img.width
-  canvas.height = img.naturalHeight || img.height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return canvas
+  const rawCanvas = document.createElement('canvas')
+  const width = img.naturalWidth || img.width
+  const height = img.naturalHeight || img.height
+  rawCanvas.width = width
+  rawCanvas.height = height
+  const ctx = rawCanvas.getContext('2d')
+  if (!ctx) return rawCanvas
 
   ctx.drawImage(img, 0, 0)
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const imageData = ctx.getImageData(0, 0, width, height)
   const data = imageData.data
 
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i]
-    const g = data[i + 1]
-    const b = data[i + 2]
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
-    const isNearBlack = max < 28
-    const isNeutralDark = max < 42 && max - min < 10
-    if (isNearBlack || isNeutralDark) {
-      data[i + 3] = 0
+  let minX = width
+  let maxX = 0
+  let minY = height
+  let maxY = 0
+  let hasPixels = false
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4
+      const r = data[idx]
+      const g = data[idx + 1]
+      const b = data[idx + 2]
+      const max = Math.max(r, g, b)
+      const min = Math.min(r, g, b)
+      const isNearBlack = max < 28
+      const isNeutralDark = max < 42 && max - min < 10
+
+      if (isNearBlack || isNeutralDark) {
+        data[idx + 3] = 0
+      } else if (data[idx + 3] > 10) {
+        hasPixels = true
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+      }
     }
   }
 
   ctx.putImageData(imageData, 0, 0)
-  return canvas
+
+  if (!hasPixels || minX > maxX || minY > maxY) {
+    return rawCanvas
+  }
+
+  const cropW = maxX - minX + 1
+  const cropH = maxY - minY + 1
+  const trimmedCanvas = document.createElement('canvas')
+  trimmedCanvas.width = cropW
+  trimmedCanvas.height = cropH
+  const trimmedCtx = trimmedCanvas.getContext('2d')
+  if (!trimmedCtx) return rawCanvas
+
+  trimmedCtx.drawImage(rawCanvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH)
+  return trimmedCanvas
 }
 
 function roundRect(
@@ -593,7 +625,7 @@ export function QrGeneratorPage() {
       setTargetUrl(generatedUrl)
 
       try {
-        const dataUrl = await generateCleanQrDataUrl(generatedUrl, qrCenterLogo)
+        const dataUrl = await generateCleanQrDataUrl(generatedUrl)
         if (isMounted) {
           setQrDataUrl(dataUrl)
         }

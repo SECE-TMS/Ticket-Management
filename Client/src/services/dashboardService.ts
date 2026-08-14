@@ -2,8 +2,8 @@ import api from './api'
 import type { AdminDashboard, EmployeeDashboard, ManagerDashboard } from '../types'
 
 export const dashboardService = {
-  async admin() {
-    const { data } = await api.get('/dashboard/admin')
+  async admin(params?: Record<string, unknown>) {
+    const { data } = await api.get('/dashboard/admin', { params })
     return data.data as AdminDashboard
   },
 

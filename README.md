@@ -67,7 +67,7 @@ Seed creates **1 admin**, **5 managers**, **10 employees**, and **15 tickets** a
 | Employee | `emp1.electrical@tms.local` / `emp2.electrical@tms.local` | `Employee@123` |
 | Manager (Gardening) | `manager.gardening@tms.local` | `Manager@123` |
 | Employee | `emp1.gardening@tms.local` / `emp2.gardening@tms.local` | `Employee@123` |
-| Manager (IT) | `manager.it@tms.local` | `Manager@123` |
+| Manager (IT) | `manager.it@tms.local` | `nd` |
 | Employee | `emp1.it@tms.local` / `emp2.it@tms.local` | `Employee@123` |
 | Manager (Housekeeping) | `manager.housekeeping@tms.local` | `Manager@123` |
 | Employee | `emp1.housekeeping@tms.local` / `emp2.housekeeping@tms.local` | `Employee@123` |

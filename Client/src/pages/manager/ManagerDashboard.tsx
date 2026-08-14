@@ -131,7 +131,8 @@ export function ManagerDashboard() {
         <table className="w-full text-left text-sm border-collapse">
           <thead>
             <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
-              <th className="px-5 py-3">Code</th>
+              <th className="px-5 py-3">Requester &amp; Ticket ID</th>
+              <th className="px-5 py-3">Complaint</th>
               <th className="px-5 py-3">Status</th>
               <th className="px-5 py-3">Assignee</th>
             </tr>
@@ -144,13 +145,19 @@ export function ManagerDashboard() {
                 className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
               >
                 <td className="px-5 py-3.5">
+                  <div className="font-bold text-[var(--ink)]">
+                    {t.requester?.name || 'Valued User'}
+                  </div>
                   <Link
                     to={`/manager/tickets/${t._id}`}
-                    className="font-bold text-[var(--primary-blue)] hover:underline"
+                    className="font-mono text-xs font-bold text-[var(--primary-blue)] hover:underline block mt-0.5"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {t.ticketCode}
                   </Link>
+                </td>
+                <td className="px-5 py-3.5 font-medium text-[var(--ink)]">
+                  {t.complaintType}
                 </td>
                 <td className="px-5 py-3.5">
                   <StatusBadge status={t.status} />
