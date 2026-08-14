@@ -118,7 +118,7 @@ export function RaiseTicket() {
           setIsEmailVerified(true)
         }
       }
-    }).catch(() => {})
+    }).catch(() => { })
   }, [])
 
   const {
@@ -463,11 +463,10 @@ export function RaiseTicket() {
               <button
                 type="button"
                 onClick={handleCopy}
-                className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                  copied
+                className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${copied
                     ? 'border-[var(--success)] bg-[var(--success-light)] text-[var(--success)]'
                     : 'border-[var(--primary-blue)] bg-white text-[var(--primary-blue)] hover:bg-[var(--primary-blue-light)]'
-                }`}
+                  }`}
               >
                 <Copy size={14} />
                 {copied ? 'Copied!' : 'Copy Code'}
@@ -679,11 +678,10 @@ export function RaiseTicket() {
                         key={role.id}
                         type="button"
                         onClick={() => setValue('userType', role.id as 'student' | 'staff' | 'guest')}
-                        className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-3.5 text-center transition-all cursor-pointer ${
-                          isSelected
+                        className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-3.5 text-center transition-all cursor-pointer ${isSelected
                             ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-bold shadow-xs ring-2 ring-[var(--primary-blue)]/20'
                             : 'border-[var(--border)] bg-[var(--white)] text-[var(--ink-muted)] hover:border-[var(--primary-blue-muted)] hover:bg-[var(--surface)]'
-                        }`}
+                          }`}
                       >
                         <IconComp size={20} className={isSelected ? 'text-[var(--primary-blue)]' : 'text-[var(--ink-muted)]'} />
                         <span className="text-xs font-bold">{role.label}</span>
@@ -703,10 +701,9 @@ export function RaiseTicket() {
                     <input
                       {...register('name')}
                       id="rt-name"
-                      className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                        errors.name ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                      }`}
-                      placeholder="e.g. Rahul Sharma"
+                      className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.name ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                        }`}
+                      placeholder="e.g. Rahul "
                       autoComplete="name"
                     />
                   </div>
@@ -729,9 +726,8 @@ export function RaiseTicket() {
                       <input
                         {...register('rollNumber')}
                         id="rt-roll"
-                        className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] uppercase outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                          errors.rollNumber ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                        }`}
+                        className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] uppercase outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.rollNumber ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                          }`}
                         placeholder="e.g. 21CS045"
                       />
                     </div>
@@ -768,14 +764,13 @@ export function RaiseTicket() {
                           id="rt-email"
                           type="email"
                           disabled={emailMode === 'otp_required' && isEmailVerified}
-                          className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                            emailMode === 'otp_required' && isEmailVerified
+                          className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${emailMode === 'otp_required' && isEmailVerified
                               ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
                               : errors.email
                                 ? 'border-[var(--danger)]'
                                 : 'border-[var(--border)]'
-                          }`}
-                          placeholder="e.g. yourname@domain.com"
+                            }`}
+                          placeholder="mail@sece.ac.in"
                           autoComplete="email"
                         />
                       </div>
@@ -884,13 +879,12 @@ export function RaiseTicket() {
                           inputMode="numeric"
                           maxLength={10}
                           disabled={mobileMode === 'otp_required' && isVerified}
-                          className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                            mobileMode === 'otp_required' && isVerified
+                          className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${mobileMode === 'otp_required' && isVerified
                               ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
                               : errors.mobile
                                 ? 'border-[var(--danger)]'
                                 : 'border-[var(--border)]'
-                          }`}
+                            }`}
                           placeholder="10-digit mobile number"
                         />
                       </div>
@@ -926,46 +920,46 @@ export function RaiseTicket() {
                     )}
                   </div>
 
-                {/* OTP Input Card (Shown after OTP is sent) */}
-                {otpSent && !isVerified && (
-                  <div className="rounded-xl border border-[var(--primary-blue-muted)] bg-[var(--primary-blue-light)]/50 p-4 animate-fade-in space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="rt-otp" className="text-xs font-bold text-[var(--primary-blue-deeper)]">
-                        Enter 6-Digit SMS OTP sent to +91 {mobileValue}
-                      </label>
-                      <span className="text-[11px] text-[var(--ink-muted)]">2Factor Verification</span>
-                    </div>
+                  {/* OTP Input Card (Shown after OTP is sent) */}
+                  {otpSent && !isVerified && (
+                    <div className="rounded-xl border border-[var(--primary-blue-muted)] bg-[var(--primary-blue-light)]/50 p-4 animate-fade-in space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="rt-otp" className="text-xs font-bold text-[var(--primary-blue-deeper)]">
+                          Enter 6-Digit SMS OTP sent to +91 {mobileValue}
+                        </label>
+                        <span className="text-[11px] text-[var(--ink-muted)]">2Factor Verification</span>
+                      </div>
 
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <input
-                        id="rt-otp"
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={6}
-                        value={otpValue}
-                        onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ''))}
-                        className="h-11 flex-1 rounded-xl border border-[var(--primary-blue)] bg-[var(--white)] px-4 font-mono text-lg font-bold tracking-widest text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--primary-blue)]/30"
-                        placeholder="••••••"
-                      />
-                      <Button
-                        type="button"
-                        variant="primary"
-                        size="md"
-                        onClick={handleVerifyOtp}
-                        loading={otpVerifying}
-                        disabled={otpValue.length < 4}
-                        className="h-11 shadow-sm"
-                      >
-                        Verify OTP
-                      </Button>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          id="rt-otp"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={otpValue}
+                          onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ''))}
+                          className="h-11 flex-1 rounded-xl border border-[var(--primary-blue)] bg-[var(--white)] px-4 font-mono text-lg font-bold tracking-widest text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--primary-blue)]/30"
+                          placeholder="••••••"
+                        />
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="md"
+                          onClick={handleVerifyOtp}
+                          loading={otpVerifying}
+                          disabled={otpValue.length < 4}
+                          className="h-11 shadow-sm"
+                        >
+                          Verify OTP
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Step 3: Department & Category */}
+            {/* Step 3: Department & Category */}
             <div>
               <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-2">
                 <Building2 size={18} className="text-[var(--primary-blue)]" />
@@ -983,9 +977,8 @@ export function RaiseTicket() {
                   <select
                     {...register('department')}
                     id="rt-department"
-                    className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                      errors.department ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                    }`}
+                    className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.department ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                      }`}
                   >
                     <option value="">Select target department…</option>
                     {departments.map((d) => (
@@ -1009,9 +1002,8 @@ export function RaiseTicket() {
                   <select
                     {...register('complaintType')}
                     id="rt-complaint-type"
-                    className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                      errors.complaintType ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                    }`}
+                    className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.complaintType ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                      }`}
                   >
                     <option value="">Select complaint category…</option>
                     {(selectedDept.complaintTypes || []).map((type) => (
@@ -1052,9 +1044,8 @@ export function RaiseTicket() {
                   {...register('description')}
                   id="rt-description"
                   rows={4}
-                  className={`w-full rounded-xl border bg-[var(--white)] p-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                    errors.description ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                  }`}
+                  className={`w-full rounded-xl border bg-[var(--white)] p-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.description ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                    }`}
                   placeholder="Describe what needs attention, location, room number, or floor details…"
                 />
                 {errors.description && (

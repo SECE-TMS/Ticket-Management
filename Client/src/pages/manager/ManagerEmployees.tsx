@@ -278,7 +278,7 @@ export function ManagerEmployees() {
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className={inputClass}
-              placeholder="e.g. Rahul Sharma"
+              placeholder="e.g. Rahul "
             />
           </div>
 

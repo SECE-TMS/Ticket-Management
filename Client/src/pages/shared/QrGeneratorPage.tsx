@@ -13,6 +13,10 @@ import {
   Zap,
   Palette,
   Check,
+  Upload,
+  Image as ImageIcon,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import { departmentService } from '../../services/departmentService'
 import { Button } from '../../components/common/Button'
@@ -32,7 +36,7 @@ const POSTCARD_H = 1800
 const POSTCARD_PRINT_WIDTH_MM = 101.6
 const POSTCARD_PRINT_HEIGHT_MM = 152.4
 
-const CONSTANT_FOOTER = 'POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED'
+const DEFAULT_FOOTER = 'POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED'
 
 export interface ThemePreset {
   id: string
@@ -263,9 +267,9 @@ async function composePosterPng(opts: {
   businessName: string
   locationName: string
   customNote: string
-  showCollegeLogo: boolean
-  sriSrc: string
-  isaiiSrc: string
+  footerText: string
+  collegeSrc: string
+  secondarySrc: string | null
 }): Promise<string> {
   await document.fonts.ready.catch(() => {})
 
@@ -278,8 +282,8 @@ async function composePosterPng(opts: {
   const ctx = canvas.getContext('2d')
   if (!ctx) return opts.qrSrc
 
-  const sriImg = await loadImage(opts.sriSrc)
-  const isaiiImg = await loadImage(opts.isaiiSrc)
+  const collegeImg = await loadImage(opts.collegeSrc)
+  const secondaryImg = opts.secondarySrc ? await loadImage(opts.secondarySrc) : null
   const qrImg = await loadImage(opts.qrSrc)
 
   // Gradient Background
@@ -339,10 +343,10 @@ async function composePosterPng(opts: {
   ctx.fillStyle = '#FFFFFF'
   ctx.fill()
 
-  if (opts.showCollegeLogo) {
-    // Dual Logos side-by-side
+  if (secondaryImg) {
+    // Dual Logos side-by-side: College Main Logo (left) + Secondary Logo (right)
     const colW = (innerW - 40) / 2
-    drawContainedImage(ctx, sriImg, innerX + 16, innerY + 16, colW, innerH - 32)
+    drawContainedImage(ctx, collegeImg, innerX + 16, innerY + 16, colW, innerH - 32)
 
     // Divider Line
     ctx.strokeStyle = '#E2E8F0'
@@ -352,10 +356,10 @@ async function composePosterPng(opts: {
     ctx.lineTo(innerX + colW + 20, innerY + innerH - 24)
     ctx.stroke()
 
-    drawContainedImage(ctx, isaiiImg, innerX + colW + 24, innerY + 16, colW, innerH - 32)
+    drawContainedImage(ctx, secondaryImg, innerX + colW + 24, innerY + 16, colW, innerH - 32)
   } else {
-    // Single Isaii AI Logo
-    drawContainedImage(ctx, isaiiImg, innerX + 32, innerY + 16, innerW - 64, innerH - 32)
+    // Single Main College Logo (Fits container in both size & perfectly centered)
+    drawContainedImage(ctx, collegeImg, innerX + 24, innerY + 12, innerW - 48, innerH - 24)
   }
 
   currentY += boxH / 2 + 65
@@ -413,10 +417,11 @@ async function composePosterPng(opts: {
     currentY += 34
   })
 
-  // Fixed Constant Footer Line (POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED)
+  // Footer Line
   ctx.font = '900 22px Inter, sans-serif'
   ctx.fillStyle = opts.theme.accentColor || '#FFFFFF'
-  ctx.fillText(CONSTANT_FOOTER, W / 2, H - 70)
+  const footerStr = (opts.footerText || DEFAULT_FOOTER).toUpperCase()
+  ctx.fillText(footerStr, W / 2, H - 70)
 
   return canvas.toDataURL('image/png')
 }
@@ -512,7 +517,6 @@ export function QrGeneratorPage() {
 
   // Configuration States
   const [selectedTheme, setSelectedTheme] = useState<ThemePreset>(THEME_PRESETS[0])
-  const [showCollegeLogo, setShowCollegeLogo] = useState(true)
 
   const [topText, setTopText] = useState('SCAN TO REPORT')
   const [scriptText, setScriptText] = useState('Campus Maintenance Desk')
@@ -522,6 +526,12 @@ export function QrGeneratorPage() {
   const [locationName, setLocationName] = useState('Water Tank Area')
   const [complaintType, setComplaintType] = useState('')
   const [customNote, setCustomNote] = useState('Scan with your mobile camera to report issue & verify via OTP.')
+  const [footerText, setFooterText] = useState('POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED')
+
+  // Logo States (College Logo is Compulsory Fixed Main Logo; Secondary Logo is Optional / Default Empty)
+  const [secondaryLogoSrc, setSecondaryLogoSrc] = useState<string | null>(null)
+
+  const collegeLogoSrc = sriEshwarClean
 
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [targetUrl, setTargetUrl] = useState('')
@@ -606,6 +616,21 @@ export function QrGeneratorPage() {
     }
   }
 
+  const handleSecondaryLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setSecondaryLogoSrc(reader.result as string)
+      toast.success('Secondary Logo added!')
+    }
+    reader.readAsDataURL(file)
+  }
+
   const handleCopyLink = () => {
     void navigator.clipboard.writeText(targetUrl)
     setCopied(true)
@@ -623,9 +648,9 @@ export function QrGeneratorPage() {
       businessName,
       locationName,
       customNote,
-      showCollegeLogo,
-      sriSrc: sriEshwarClean,
-      isaiiSrc: isaiiLogo,
+      footerText,
+      collegeSrc: collegeLogoSrc,
+      secondarySrc: secondaryLogoSrc,
     })
   }
 
@@ -795,24 +820,95 @@ export function QrGeneratorPage() {
               />
             </div>
 
-            {/* College Logo Toggle */}
-            <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-[var(--ink)]">Show College Logo alongside Isaii AI</span>
-                <span className="text-[11px] text-[var(--ink-muted)]">Display dual Sri Eshwar & Isaii logos in header</span>
+            {/* Logo Customizer Section */}
+            <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
+                  <ImageIcon size={14} className="text-[var(--primary-blue)]" />
+                  Header Logos Customization
+                </span>
               </div>
-              <input
-                type="checkbox"
-                checked={showCollegeLogo}
-                onChange={(e) => setShowCollegeLogo(e.target.checked)}
-                className="h-5 w-5 cursor-pointer accent-[var(--primary-blue)]"
-              />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {/* College / Primary Logo (Main - Compulsory Fixed) */}
+                {/* <div className="flex flex-col justify-between gap-1.5 rounded-lg border border-[var(--border)] bg-white p-2.5">
+                  <div>
+                    <span className="text-[11px] font-bold text-[var(--ink)] flex items-center gap-1">
+                      College / Primary Logo <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">(Main)</span>
+                    </span>
+                    <p className="text-[10px] text-[var(--ink-muted)]">Fixed institutional main logo</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-10 w-20 items-center justify-center rounded border border-slate-200 bg-slate-50 p-1">
+                      <img src={collegeLogoSrc} alt="College Logo" className="max-h-full max-w-full object-contain" />
+                    </div>
+                    <span className="text-[11px] font-medium text-[var(--ink-muted)] italic">Fixed Main Logo</span>
+                  </div>
+                </div> */}
+
+                {/* Secondary Logo (Optional - Default Empty) */}
+                <div className="flex flex-col justify-between gap-1.5 rounded-lg border border-[var(--border)] bg-white p-2.5">
+                  <div>
+                    <span className="text-[11px] font-bold text-[var(--ink)]">Secondary Logo (Optional)</span>
+                    <p className="text-[10px] text-[var(--ink-muted)]">Dual logo alongside main logo</p>
+                  </div>
+
+                  {secondaryLogoSrc ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-10 w-14 items-center justify-center rounded border border-slate-200 bg-slate-50 p-1">
+                        <img src={secondaryLogoSrc} alt="Secondary Logo" className="max-h-full max-w-full object-contain" />
+                      </div>
+                      <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[var(--ink)] hover:bg-slate-50">
+                        <Upload size={12} />
+                        <span>Change</span>
+                        <input type="file" accept="image/*" onChange={handleSecondaryLogoChange} className="hidden" />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSecondaryLogoSrc(null)
+                          toast.success('Secondary logo removed')
+                        }}
+                        className="flex cursor-pointer items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[11px] font-medium text-rose-600 hover:bg-rose-100"
+                        title="Remove secondary logo"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-dashed border-[var(--border)] bg-slate-50 px-2 py-1 text-[11px] font-semibold text-[var(--primary-blue)] hover:bg-blue-50">
+                        <Upload size={12} />
+                        <span>Upload Logo</span>
+                        <input type="file" accept="image/*" onChange={handleSecondaryLogoChange} className="hidden" />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSecondaryLogoSrc(isaiiLogo)
+                          toast.success('Isaii AI logo added as secondary logo')
+                        }}
+                        className="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <Plus size={12} />
+                        <span>Add Logo</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* <div className="rounded-xl border border-[var(--border)] bg-slate-50 p-3">
-              <p className="text-[11px] font-bold text-[var(--ink-muted)]">Footer Attribution (Constant)</p>
-              <p className="mt-0.5 font-mono text-xs font-bold text-[var(--ink)]">{CONSTANT_FOOTER}</p>
-            </div> */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-[var(--ink)]">Footer Attribution Text</label>
+              <input
+                type="text"
+                value={footerText}
+                onChange={(e) => setFooterText(e.target.value)}
+                placeholder="e.g. POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED"
+                className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+              />
+            </div>
           </div>
 
           {/* QR Code Target Location Controls */}
@@ -932,19 +1028,19 @@ export function QrGeneratorPage() {
                 {/* Broad & Beautiful Dashed Logo Container */}
                 <div className="mt-5 flex h-28 w-[92%] max-w-[340px] items-center justify-center rounded-[32px] border-2 border-dashed border-white/95 p-2 shadow-lg">
                   <div className="flex h-full w-full items-center justify-between rounded-[24px] bg-white px-4 py-2 shadow-md">
-                    {showCollegeLogo ? (
+                    {secondaryLogoSrc ? (
                       <>
                         <div className="flex h-full flex-1 items-center justify-center pr-2">
-                          <img src={sriEshwarClean} alt="Sri Eshwar Logo" className="max-h-full max-w-full object-contain" />
+                          <img src={collegeLogoSrc} alt="College Logo" className="max-h-full max-w-full object-contain" />
                         </div>
                         <div className="h-10 w-[2px] bg-slate-200" />
                         <div className="flex h-full flex-1 items-center justify-center pl-2">
-                          <img src={isaiiLogo} alt="Isaii AI Logo" className="max-h-full max-w-full object-contain" />
+                          <img src={secondaryLogoSrc} alt="Secondary Logo" className="max-h-full max-w-full object-contain" />
                         </div>
                       </>
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <img src={isaiiLogo} alt="Isaii AI Logo" className="max-h-full max-w-full object-contain" />
+                      <div className="flex h-full w-full items-center justify-center p-1">
+                        <img src={collegeLogoSrc} alt="College Main Logo" className="h-full w-full object-contain" />
                       </div>
                     )}
                   </div>
@@ -979,12 +1075,12 @@ export function QrGeneratorPage() {
                 </p>
               </div>
 
-              {/* Constant Footer Bar */}
+              {/* Editable Footer Bar */}
               <div
-                className="px-4 py-3.5 text-xs font-black tracking-widest text-center"
+                className="px-4 py-3.5 text-xs font-black tracking-widest text-center uppercase"
                 style={{ backgroundColor: 'rgba(0, 0, 0, 0.28)', color: selectedTheme.accentColor || '#FFFFFF' }}
               >
-                {CONSTANT_FOOTER}
+                {footerText || DEFAULT_FOOTER}
               </div>
             </div>
 
