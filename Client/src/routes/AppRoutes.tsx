@@ -11,6 +11,8 @@ import { Login } from '../pages/public/Login'
 import { AdminDashboard } from '../pages/admin/AdminDashboard'
 import { AdminDepartments } from '../pages/admin/AdminDepartments'
 import { AdminUsers } from '../pages/admin/AdminUsers'
+import { AdminSettings } from '../pages/admin/AdminSettings'
+import { AdminFeedback } from '../pages/admin/AdminFeedback'
 import {
   AdminTicketDetail,
   AdminTickets,
@@ -45,7 +47,9 @@ export function AppRoutes() {
               <Route path="users" element={<AdminUsers />} />
               <Route path="tickets" element={<AdminTickets />} />
               <Route path="tickets/:id" element={<AdminTicketDetail />} />
+              <Route path="feedback" element={<AdminFeedback />} />
               <Route path="qr-generator" element={<QrGeneratorPage />} />
+              <Route path="settings" element={<AdminSettings />} />
             </Route>
           </Route>
 

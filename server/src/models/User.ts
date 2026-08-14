@@ -11,6 +11,7 @@ export interface IUserSafeObject {
   role: UserRole;
   department: mongoose.Types.ObjectId | null;
   phone: string;
+  rollNumber: string;
   avatarUrl: string;
   isActive: boolean;
   lastLogin: Date | null;
@@ -25,6 +26,7 @@ export interface IUser {
   role: UserRole;
   department: mongoose.Types.ObjectId | null;
   phone: string;
+  rollNumber: string;
   avatarUrl: string;
   isActive: boolean;
   lastLogin: Date | null;
@@ -61,6 +63,7 @@ const userSchema = new Schema<IUser>(
       default: null,
     },
     phone: { type: String, trim: true, default: '' },
+    rollNumber: { type: String, trim: true, default: '' },
     avatarUrl: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date, default: null },
@@ -101,6 +104,7 @@ userSchema.methods.toSafeObject = function toSafeObject(this: IUserDocument): IU
     role: this.role,
     department: this.department,
     phone: this.phone,
+    rollNumber: this.rollNumber || '',
     avatarUrl: this.avatarUrl,
     isActive: this.isActive,
     lastLogin: this.lastLogin,

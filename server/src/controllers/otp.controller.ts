@@ -21,3 +21,23 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
     next(err);
   }
 };
+
+export const sendEmailOtp = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body;
+    const data = await otpService.sendEmailOtp(email);
+    return sendSuccess(res, { data, message: '6-digit Email OTP sent successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const verifyEmailOtp = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { sessionId, otp } = req.body;
+    const isVerified = await otpService.verifyEmailOtp(sessionId, otp);
+    return sendSuccess(res, { data: { verified: isVerified }, message: 'Email OTP verified successfully' });
+  } catch (err) {
+    next(err);
+  }
+};

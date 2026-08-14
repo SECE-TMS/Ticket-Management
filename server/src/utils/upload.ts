@@ -36,6 +36,22 @@ export const getAttachmentType = (mimetype: string): AttachmentType | null => {
   return null;
 };
 
+const saveFileLocally = (file: UploadableFile, type: AttachmentType): UploadedAttachment => {
+  ensureUploadsDir();
+  const ext =
+    path.extname(file.originalname) ||
+    (type === 'image' ? '.jpg' : type === 'audio' ? '.mp3' : '.mp4');
+  const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${ext}`;
+  const filePath = path.join(uploadsDir, filename);
+  fs.writeFileSync(filePath, file.buffer);
+
+  return {
+    url: `/uploads/${filename}`,
+    type,
+    publicId: null,
+  };
+};
+
 export const uploadBuffer = async (
   file: UploadableFile | undefined | null,
   folder = 'tms'
@@ -65,41 +81,37 @@ export const uploadBuffer = async (
     );
   }
 
-  // Cloudinary Upload (strict cloud storage)
-  if (!isCloudinaryConfigured()) {
-    throw ApiError.internal(
-      'Cloudinary is not configured. Please set valid CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in server/.env.',
-      'CLOUDINARY_NOT_CONFIGURED'
-    );
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const isCloudValid = isCloudinaryConfigured() && cloudName && cloudName !== 'Root';
+
+  if (isCloudValid) {
+    try {
+      configureCloudinary();
+      const resourceType = type === 'image' ? 'image' : 'video';
+      const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder,
+            resource_type: resourceType,
+            use_filename: true,
+            unique_filename: true,
+          },
+          (err, res) => (err ? reject(err) : resolve(res as UploadApiResponse))
+        );
+        stream.end(file.buffer);
+      });
+
+      return {
+        url: result.secure_url,
+        type,
+        publicId: result.public_id,
+      };
+    } catch (err: any) {
+      console.warn('Cloudinary upload failed, falling back to local file storage:', err?.message || err);
+      return saveFileLocally(file, type);
+    }
   }
 
-  try {
-    configureCloudinary();
-    // Note: Cloudinary classifies audio as 'video' resource type
-    const resourceType = type === 'image' ? 'image' : 'video';
-    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          resource_type: resourceType,
-          use_filename: true,
-          unique_filename: true,
-        },
-        (err, res) => (err ? reject(err) : resolve(res as UploadApiResponse))
-      );
-      stream.end(file.buffer);
-    });
-
-    return {
-      url: result.secure_url,
-      type,
-      publicId: result.public_id,
-    };
-  } catch (err: any) {
-    console.error('Cloudinary upload error:', err?.message || err);
-    throw ApiError.badRequest(
-      `Cloudinary upload failed: ${err?.message || 'Upload error'}`,
-      'CLOUDINARY_UPLOAD_ERROR'
-    );
-  }
+  // Local storage fallback when Cloudinary is not configured or set to dummy 'Root'
+  return saveFileLocally(file, type);
 };

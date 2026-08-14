@@ -1,4 +1,4 @@
-import type { Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import * as ticketService from '../services/ticket.service';
 import { sendSuccess } from '../utils/apiResponse';
 import type { AuthRequest } from '../types/auth';
@@ -110,6 +110,58 @@ export const exportCsv = async (req: AuthRequest, res: Response, next: NextFunct
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="tickets.csv"');
     return res.status(200).send(csv);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const exportExcel = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const buffer = await ticketService.exportExcel(req.user!, req.query as Record<string, unknown>);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename="tickets_report.xlsx"');
+    return res.status(200).send(buffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const submitFeedback = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { ticketCode, mobile, rating, comment, tags } = req.body;
+    const ticket = await ticketService.submitFeedback(
+      ticketCode,
+      mobile,
+      Number(rating),
+      comment,
+      tags
+    );
+    return sendSuccess(res, { data: ticket, message: 'Thank you for your feedback!' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getAdminFeedbackList = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await ticketService.getAdminFeedbackList(req.query as Record<string, unknown>);
+    return sendSuccess(res, { data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getDepartmentFeedbackAnalytics = async (
+  _req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const data = await ticketService.getDepartmentFeedbackAnalytics();
+    return sendSuccess(res, { data });
   } catch (err) {
     next(err);
   }

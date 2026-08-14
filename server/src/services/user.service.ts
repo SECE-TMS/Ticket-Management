@@ -13,6 +13,7 @@ export const listUsers = async (query: Record<string, unknown> = {}) => {
     filter.$or = [
       { name: { $regex: query.search, $options: 'i' } },
       { email: { $regex: query.search, $options: 'i' } },
+      { rollNumber: { $regex: query.search, $options: 'i' } },
     ];
   }
 
@@ -96,6 +97,7 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
     email: String(data.email).toLowerCase(),
     password: data.password,
     phone: (data.phone as string) || '',
+    rollNumber: (data.rollNumber as string) || '',
     role: 'employee',
     department: actor.department,
     createdBy: actor._id,

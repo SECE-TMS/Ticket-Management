@@ -15,8 +15,10 @@ import {
   Headset,
   IdCard,
   Phone,
+  Printer,
   QrCode,
   RefreshCw,
+  Share2,
   ShieldCheck,
   User,
   UserCheck,
@@ -28,18 +30,23 @@ import { otpService } from '../../services/otpService'
 import { Button } from '../../components/common/Button'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { MediaAttachmentInput } from '../../components/common/MediaAttachmentInput'
+import { ShareTicketModal } from '../../components/tickets/ShareTicketModal'
+import { TicketReceiptModal } from '../../components/tickets/TicketReceiptModal'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage } from '../../lib/utils'
-import type { Department } from '../../types'
+import type { Department, Ticket } from '../../types'
 import { getId } from '../../types'
+
+import { settingService } from '../../services/settingService'
 
 const schema = z
   .object({
     userType: z.enum(['student', 'staff', 'guest']),
     rollNumber: z.string().optional(),
     name: z.string().min(2, 'Name is required'),
+    email: z.string().email('Enter a valid email address').or(z.literal('')).optional(),
     department: z.string().min(1, 'Select a department'),
-    mobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
+    mobile: z.string().optional(),
     complaintType: z.string().min(1, 'Select a complaint type'),
     description: z.string().min(5, 'Describe the issue (min 5 characters)'),
   })
@@ -66,13 +73,16 @@ export function RaiseTicket() {
   const [loadingDepts, setLoadingDepts] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [ticketCode, setTicketCode] = useState<string | null>(null)
+  const [createdTicket, setCreatedTicket] = useState<Ticket | null>(null)
   const [attachments, setAttachments] = useState<File[]>([])
   const [copied, setCopied] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [showReceiptModal, setShowReceiptModal] = useState(false)
 
   // QR prefill banner state
   const [qrPrefillInfo, setQrPrefillInfo] = useState<{ location?: string; department?: string } | null>(null)
 
-  // OTP Verification state
+  // Mobile OTP Verification state
   const [otpSent, setOtpSent] = useState(false)
   const [otpSending, setOtpSending] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -80,6 +90,36 @@ export function RaiseTicket() {
   const [otpVerifying, setOtpVerifying] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
   const [countdown, setCountdown] = useState(0)
+
+  // Email OTP Verification state
+  const [emailOtpSent, setEmailOtpSent] = useState(false)
+  const [emailOtpSending, setEmailOtpSending] = useState(false)
+  const [emailSessionId, setEmailSessionId] = useState<string | null>(null)
+  const [emailOtpValue, setEmailOtpValue] = useState('')
+  const [emailOtpVerifying, setEmailOtpVerifying] = useState(false)
+  const [isEmailVerified, setIsEmailVerified] = useState(false)
+  const [emailCountdown, setEmailCountdown] = useState(0)
+
+  // Settings state
+  const [mobileMode, setMobileMode] = useState<'hidden' | 'optional' | 'required' | 'otp_required'>('otp_required')
+  const [emailMode, setEmailMode] = useState<'hidden' | 'optional' | 'required' | 'otp_required'>('optional')
+
+  useEffect(() => {
+    settingService.getPublic().then((s) => {
+      if (s) {
+        const mMode = s.mobileMode || (s.smsOtpEnabled ? 'otp_required' : 'required')
+        const eMode = s.emailMode || (s.requireRequesterEmail ? 'required' : 'optional')
+        setMobileMode(mMode)
+        setEmailMode(eMode)
+        if (mMode !== 'otp_required') {
+          setIsVerified(true)
+        }
+        if (eMode !== 'otp_required') {
+          setIsEmailVerified(true)
+        }
+      }
+    }).catch(() => {})
+  }, [])
 
   const {
     register,
@@ -93,6 +133,7 @@ export function RaiseTicket() {
       userType: 'student',
       rollNumber: '',
       name: '',
+      email: '',
       department: '',
       mobile: '',
       complaintType: '',
@@ -103,6 +144,7 @@ export function RaiseTicket() {
   const selectedUserType = watch('userType')
   const selectedDeptId = watch('department')
   const mobileValue = watch('mobile')
+  const emailValue = watch('email')
   const descriptionValue = watch('description') || ''
 
   const selectedDept = useMemo(
@@ -110,7 +152,7 @@ export function RaiseTicket() {
     [departments, selectedDeptId]
   )
 
-  // Countdown timer for OTP resend
+  // Countdown timer for Mobile OTP resend
   useEffect(() => {
     if (countdown <= 0) return
     const timer = setInterval(() => {
@@ -119,7 +161,16 @@ export function RaiseTicket() {
     return () => clearInterval(timer)
   }, [countdown])
 
-  // Reset verification if mobile number changes
+  // Countdown timer for Email OTP resend
+  useEffect(() => {
+    if (emailCountdown <= 0) return
+    const timer = setInterval(() => {
+      setEmailCountdown((prev) => prev - 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [emailCountdown])
+
+  // Reset mobile verification if mobile number changes
   useEffect(() => {
     if (isVerified || otpSent) {
       setIsVerified(false)
@@ -128,6 +179,18 @@ export function RaiseTicket() {
       setOtpValue('')
     }
   }, [mobileValue])
+
+  // Reset email verification if email address changes
+  useEffect(() => {
+    if (emailMode === 'otp_required') {
+      if (isEmailVerified || emailOtpSent) {
+        setIsEmailVerified(false)
+        setEmailOtpSent(false)
+        setEmailSessionId(null)
+        setEmailOtpValue('')
+      }
+    }
+  }, [emailValue])
 
   // Fetch departments & handle QR code query prefilling
   useEffect(() => {
@@ -255,8 +318,74 @@ export function RaiseTicket() {
     }
   }
 
+  // Email OTP Send Handler
+  const handleSendEmailOtp = async () => {
+    if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim())) {
+      toast.error('Please enter a valid email address first')
+      return
+    }
+
+    setEmailOtpSending(true)
+    try {
+      const res = await otpService.sendEmailOtp(emailValue.trim())
+      setEmailSessionId(res.sessionId)
+      setEmailOtpSent(true)
+      setEmailCountdown(60)
+      toast.success('6-digit numeric OTP sent to your email address!')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to send Email OTP'))
+    } finally {
+      setEmailOtpSending(false)
+    }
+  }
+
+  // Email OTP Verify Handler
+  const handleVerifyEmailOtp = async () => {
+    if (!emailSessionId) {
+      toast.error('Please request Email OTP first')
+      return
+    }
+    if (!emailOtpValue || emailOtpValue.trim().length !== 6) {
+      toast.error('Please enter the 6-digit numeric OTP sent to your email')
+      return
+    }
+
+    setEmailOtpVerifying(true)
+    try {
+      const res = await otpService.verifyEmailOtp(emailSessionId, emailOtpValue.trim())
+      if (res.verified) {
+        setIsEmailVerified(true)
+        toast.success('Email address verified successfully!')
+      } else {
+        toast.error('Invalid Email OTP. Please try again.')
+      }
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Email OTP verification failed'))
+    } finally {
+      setEmailOtpVerifying(false)
+    }
+  }
+
   const onSubmit = handleSubmit(async (values) => {
-    if (!isVerified) {
+    if ((emailMode === 'required' || emailMode === 'otp_required') && (!values.email || !values.email.trim())) {
+      toast.error('Email address is required')
+      return
+    }
+
+    if (emailMode === 'otp_required' && !isEmailVerified) {
+      toast.error('Please verify your email address with the 6-digit OTP before submitting')
+      return
+    }
+
+    if (
+      (mobileMode === 'required' || mobileMode === 'otp_required') &&
+      (!values.mobile || !/^\d{10}$/.test(values.mobile))
+    ) {
+      toast.error('Valid 10-digit mobile number is required')
+      return
+    }
+
+    if (mobileMode === 'otp_required' && !isVerified) {
       toast.error('Please verify your mobile number with OTP before submitting')
       return
     }
@@ -269,8 +398,13 @@ export function RaiseTicket() {
         formData.append('rollNumber', values.rollNumber.trim())
       }
       formData.append('name', values.name)
+      if (values.email) {
+        formData.append('email', values.email.trim())
+      }
       formData.append('department', values.department)
-      formData.append('mobile', values.mobile)
+      if (values.mobile) {
+        formData.append('mobile', values.mobile.trim())
+      }
       formData.append('complaintType', values.complaintType)
       formData.append('description', values.description)
       if (attachments.length > 0) {
@@ -280,6 +414,7 @@ export function RaiseTicket() {
       }
 
       const ticket = await ticketService.create(formData)
+      setCreatedTicket(ticket)
       setTicketCode(ticket.ticketCode)
       toast.success('Ticket submitted successfully!')
     } catch (err) {
@@ -301,50 +436,74 @@ export function RaiseTicket() {
 
     return (
       <div className="mx-auto max-w-xl px-4 py-12 sm:px-6">
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-8 text-center shadow-lg animate-fade-in">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--success-light)] text-[var(--success)] shadow-inner">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-8 text-center shadow-lg animate-fade-in space-y-6">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--success-light)] text-[var(--success)] shadow-inner">
             <CheckCircle2 size={48} />
           </div>
 
-          <h1 className="font-display text-3xl font-bold text-[var(--ink)]">
-            Ticket Submitted!
-          </h1>
-          <p className="mt-2 text-sm text-[var(--ink-muted)]">
-            Your maintenance request has been logged and queued for assignment.
-          </p>
+          <div>
+            <h1 className="font-display text-3xl font-bold text-[var(--ink)]">
+              Ticket Submitted!
+            </h1>
+            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
+              Your maintenance request has been logged and queued for assignment. An email confirmation has been sent to your registered email address.
+            </p>
+          </div>
 
-          <div className="mt-6 rounded-2xl border border-[var(--primary-blue-muted)] bg-gradient-to-br from-[var(--primary-blue-light)] to-[var(--surface-2)] p-6 shadow-xs">
+          {/* Reference Card */}
+          <div className="rounded-2xl border border-[var(--primary-blue-muted)] bg-gradient-to-br from-[var(--primary-blue-light)] to-[var(--surface-2)] p-6 shadow-xs space-y-3">
             <p className="text-xs font-bold uppercase tracking-wider text-[var(--primary-blue)]">
               Your Unique Ticket Reference
             </p>
-            <p className="mt-2 font-mono text-3xl font-bold tracking-widest text-[var(--primary-blue-deeper)]">
+            <p className="font-mono text-3xl font-bold tracking-widest text-[var(--primary-blue-deeper)]">
               {ticketCode}
             </p>
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">
-              Use this code to track progress without logging in.
-            </p>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className={`mt-4 inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                copied
-                  ? 'border-[var(--success)] bg-[var(--success-light)] text-[var(--success)]'
-                  : 'border-[var(--primary-blue)] bg-[var(--white)] text-[var(--primary-blue)] hover:bg-[var(--primary-blue-light)]'
-              }`}
-            >
-              <Copy size={14} />
-              {copied ? 'Copied to Clipboard!' : 'Copy Ticket Code'}
-            </button>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                  copied
+                    ? 'border-[var(--success)] bg-[var(--success-light)] text-[var(--success)]'
+                    : 'border-[var(--primary-blue)] bg-white text-[var(--primary-blue)] hover:bg-[var(--primary-blue-light)]'
+                }`}
+              >
+                <Copy size={14} />
+                {copied ? 'Copied!' : 'Copy Code'}
+              </button>
+
+              {/* Share Action Button */}
+              <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 cursor-pointer shadow-xs transition-colors"
+              >
+                <Share2 size={14} />
+                Share Ticket
+              </button>
+
+              {/* Download / Print Receipt Button */}
+              <button
+                type="button"
+                onClick={() => setShowReceiptModal(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer shadow-xs transition-colors"
+              >
+                <Printer size={14} />
+                Download Receipt
+              </button>
+            </div>
           </div>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Button
               type="button"
               variant="primary"
               size="lg"
               onClick={() => {
                 setTicketCode(null)
-                setAttachment(null)
+                setCreatedTicket(null)
+                setAttachments([])
                 setIsVerified(false)
                 setOtpSent(false)
                 setSessionId(null)
@@ -353,13 +512,35 @@ export function RaiseTicket() {
             >
               Raise Another Ticket
             </Button>
-            <Link to="/track-ticket">
+            <Link to={`/track-ticket?ticketCode=${encodeURIComponent(ticketCode)}&mobile=${encodeURIComponent(mobileValue || '')}`}>
               <Button type="button" variant="outline" size="lg" className="w-full sm:w-auto">
                 Track Status Now
               </Button>
             </Link>
           </div>
         </div>
+
+        {/* Modals */}
+        <ShareTicketModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          ticketCode={ticketCode}
+          mobile={mobileValue || createdTicket?.requester?.mobile}
+          departmentName={selectedDept?.name}
+          complaintType={watch('complaintType')}
+        />
+
+        <TicketReceiptModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          ticket={createdTicket}
+          ticketCode={ticketCode}
+          mobile={mobileValue || createdTicket?.requester?.mobile}
+          requesterName={watch('name') || createdTicket?.requester?.name}
+          departmentName={selectedDept?.name}
+          complaintType={watch('complaintType')}
+          description={descriptionValue}
+        />
       </div>
     )
   }
@@ -559,84 +740,191 @@ export function RaiseTicket() {
                     )}
                   </div>
                 )}
+
+                {/* Email Address (Conditional based on emailMode) */}
+                {emailMode !== 'hidden' && (
+                  <div className="flex flex-col gap-1.5 sm:col-span-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="rt-email" className="text-xs font-bold text-[var(--ink)]">
+                        Email Address{' '}
+                        {emailMode === 'required' || emailMode === 'otp_required' ? (
+                          <span className="text-[var(--danger)]">*</span>
+                        ) : (
+                          <span className="text-[var(--ink-muted)] font-normal">(Optional — to receive ticket status updates)</span>
+                        )}
+                      </label>
+                      {emailMode === 'otp_required' && isEmailVerified && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success-light)] px-3 py-0.5 text-xs font-bold text-[var(--success)] shadow-xs">
+                          <CheckCircle2 size={13} />
+                          Email Verified ✓
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <div className="relative flex-1">
+                        <input
+                          {...register('email')}
+                          id="rt-email"
+                          type="email"
+                          disabled={emailMode === 'otp_required' && isEmailVerified}
+                          className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                            emailMode === 'otp_required' && isEmailVerified
+                              ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
+                              : errors.email
+                                ? 'border-[var(--danger)]'
+                                : 'border-[var(--border)]'
+                          }`}
+                          placeholder="e.g. yourname@domain.com"
+                          autoComplete="email"
+                        />
+                      </div>
+
+                      {emailMode === 'otp_required' && !isEmailVerified && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="md"
+                          onClick={handleSendEmailOtp}
+                          loading={emailOtpSending}
+                          disabled={emailCountdown > 0 || !emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim())}
+                          className="w-full sm:w-auto font-bold h-11 shrink-0"
+                        >
+                          {emailOtpSent
+                            ? emailCountdown > 0
+                              ? `Resend in ${emailCountdown}s`
+                              : 'Resend Email OTP'
+                            : 'Send OTP to Email'}
+                        </Button>
+                      )}
+                    </div>
+
+                    {errors.email && (
+                      <span className="text-xs text-[var(--danger)]">{errors.email.message}</span>
+                    )}
+
+                    {/* Email OTP 6-Digit Code Verification Input Box */}
+                    {emailMode === 'otp_required' && emailOtpSent && !isEmailVerified && (
+                      <div className="mt-3 rounded-2xl border border-[var(--primary-blue-muted)] bg-gradient-to-br from-[var(--primary-blue-light)] to-[var(--surface-2)] p-4 shadow-xs space-y-3 animate-fade-in">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold uppercase tracking-wider text-[var(--primary-blue-deeper)]">
+                            Enter 6-Digit Numeric Email OTP
+                          </p>
+                          <span className="text-[11px] text-[var(--ink-muted)] font-medium">
+                            Sent to <strong>{emailValue}</strong>
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={emailOtpValue}
+                            onChange={(e) => setEmailOtpValue(e.target.value.replace(/\D/g, ''))}
+                            placeholder="e.g. 583920"
+                            className="h-11 flex-1 rounded-xl border border-[var(--border)] bg-white px-3.5 font-mono text-base font-bold text-[var(--ink)] tracking-widest outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 text-center sm:text-left"
+                          />
+                          <Button
+                            type="button"
+                            variant="primary"
+                            size="md"
+                            onClick={handleVerifyEmailOtp}
+                            loading={emailOtpVerifying}
+                            disabled={!emailOtpValue || emailOtpValue.trim().length !== 6}
+                            className="w-full sm:w-auto font-bold h-11"
+                          >
+                            Verify Email OTP
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Step 2: Mobile Number & 2Factor OTP Verification */}
-            <div>
-              <div className="mb-4 flex items-center justify-between border-b border-[var(--border)] pb-2">
-                <div className="flex items-center gap-2">
-                  <Phone size={18} className="text-[var(--primary-blue)]" />
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)]">
-                    2. Mobile Number &amp; OTP Verification
-                  </h2>
-                </div>
-                {isVerified && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success-light)] px-3 py-1 text-xs font-bold text-[var(--success)] shadow-xs">
-                    <CheckCircle2 size={13} />
-                    Verified
-                  </span>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
-                  <div className="flex-1 flex flex-col gap-1.5">
-                    <label htmlFor="rt-mobile" className="text-xs font-bold text-[var(--ink)]">
-                      Mobile Number <span className="text-[var(--danger)]">*</span>
-                    </label>
-                    <div className="relative">
-                      <Phone
-                        size={15}
-                        className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--ink-muted)]"
-                      />
-                      <input
-                        {...register('mobile')}
-                        id="rt-mobile"
-                        inputMode="numeric"
-                        maxLength={10}
-                        disabled={isVerified}
-                        className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                          isVerified
-                            ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
-                            : errors.mobile
-                              ? 'border-[var(--danger)]'
-                              : 'border-[var(--border)]'
-                        }`}
-                        placeholder="10-digit mobile"
-                      />
-                    </div>
-                    {errors.mobile && (
-                      <span className="text-xs text-[var(--danger)]">{errors.mobile.message}</span>
-                    )}
+            {/* Step 2: Mobile Number & OTP Verification (Conditional based on mobileMode) */}
+            {mobileMode !== 'hidden' && (
+              <div>
+                <div className="mb-4 flex items-center justify-between border-b border-[var(--border)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <Phone size={18} className="text-[var(--primary-blue)]" />
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)]">
+                      2. Mobile Contact {mobileMode === 'otp_required' ? '& OTP Verification' : ''}
+                    </h2>
                   </div>
-
-                  {!isVerified && (
-                    <div className="mt-1 sm:mt-6 sm:w-auto">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="md"
-                        onClick={handleSendOtp}
-                        loading={otpSending}
-                        disabled={!mobileValue || mobileValue.length !== 10 || countdown > 0}
-                        className="w-full sm:w-auto whitespace-nowrap h-11"
-                      >
-                        {countdown > 0 ? (
-                          <span className="flex items-center gap-1.5">
-                            <Clock size={14} /> Resend in {countdown}s
-                          </span>
-                        ) : otpSent ? (
-                          <span className="flex items-center gap-1.5">
-                            <RefreshCw size={14} /> Resend OTP
-                          </span>
-                        ) : (
-                          'Send OTP via SMS'
-                        )}
-                      </Button>
-                    </div>
+                  {mobileMode === 'otp_required' && isVerified && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success-light)] px-3 py-1 text-xs font-bold text-[var(--success)] shadow-xs">
+                      <CheckCircle2 size={13} />
+                      Verified
+                    </span>
                   )}
                 </div>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label htmlFor="rt-mobile" className="text-xs font-bold text-[var(--ink)]">
+                        Mobile Number{' '}
+                        {mobileMode === 'optional' ? (
+                          <span className="text-[var(--ink-muted)] font-normal">(Optional)</span>
+                        ) : (
+                          <span className="text-[var(--danger)]">*</span>
+                        )}
+                      </label>
+                      <div className="relative">
+                        <Phone
+                          size={15}
+                          className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--ink-muted)]"
+                        />
+                        <input
+                          {...register('mobile')}
+                          id="rt-mobile"
+                          inputMode="numeric"
+                          maxLength={10}
+                          disabled={mobileMode === 'otp_required' && isVerified}
+                          className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                            mobileMode === 'otp_required' && isVerified
+                              ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
+                              : errors.mobile
+                                ? 'border-[var(--danger)]'
+                                : 'border-[var(--border)]'
+                          }`}
+                          placeholder="10-digit mobile number"
+                        />
+                      </div>
+                      {errors.mobile && (
+                        <span className="text-xs text-[var(--danger)]">{errors.mobile.message}</span>
+                      )}
+                    </div>
+
+                    {mobileMode === 'otp_required' && !isVerified && (
+                      <div className="mt-1 sm:mt-6 sm:w-auto">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="md"
+                          onClick={handleSendOtp}
+                          loading={otpSending}
+                          disabled={!mobileValue || mobileValue.length !== 10 || countdown > 0}
+                          className="w-full sm:w-auto whitespace-nowrap h-11"
+                        >
+                          {countdown > 0 ? (
+                            <span className="flex items-center gap-1.5">
+                              <Clock size={14} /> Resend in {countdown}s
+                            </span>
+                          ) : otpSent ? (
+                            <span className="flex items-center gap-1.5">
+                              <RefreshCw size={14} /> Resend OTP
+                            </span>
+                          ) : (
+                            'Send OTP via SMS'
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
 
                 {/* OTP Input Card (Shown after OTP is sent) */}
                 {otpSent && !isVerified && (
@@ -675,8 +963,9 @@ export function RaiseTicket() {
                 )}
               </div>
             </div>
+          )}
 
-            {/* Step 3: Department & Category */}
+          {/* Step 3: Department & Category */}
             <div>
               <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-2">
                 <Building2 size={18} className="text-[var(--primary-blue)]" />

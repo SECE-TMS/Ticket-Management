@@ -76,4 +76,45 @@ export const ticketService = {
     const { data } = await api.post(`/tickets/${id}/comments`, { message })
     return data.data as Ticket
   },
+
+  async submitFeedback(payload: {
+    ticketCode: string
+    mobile: string
+    rating: number
+    comment?: string
+    tags?: string[]
+  }) {
+    const { data } = await api.post('/tickets/feedback', payload)
+    return data.data as Ticket
+  },
+
+  async getAdminFeedback(params: {
+    page?: number
+    limit?: number
+    department?: string
+    rating?: number
+    search?: string
+  } = {}) {
+    const { data } = await api.get('/tickets/admin/feedback', { params })
+    return data.data as { items?: Ticket[]; tickets?: Ticket[]; pagination: Pagination }
+  },
+
+  async getDepartmentFeedbackAnalytics() {
+    const { data } = await api.get('/tickets/admin/feedback/department-analytics')
+    return data.data as import('../types').DepartmentFeedbackAnalytics[]
+  },
+
+  async exportExcel(params: TicketListParams = {}) {
+    const response = await api.get('/tickets/export-excel', {
+      params,
+      responseType: 'blob',
+    })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `tickets_report_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  },
 }

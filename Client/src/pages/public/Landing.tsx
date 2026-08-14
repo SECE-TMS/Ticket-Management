@@ -1,23 +1,7 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Headset, Search} from 'lucide-react'
-
-// const features = [
-//   {
-//     icon: Zap,
-//     title: 'Raise in minutes',
-//     desc: 'Submit facility issues instantly with photos or voice notes attached.',
-//   },
-//   {
-//     icon: Search,
-//     title: 'Track live status',
-//     desc: 'Follow every stage from assignment to resolution without any calls.',
-//   },
-//   {
-//     icon: Shield,
-//     title: 'SLA guaranteed',
-//     desc: 'Every department has defined response times so issues never go unresolved.',
-//   },
-// ]
+import { ArrowRight, Headset, Search } from 'lucide-react'
+import isaiiCleanLogo from '../../assets/isaii_clean.png'
+import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
 export function Landing() {
   return (
@@ -44,23 +28,37 @@ export function Landing() {
         />
 
         {/* Top Header Logo inside Hero */}
-        <div className="relative mx-auto flex w-full max-w-5xl items-center justify-between px-4 pt-6 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-bold bg-[var(--gold)] text-[var(--primary-blue-deeper)] shadow-xs">
-              TM
-            </span>
-            <div className="flex flex-col">
-              <span className="text-base font-bold tracking-tight text-[var(--white)] leading-none">
+        <div className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-6 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Split College Logo Badge */}
+            <div className="flex items-center rounded-2xl bg-white px-3.5 py-1.5 shadow-md border border-white/30">
+              <img
+                src={sriEshwarCleanLogo}
+                alt="Sri Eshwar College Logo"
+                className="h-9 sm:h-10 w-auto max-w-[150px] object-contain"
+              />
+            </div>
+
+            {/* Split ISAII Logo Badge (Zoomed) */}
+            <div className="flex items-center rounded-2xl bg-white px-3.5 py-1.5 shadow-md border border-white/30">
+              <img
+                src={isaiiCleanLogo}
+                alt="ISAII Logo"
+                className="h-9 sm:h-10 w-auto max-w-[110px] object-contain scale-125"
+              />
+            </div>
+            <div className="hidden sm:flex flex-col">
+              <span className="text-lg font-bold tracking-tight text-[var(--white)] leading-snug">
                 TMS Portal
               </span>
-              <span className="text-[10px] font-medium text-white/60 tracking-wider uppercase">
-                Ticket Management
+              <span className="text-xs font-semibold text-white/70 tracking-wider uppercase">
+                Ticket Management System
               </span>
             </div>
           </div>
           <Link
             to="/login"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-4 text-xs font-bold bg-[var(--gold)] text-[var(--primary-blue-deeper)] hover:bg-[var(--gold-dark)] transition-colors shadow-xs"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl px-5 text-xs font-bold bg-[var(--gold)] text-[var(--primary-blue-deeper)] hover:bg-[var(--gold-dark)] transition-transform hover:scale-105 shadow-md"
           >
             Staff Login
           </Link>

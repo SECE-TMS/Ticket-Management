@@ -11,6 +11,8 @@ import {
   QrCode as QrIcon,
   Sparkles,
   Zap,
+  Palette,
+  Check,
 } from 'lucide-react'
 import { departmentService } from '../../services/departmentService'
 import { Button } from '../../components/common/Button'
@@ -20,34 +22,536 @@ import { getErrorMessage } from '../../lib/utils'
 import type { Department } from '../../types'
 import { getId } from '../../types'
 
+import sriEshwarLogo from '../../assets/Sri Eshwar.png'
+import isaiiLogo from '../../assets/isaii.jpg'
+import qrCenterLogo from '../../assets/logo_remove-removebg-preview.png'
+
+/** Standard Card (4" x 6" 300DPI) dimensions */
+const POSTCARD_W = 1200
+const POSTCARD_H = 1800
+const POSTCARD_PRINT_WIDTH_MM = 101.6
+const POSTCARD_PRINT_HEIGHT_MM = 152.4
+
+const CONSTANT_FOOTER = 'POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED'
+
+export interface ThemePreset {
+  id: string
+  name: string
+  colors: [string, string, ...string[]]
+  cssGradient: string
+  textColor: string
+  accentColor: string
+}
+
+export const THEME_PRESETS: ThemePreset[] = [
+  {
+    id: 'navy_gold',
+    name: 'Institutional Navy & Gold',
+    colors: ['#163A6B', '#235EAA', '#0F172A'],
+    cssGradient: 'linear-gradient(170deg, #163A6B 0%, #235EAA 60%, #0F172A 100%)',
+    textColor: '#FFFFFF',
+    accentColor: '#F9C301',
+  },
+  {
+    id: 'instagram',
+    name: 'Instagram Sunset',
+    colors: ['#FA7E1E', '#D62976', '#962FBF'],
+    cssGradient: 'linear-gradient(170deg, #FA7E1E 0%, #D62976 50%, #962FBF 100%)',
+    textColor: '#FFFFFF',
+    accentColor: '#FFFFFF',
+  },
+  {
+    id: 'magenta',
+    name: 'Neon Magenta',
+    colors: ['#FF007F', '#7B2FF7', '#380036'],
+    cssGradient: 'linear-gradient(170deg, #FF007F 0%, #7B2FF7 60%, #380036 100%)',
+    textColor: '#FFFFFF',
+    accentColor: '#FFFFFF',
+  },
+  {
+    id: 'sunset',
+    name: 'Coral Warmth',
+    colors: ['#FF512F', '#DD2476'],
+    cssGradient: 'linear-gradient(170deg, #FF512F 0%, #DD2476 100%)',
+    textColor: '#FFFFFF',
+    accentColor: '#FFFFFF',
+  },
+  {
+    id: 'ocean',
+    name: 'Deep Ocean',
+    colors: ['#0093E9', '#80D0C7'],
+    cssGradient: 'linear-gradient(170deg, #0093E9 0%, #80D0C7 100%)',
+    textColor: '#FFFFFF',
+    accentColor: '#FFFFFF',
+  },
+  {
+    id: 'emerald',
+    name: 'Emerald Glow',
+    colors: ['#059669', '#10B981', '#064E3B'],
+    cssGradient: 'linear-gradient(170deg, #059669 0%, #10B981 50%, #064E3B 100%)',
+    textColor: '#FFFFFF',
+    accentColor: '#FEF08A',
+  },
+  {
+    id: 'dark',
+    name: 'Cyber Night',
+    colors: ['#1E1B4B', '#312E81', '#0F172A'],
+    cssGradient: 'linear-gradient(170deg, #1E1B4B 0%, #312E81 50%, #0F172A 100%)',
+    textColor: '#FFFFFF',
+    accentColor: '#38BDF8',
+  },
+]
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
+    img.src = src
+  })
+}
+
+function knockoutBlackBackground(img: HTMLImageElement): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = img.naturalWidth || img.width
+  canvas.height = img.naturalHeight || img.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return canvas
+
+  ctx.drawImage(img, 0, 0)
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const data = imageData.data
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i]
+    const g = data[i + 1]
+    const b = data[i + 2]
+    const max = Math.max(r, g, b)
+    const min = Math.min(r, g, b)
+    const isNearBlack = max < 28
+    const isNeutralDark = max < 42 && max - min < 10
+    if (isNearBlack || isNeutralDark) {
+      data[i + 3] = 0
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0)
+  return canvas
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  const radius = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + radius, y)
+  ctx.arcTo(x + w, y, x + w, y + h, radius)
+  ctx.arcTo(x + w, y + h, x, y + h, radius)
+  ctx.arcTo(x, y + h, x, y, radius)
+  ctx.arcTo(x, y, x + w, y, radius)
+  ctx.closePath()
+}
+
+function drawContainedImage(
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  x: number,
+  y: number,
+  boxW: number,
+  boxH: number
+) {
+  const sw = 'width' in source ? Number(source.width) : 1
+  const sh = 'height' in source ? Number(source.height) : 1
+  const aspect = sw / Math.max(sh, 1)
+  let drawW = boxW
+  let drawH = boxW / aspect
+  if (drawH > boxH) {
+    drawH = boxH
+    drawW = boxH * aspect
+  }
+  const dx = x + (boxW - drawW) / 2
+  const dy = y + (boxH - drawH) / 2
+  ctx.drawImage(source, dx, dy, drawW, drawH)
+}
+
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number = 3
+): string[] {
+  const words = text.split(' ')
+  const lines: string[] = []
+  let current = ''
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word
+    if (ctx.measureText(next).width > maxWidth && current) {
+      lines.push(current)
+      current = word
+    } else {
+      current = next
+    }
+  }
+  if (current) lines.push(current)
+  return lines.slice(0, maxLines)
+}
+
+const generateCleanQrDataUrl = async (text: string, centerLogoSrc?: string): Promise<string> => {
+  const canvasSize = 1200
+  const canvas = document.createElement('canvas')
+  canvas.width = canvasSize
+  canvas.height = canvasSize
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return ''
+
+  await QRCode.toCanvas(canvas, text, {
+    errorCorrectionLevel: 'H',
+    margin: 2,
+    width: canvasSize,
+    color: {
+      dark: '#0f172a',
+      light: '#ffffff',
+    },
+  })
+
+  if (centerLogoSrc) {
+    try {
+      const rawLogo = await loadImage(centerLogoSrc)
+      const logoCanvas = knockoutBlackBackground(rawLogo)
+      const padW = Math.round(canvasSize * 0.26)
+      const padH = Math.round(canvasSize * 0.26)
+      const padX = (canvasSize - padW) / 2
+      const padY = (canvasSize - padH) / 2
+      const radius = Math.round(padH * 0.3)
+
+      roundRect(ctx, padX, padY, padW, padH, radius)
+      ctx.fillStyle = '#ffffff'
+      ctx.fill()
+      ctx.strokeStyle = '#e2e8f0'
+      ctx.lineWidth = 4
+      ctx.stroke()
+
+      const innerW = padW * 0.82
+      const innerH = padH * 0.82
+      drawContainedImage(
+        ctx,
+        logoCanvas,
+        (canvasSize - innerW) / 2,
+        (canvasSize - innerH) / 2,
+        innerW,
+        innerH
+      )
+    } catch (err) {
+      console.error('Error overlaying QR center logo:', err)
+    }
+  }
+
+  return canvas.toDataURL('image/png')
+}
+
+async function composePosterPng(opts: {
+  theme: ThemePreset
+  qrSrc: string
+  topText: string
+  scriptText: string
+  businessName: string
+  locationName: string
+  customNote: string
+  showCollegeLogo: boolean
+  sriSrc: string
+  isaiiSrc: string
+}): Promise<string> {
+  await document.fonts.ready.catch(() => {})
+
+  const W = POSTCARD_W
+  const H = POSTCARD_H
+
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return opts.qrSrc
+
+  const sriImg = await loadImage(opts.sriSrc)
+  const isaiiImg = await loadImage(opts.isaiiSrc)
+  const qrImg = await loadImage(opts.qrSrc)
+
+  // Gradient Background
+  const grad = ctx.createLinearGradient(0, 0, 0, H)
+  const colors = opts.theme.colors
+  if (colors.length === 2) {
+    grad.addColorStop(0, colors[0])
+    grad.addColorStop(1, colors[1])
+  } else {
+    grad.addColorStop(0, colors[0])
+    grad.addColorStop(0.5, colors[1])
+    grad.addColorStop(1, colors[2] || colors[1])
+  }
+
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, W, H)
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
+  let currentY = 115
+
+  // Top Tracking Header Label (Larger & Bold)
+  ctx.fillStyle = opts.theme.textColor
+  ctx.font = '900 34px Inter, sans-serif'
+  ctx.fillText((opts.topText || 'SCAN TO REPORT').toUpperCase(), W / 2, currentY)
+  currentY += 75
+
+  // Cursive Subheader Typography (Prominent & Elegant)
+  ctx.font = '400 96px Satisfy, Pacifico, cursive'
+  ctx.fillStyle = opts.theme.accentColor || '#FFFFFF'
+  ctx.fillText(opts.scriptText || 'Campus Maintenance Desk', W / 2, currentY)
+  currentY += 175
+
+  // Broad & Beautiful Logo Container Box (Dashed Outer Outline)
+  const boxW = 720
+  const boxH = 260
+  const boxX = (W - boxW) / 2
+  const boxY = currentY - boxH / 2
+
+  ctx.save()
+  ctx.setLineDash([18, 14])
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)'
+  ctx.lineWidth = 4
+  roundRect(ctx, boxX, boxY, boxW, boxH, 48)
+  ctx.stroke()
+  ctx.restore()
+
+  // Inner White Card filled nicely inside Dashed Box
+  const innerPad = 16
+  const innerX = boxX + innerPad
+  const innerY = boxY + innerPad
+  const innerW = boxW - innerPad * 2
+  const innerH = boxH - innerPad * 2
+
+  roundRect(ctx, innerX, innerY, innerW, innerH, 36)
+  ctx.fillStyle = '#FFFFFF'
+  ctx.fill()
+
+  if (opts.showCollegeLogo) {
+    // Dual Logos side-by-side
+    const colW = (innerW - 40) / 2
+    drawContainedImage(ctx, sriImg, innerX + 16, innerY + 16, colW, innerH - 32)
+
+    // Divider Line
+    ctx.strokeStyle = '#E2E8F0'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.moveTo(innerX + colW + 20, innerY + 24)
+    ctx.lineTo(innerX + colW + 20, innerY + innerH - 24)
+    ctx.stroke()
+
+    drawContainedImage(ctx, isaiiImg, innerX + colW + 24, innerY + 16, colW, innerH - 32)
+  } else {
+    // Single Isaii AI Logo
+    drawContainedImage(ctx, isaiiImg, innerX + 32, innerY + 16, innerW - 64, innerH - 32)
+  }
+
+  currentY += boxH / 2 + 65
+
+  // Campus / Organization Title Name (Bold & Large)
+  ctx.fillStyle = '#FFFFFF'
+  ctx.font = '900 46px Inter, sans-serif'
+  ctx.fillText(opts.businessName || 'Sri Eshwar College of Engineering', W / 2, currentY)
+  currentY += 70
+
+  // Location Pill Badge
+  const locText = (opts.locationName || 'CAMPUS AREA').toUpperCase()
+  ctx.font = '900 26px Inter, sans-serif'
+  const locW = Math.min(W - 100, Math.max(ctx.measureText(locText).width + 90, 320))
+  const locH = 60
+  const locX = (W - locW) / 2
+  const locY = currentY - locH / 2
+
+  ctx.fillStyle = opts.theme.accentColor || '#F9C301'
+  roundRect(ctx, locX, locY, locW, locH, 30)
+  ctx.fill()
+
+  ctx.fillStyle = '#0F172A'
+  ctx.fillText(`📍 ${locText}`, W / 2, currentY)
+  currentY += locH / 2 + 55
+
+  // Central Pure White QR Box Container
+  const qrBoxW = 730
+  const qrBoxH = 730
+  const qrBoxX = (W - qrBoxW) / 2
+  const qrBoxY = currentY
+
+  ctx.save()
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.32)'
+  ctx.shadowBlur = 36
+  ctx.shadowOffsetY = 16
+  ctx.fillStyle = '#FFFFFF'
+  roundRect(ctx, qrBoxX, qrBoxY, qrBoxW, qrBoxH, 44)
+  ctx.fill()
+  ctx.restore()
+
+  const qrInnerSize = 650
+  const qrInnerX = (W - qrInnerSize) / 2
+  const qrInnerY = qrBoxY + (qrBoxH - qrInnerSize) / 2
+  ctx.drawImage(qrImg, qrInnerX, qrInnerY, qrInnerSize, qrInnerSize)
+  currentY += qrBoxH + 60
+
+  // Scan Subtext Note (Readable & Balanced)
+  const note = opts.customNote || 'Scan with your mobile camera to report issue & verify via OTP.'
+  ctx.fillStyle = '#FFFFFF'
+  ctx.font = '700 26px Inter, sans-serif'
+  const lines = wrapText(ctx, note, W - 140, 2)
+  lines.forEach((line) => {
+    ctx.fillText(line, W / 2, currentY)
+    currentY += 34
+  })
+
+  // Fixed Constant Footer Line (POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED)
+  ctx.font = '900 22px Inter, sans-serif'
+  ctx.fillStyle = opts.theme.accentColor || '#FFFFFF'
+  ctx.fillText(CONSTANT_FOOTER, W / 2, H - 70)
+
+  return canvas.toDataURL('image/png')
+}
+
+function printPng(dataUrl: string) {
+  const iframe = document.createElement('iframe')
+  iframe.style.position = 'fixed'
+  iframe.style.right = '0'
+  iframe.style.bottom = '0'
+  iframe.style.width = '0'
+  iframe.style.height = '0'
+  iframe.style.border = '0'
+  document.body.appendChild(iframe)
+
+  const doc = iframe.contentDocument
+  if (!doc) return
+
+  doc.open()
+  doc.write(`<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      @page { size: A4 portrait; margin: 0; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+        height: 297mm;
+        background: #fff;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .sheet {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4mm;
+      }
+      .hint {
+        font: 11px Arial, sans-serif;
+        font-weight: bold;
+        color: #64748b;
+        letter-spacing: 0.05em;
+      }
+      .postcard {
+        width: ${POSTCARD_PRINT_WIDTH_MM}mm;
+        height: ${POSTCARD_PRINT_HEIGHT_MM}mm;
+        display: block;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        outline: 0.5mm dashed #94a3b8;
+        outline-offset: 3mm;
+        object-fit: contain;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sheet">
+      <div class="hint">CUT ALONG DASHED BORDER &nbsp;·&nbsp; STANDARD POSTCARD SIZE 4" × 6" (${POSTCARD_PRINT_WIDTH_MM} × ${POSTCARD_PRINT_HEIGHT_MM} mm)</div>
+      <img id="poster" class="postcard" src="${dataUrl}" alt="Campus QR Code Poster" />
+    </div>
+  </body>
+</html>`)
+  doc.close()
+
+  const img = doc.getElementById('poster') as HTMLImageElement | null
+  const runPrint = () => {
+    iframe.contentWindow?.focus()
+    iframe.contentWindow?.print()
+    setTimeout(() => {
+      iframe.remove()
+    }, 1000)
+  }
+
+  if (img?.complete) {
+    runPrint()
+  } else if (img) {
+    img.onload = runPrint
+  } else {
+    runPrint()
+  }
+}
+
 export function QrGeneratorPage() {
   const toast = useToast()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState<'download' | 'print' | null>(null)
+  const [sriEshwarClean, setSriEshwarClean] = useState(sriEshwarLogo)
 
-  // Form states
+  // Configuration States
+  const [selectedTheme, setSelectedTheme] = useState<ThemePreset>(THEME_PRESETS[0])
+  const [showCollegeLogo, setShowCollegeLogo] = useState(true)
+
+  const [topText, setTopText] = useState('SCAN TO REPORT')
+  const [scriptText, setScriptText] = useState('Campus Maintenance Desk')
+  const [businessName, setBusinessName] = useState('Sri Eshwar College of Engineering')
+
   const [selectedDeptId, setSelectedDeptId] = useState('')
-  const [locationName, setLocationName] = useState('Water Tank')
+  const [locationName, setLocationName] = useState('Water Tank Area')
   const [complaintType, setComplaintType] = useState('')
-  const [customNote, setCustomNote] = useState('')
+  const [customNote, setCustomNote] = useState('Scan with your mobile camera to report issue & verify via OTP.')
 
-  // QR Code Image State
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [targetUrl, setTargetUrl] = useState('')
   const [copied, setCopied] = useState(false)
 
-  const cardRef = useRef<HTMLDivElement>(null)
-
   const selectedDept = departments.find((d) => getId(d) === selectedDeptId)
+  const exportLock = useRef(false)
 
-  // Fetch departments
+  useEffect(() => {
+    let isMounted = true
+    void (async () => {
+      try {
+        const img = await loadImage(sriEshwarLogo)
+        const cleaned = knockoutBlackBackground(img).toDataURL('image/png')
+        if (isMounted) setSriEshwarClean(cleaned)
+      } catch {
+        if (isMounted) setSriEshwarClean(sriEshwarLogo)
+      }
+    })()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   useEffect(() => {
     void (async () => {
       try {
         const data = await departmentService.listActive()
         setDepartments(data)
         if (data.length > 0) {
-          // Preselect Plumbing or first department
           const plumbing = data.find((d) => d.name.toLowerCase().includes('plumb'))
           setSelectedDeptId(getId(plumbing || data[0]))
         }
@@ -59,8 +563,8 @@ export function QrGeneratorPage() {
     })()
   }, [toast])
 
-  // Generate QR code whenever form parameters change
   useEffect(() => {
+    let isMounted = true
     void (async () => {
       const baseUrl = window.location.origin
       const params = new URLSearchParams()
@@ -79,22 +583,20 @@ export function QrGeneratorPage() {
       setTargetUrl(generatedUrl)
 
       try {
-        const url = await QRCode.toDataURL(generatedUrl, {
-          width: 500,
-          margin: 2,
-          color: {
-            dark: '#0f172a',
-            light: '#ffffff',
-          },
-        })
-        setQrDataUrl(url)
+        const dataUrl = await generateCleanQrDataUrl(generatedUrl, qrCenterLogo)
+        if (isMounted) {
+          setQrDataUrl(dataUrl)
+        }
       } catch (err) {
         console.error('Error generating QR code:', err)
       }
     })()
+
+    return () => {
+      isMounted = false
+    }
   }, [selectedDept, locationName, complaintType])
 
-  // Presets
   const applyPreset = (preset: { deptName: string; location: string; complaint: string }) => {
     setLocationName(preset.location)
     setComplaintType(preset.complaint)
@@ -104,7 +606,6 @@ export function QrGeneratorPage() {
     }
   }
 
-  // Copy Link Handler
   const handleCopyLink = () => {
     void navigator.clipboard.writeText(targetUrl)
     setCopied(true)
@@ -112,72 +613,89 @@ export function QrGeneratorPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Download QR Badge Handler
-  const handleDownload = () => {
-    if (!qrDataUrl) return
-    const link = document.createElement('a')
-    link.href = qrDataUrl
-    const filename = `QR_${locationName.replace(/\s+/g, '_') || 'Campus'}.png`
-    link.download = filename
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    toast.success(`Downloaded ${filename}`)
+  const buildPoster = async () => {
+    if (!qrDataUrl) throw new Error('QR is not ready')
+    return composePosterPng({
+      theme: selectedTheme,
+      qrSrc: qrDataUrl,
+      topText,
+      scriptText,
+      businessName,
+      locationName,
+      customNote,
+      showCollegeLogo,
+      sriSrc: sriEshwarClean,
+      isaiiSrc: isaiiLogo,
+    })
   }
 
-  // Print Poster Handler
-  const handlePrint = () => {
-    window.print()
+  const handleDownload = async () => {
+    if (exportLock.current) return
+    exportLock.current = true
+    setExporting('download')
+    try {
+      const dataUrl = await buildPoster()
+      const link = document.createElement('a')
+      const filename = `Campus_Maintenance_QR_${(locationName || 'Poster').replace(/\s+/g, '_')}.png`
+      link.download = filename
+      link.href = dataUrl
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      toast.success(`Downloaded ${filename}`)
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to download the poster. Please try again.')
+    } finally {
+      exportLock.current = false
+      setExporting(null)
+    }
+  }
+
+  const handlePrint = async () => {
+    if (exportLock.current) return
+    exportLock.current = true
+    setExporting('print')
+    try {
+      const dataUrl = await buildPoster()
+      printPng(dataUrl)
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to prepare the poster for print.')
+    } finally {
+      exportLock.current = false
+      setExporting(null)
+    }
   }
 
   if (loading) return <PageLoader />
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Print Stylesheet overlay for direct poster printing */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-qr-poster, #printable-qr-poster * {
-            visibility: visible;
-          }
-          #printable-qr-poster {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 20px;
-            box-shadow: none !important;
-            border: 2px solid #000 !important;
-          }
-        }
-      `}</style>
-
-      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mx-auto max-w-7xl pb-12">
+      {/* Navigation Header */}
+      <Link
+        to="/admin/dashboard"
+        className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--primary-blue)] hover:underline"
+      >
+        <ArrowLeft size={14} />
+        Back to Admin Dashboard
+      </Link>
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <Link
-            to="/admin/dashboard"
-            className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--primary-blue)] hover:underline"
-          >
-            <ArrowLeft size={14} />
-            Back to Admin Dashboard
-          </Link>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[var(--ink)] flex items-center gap-2.5">
-            <QrIcon className="text-[var(--primary-blue)]" size={28} />
-            QR Code Generator for Campus Areas
+          <h1 className="font-display flex items-center gap-2.5 text-2xl font-bold text-[var(--ink)] sm:text-3xl">
+            <QrIcon className="text-[var(--primary-blue)]" size={30} />
+            Campus Maintenance QR Poster Generator
           </h1>
-          <p className="mt-1 text-xs text-[var(--ink-muted)] sm:text-sm">
-            Generate printable QR code stickers for pasting on water tanks, hostels, labs, or campus facilities.
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+            Generate and print official high-resolution 4" × 6" campus maintenance QR code posters for facility areas.
           </p>
         </div>
       </div>
 
-      {/* Quick Location Presets */}
-      <div className="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-xs">
-        <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)] flex items-center gap-1.5">
-          <Sparkles size={14} className="text-[var(--gold)]" /> Quick Location Presets
+      {/* Facility Quick Presets */}
+      <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-sm">
+        <p className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">
+          <Sparkles size={14} className="text-[var(--gold)]" /> Campus Facility Quick Presets
         </p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
@@ -190,7 +708,7 @@ export function QrGeneratorPage() {
               key={idx}
               type="button"
               onClick={() => applyPreset(preset)}
-              className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-left transition-all hover:border-[var(--primary-blue)] hover:bg-[var(--primary-blue-light)] hover:text-[var(--primary-blue)] cursor-pointer"
+              className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-left transition-all hover:border-[var(--primary-blue)] hover:bg-[var(--primary-blue-light)] hover:text-[var(--primary-blue)]"
             >
               <span className="text-xs font-bold">{preset.label}</span>
               <Zap size={13} className="text-[var(--primary-blue)]" />
@@ -199,158 +717,308 @@ export function QrGeneratorPage() {
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-12">
-        {/* Left Column: Form Settings */}
-        <div className="col-span-12 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-6 shadow-sm lg:col-span-6 space-y-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)] border-b border-[var(--border)] pb-2 flex items-center gap-2">
-            <Building2 size={16} className="text-[var(--primary-blue)]" />
-            Configure QR Code Data
-          </h2>
-
-          {/* Location Name */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-[var(--ink)]">
-              Location / Facility Name <span className="text-[var(--danger)]">*</span>
+      {/* Main Grid Workspace */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        {/* Left Form Controls */}
+        <div className="space-y-6 lg:col-span-6">
+          {/* Theme Selector */}
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-sm">
+            <label className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+              <Palette size={16} className="text-[var(--primary-blue)]" />
+              Poster Color Gradient Theme
             </label>
-            <div className="relative">
-              <MapPin
-                size={16}
-                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--ink-muted)]"
-              />
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
+              {THEME_PRESETS.map((theme) => {
+                const active = selectedTheme.id === theme.id
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    title={theme.name}
+                    onClick={() => setSelectedTheme(theme)}
+                    className={`group relative flex h-14 flex-col items-center justify-center rounded-xl border transition-all ${
+                      active ? 'border-2 border-[var(--primary-blue)] ring-2 ring-[var(--primary-blue)]/20' : 'border-transparent'
+                    }`}
+                    style={{ background: theme.cssGradient }}
+                  >
+                    {active && (
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow">
+                        <Check size={12} className="stroke-[3]" />
+                      </div>
+                    )}
+                    <span className="sr-only">{theme.name}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Design Header & Logo Customizer */}
+          <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-sm">
+            <h2 className="flex items-center gap-2 border-b border-[var(--border)] pb-2 text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+              <Sparkles size={16} className="text-[var(--primary-blue)]" />
+              Poster Header & Branding Customization
+            </h2>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-[var(--ink)]">Top Header Text</label>
+                <input
+                  type="text"
+                  value={topText}
+                  onChange={(e) => setTopText(e.target.value)}
+                  placeholder="e.g. SCAN TO REPORT"
+                  className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-[var(--ink)]">Cursive Subtitle</label>
+                <input
+                  type="text"
+                  value={scriptText}
+                  onChange={(e) => setScriptText(e.target.value)}
+                  placeholder="e.g. Campus Maintenance Desk"
+                  className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-[var(--ink)]">Institution / College Name</label>
               <input
                 type="text"
-                value={locationName}
-                onChange={(e) => setLocationName(e.target.value)}
-                placeholder="e.g. Water Tank Area, Block B Washroom..."
-                className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder="e.g. Sri Eshwar College of Engineering"
+                className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
               />
             </div>
-            <p className="text-[11px] text-[var(--ink-muted)]">
-              Where this QR code sticker will be physically pasted.
-            </p>
-          </div>
 
-          {/* Department Selection */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-[var(--ink)]">Target Department</label>
-            <select
-              value={selectedDeptId}
-              onChange={(e) => {
-                setSelectedDeptId(e.target.value)
-                setComplaintType('')
-              }}
-              className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
-            >
-              <option value="">Select target department...</option>
-              {departments.map((d) => (
-                <option key={getId(d)} value={getId(d)}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Complaint Type */}
-          {selectedDept && (
-            <div className="flex flex-col gap-1.5 animate-fade-in">
-              <label className="text-xs font-bold text-[var(--ink)]">Default Complaint Category</label>
-              <select
-                value={complaintType}
-                onChange={(e) => setComplaintType(e.target.value)}
-                className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
-              >
-                <option value="">Select default category (optional)...</option>
-                {(selectedDept.complaintTypes || []).map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Custom Note */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-[var(--ink)]">Poster Banner Subtext (Optional)</label>
-            <input
-              type="text"
-              value={customNote}
-              onChange={(e) => setCustomNote(e.target.value)}
-              placeholder="e.g. Scan to report leaks, overflows, or pipe damage"
-              className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
-            />
-          </div>
-
-          {/* Target URL Preview */}
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
-              Encoded URL Target
-            </p>
-            <p className="font-mono text-xs text-[var(--primary-blue)] break-all">{targetUrl}</p>
-          </div>
-        </div>
-
-        {/* Right Column: Printable Poster Card Preview */}
-        <div className="col-span-12 lg:col-span-6 flex flex-col items-center">
-          {/* Printable Card Poster */}
-          <div
-            ref={cardRef}
-            id="printable-qr-poster"
-            className="w-full max-w-md rounded-2xl border-2 border-[var(--primary-blue)] bg-[var(--white)] p-6 text-center shadow-lg transition-all"
-          >
-            {/* Poster Header */}
-            <div className="mb-4 border-b border-[var(--border)] pb-3">
-              <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary-blue)] text-white shadow-xs">
-                <QrIcon size={24} />
+            {/* College Logo Toggle */}
+            <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-[var(--ink)]">Show College Logo alongside Isaii AI</span>
+                <span className="text-[11px] text-[var(--ink-muted)]">Display dual Sri Eshwar & Isaii logos in header</span>
               </div>
-              <h3 className="font-display text-lg font-bold text-[var(--ink)] uppercase tracking-tight">
-                Campus Maintenance Desk
-              </h3>
-              <p className="text-xs text-[var(--ink-muted)]">Instant Issue Reporting QR</p>
+              <input
+                type="checkbox"
+                checked={showCollegeLogo}
+                onChange={(e) => setShowCollegeLogo(e.target.checked)}
+                className="h-5 w-5 cursor-pointer accent-[var(--primary-blue)]"
+              />
             </div>
 
-            {/* Location Banner Badge */}
-            <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-[var(--primary-blue)]/30 bg-[var(--primary-blue-light)] px-4 py-1.5 text-xs font-bold text-[var(--primary-blue-deeper)] shadow-xs">
-              <MapPin size={14} className="text-[var(--primary-blue)]" />
-              <span>{locationName || 'Campus Location'}</span>
+            {/* <div className="rounded-xl border border-[var(--border)] bg-slate-50 p-3">
+              <p className="text-[11px] font-bold text-[var(--ink-muted)]">Footer Attribution (Constant)</p>
+              <p className="mt-0.5 font-mono text-xs font-bold text-[var(--ink)]">{CONSTANT_FOOTER}</p>
+            </div> */}
+          </div>
+
+          {/* QR Code Target Location Controls */}
+          <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-sm">
+            <h2 className="flex items-center gap-2 border-b border-[var(--border)] pb-2 text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+              <Building2 size={16} className="text-[var(--primary-blue)]" />
+              Configure Campus Location & Ticket Parameters
+            </h2>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[var(--ink)]">
+                Facility / Area Name <span className="text-[var(--danger)]">*</span>
+              </label>
+              <div className="relative">
+                <MapPin
+                  size={16}
+                  className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--ink-muted)]"
+                />
+                <input
+                  type="text"
+                  value={locationName}
+                  onChange={(e) => setLocationName(e.target.value)}
+                  placeholder="e.g. Water Tank Area, Block B Washroom..."
+                  className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] pl-10 pr-3.5 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+                />
+              </div>
             </div>
 
-            {/* QR Code Image */}
-            <div className="mx-auto my-3 flex justify-center p-3 rounded-2xl border border-[var(--border)] bg-white shadow-inner max-w-[240px]">
-              {qrDataUrl ? (
-                <img src={qrDataUrl} alt="QR Code" className="w-full h-auto rounded-lg" />
-              ) : (
-                <div className="h-48 w-48 animate-pulse bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400">
-                  Generating QR...
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[var(--ink)]">Target Department</label>
+                <select
+                  value={selectedDeptId}
+                  onChange={(e) => {
+                    setSelectedDeptId(e.target.value)
+                    setComplaintType('')
+                  }}
+                  className="h-10 w-full cursor-pointer rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+                >
+                  <option value="">Select target department...</option>
+                  {departments.map((d) => (
+                    <option key={getId(d)} value={getId(d)}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedDept && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[var(--ink)]">Default Category</label>
+                  <select
+                    value={complaintType}
+                    onChange={(e) => setComplaintType(e.target.value)}
+                    className="h-10 w-full cursor-pointer rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+                  >
+                    <option value="">Select category (optional)...</option>
+                    {(selectedDept.complaintTypes || []).map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>
 
-            {/* Subtext */}
-            <p className="mt-2 text-xs font-bold text-[var(--ink)]">
-              {customNote || 'Scan with your mobile camera to log issue & verify mobile via SMS OTP.'}
-            </p>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[var(--ink)]">Poster Subtext Note (Optional)</label>
+              <input
+                type="text"
+                value={customNote}
+                onChange={(e) => setCustomNote(e.target.value)}
+                placeholder="e.g. Scan with mobile camera to log issue & verify via OTP"
+                className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+              />
+            </div>
 
-            <div className="mt-4 pt-3 border-t border-dashed border-[var(--border)] text-[11px] text-[var(--ink-muted)] flex items-center justify-center gap-1.5">
-              <Zap size={12} className="text-[var(--gold)]" />
-              <span>Fast 24/7 Facility Response • Ticket Management System</span>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
+                Generated Target QR Link
+              </p>
+              <p className="mt-1 break-all font-mono text-[11px] text-[var(--primary-blue)]">{targetUrl}</p>
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="mt-6 flex flex-wrap gap-3 justify-center w-full max-w-md">
-            <Button type="button" variant="primary" size="md" onClick={handleDownload} className="flex-1">
-              <Download size={16} />
-              Download PNG
-            </Button>
-            <Button type="button" variant="outline" size="md" onClick={handlePrint} className="flex-1">
-              <Printer size={16} />
-              Print Poster
-            </Button>
-            <Button type="button" variant="secondary" size="md" onClick={handleCopyLink}>
-              <Copy size={16} />
-              {copied ? 'Copied!' : 'Copy Link'}
-            </Button>
+        {/* Right Live Preview & Action Panel */}
+        <div className="flex flex-col items-center lg:col-span-6">
+          <div className="sticky top-6 flex w-full flex-col items-center">
+            <div className="mb-2 flex w-full max-w-[420px] items-center justify-between px-1 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">
+              <span>Live Poster Preview</span>
+              <span className="rounded-full bg-slate-200 px-2.5 py-0.5 font-mono text-[10px]">
+                Postcard 4"×6" (300 DPI)
+              </span>
+            </div>
+
+            {/* Live Visual Card Preview Container */}
+            <div
+              className="relative w-full max-w-[420px] overflow-hidden rounded-[32px] text-center shadow-2xl transition-all duration-300"
+              style={{ background: selectedTheme.cssGradient }}
+            >
+              <div className="flex flex-col items-center px-6 pt-9 pb-6 text-white">
+                {/* Top Header Label */}
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-white drop-shadow-sm">
+                  {topText || 'SCAN TO REPORT'}
+                </p>
+
+                {/* Script Cursive Title */}
+                <h2
+                  className="mt-1.5 text-[42px] leading-tight font-normal drop-shadow-md"
+                  style={{ fontFamily: "'Satisfy', cursive", color: selectedTheme.accentColor || '#FFFFFF' }}
+                >
+                  {scriptText || 'Campus Maintenance Desk'}
+                </h2>
+
+                {/* Broad & Beautiful Dashed Logo Container */}
+                <div className="mt-5 flex h-28 w-[92%] max-w-[340px] items-center justify-center rounded-[32px] border-2 border-dashed border-white/95 p-2 shadow-lg">
+                  <div className="flex h-full w-full items-center justify-between rounded-[24px] bg-white px-4 py-2 shadow-md">
+                    {showCollegeLogo ? (
+                      <>
+                        <div className="flex h-full flex-1 items-center justify-center pr-2">
+                          <img src={sriEshwarClean} alt="Sri Eshwar Logo" className="max-h-full max-w-full object-contain" />
+                        </div>
+                        <div className="h-10 w-[2px] bg-slate-200" />
+                        <div className="flex h-full flex-1 items-center justify-center pl-2">
+                          <img src={isaiiLogo} alt="Isaii AI Logo" className="max-h-full max-w-full object-contain" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <img src={isaiiLogo} alt="Isaii AI Logo" className="max-h-full max-w-full object-contain" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Business / College Name */}
+                <h3 className="mt-5 text-xl font-black tracking-tight text-white drop-shadow-sm">
+                  {businessName || 'Sri Eshwar College of Engineering'}
+                </h3>
+
+                {/* Location Badge Pill */}
+                <div
+                  className="mt-3.5 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-black shadow-md"
+                  style={{ backgroundColor: selectedTheme.accentColor || '#F9C301', color: '#0F172A' }}
+                >
+                  <MapPin size={13} />
+                  <span>{(locationName || 'CAMPUS AREA').toUpperCase()}</span>
+                </div>
+
+                {/* Central White QR Code Box */}
+                <div className="mt-5 w-full max-w-[285px] rounded-[28px] bg-white p-4 shadow-2xl">
+                  {qrDataUrl ? (
+                    <img src={qrDataUrl} alt="Campus QR Code" className="h-auto w-full" />
+                  ) : (
+                    <div className="h-48 w-full animate-pulse rounded-2xl bg-gray-100" />
+                  )}
+                </div>
+
+                {/* Scan Instructions Note */}
+                <p className="mt-5 text-sm font-semibold leading-snug text-white/95 max-w-[310px] drop-shadow">
+                  {customNote || 'Scan with your mobile camera to report issue & verify via OTP.'}
+                </p>
+              </div>
+
+              {/* Constant Footer Bar */}
+              <div
+                className="px-4 py-3.5 text-xs font-black tracking-widest text-center"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.28)', color: selectedTheme.accentColor || '#FFFFFF' }}
+              >
+                {CONSTANT_FOOTER}
+              </div>
+            </div>
+
+            {/* Actions Bar */}
+            <div className="mt-6 flex w-full max-w-[420px] flex-wrap justify-center gap-2.5">
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={() => void handleDownload()}
+                disabled={!qrDataUrl}
+                loading={exporting === 'download'}
+                className="flex-1 shadow-md"
+              >
+                <Download size={16} />
+                {exporting === 'download' ? 'Generating PNG...' : 'Download'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={() => void handlePrint()}
+                disabled={!qrDataUrl}
+                loading={exporting === 'print'}
+                className="flex-1"
+              >
+                <Printer size={16} />
+                Print Poster
+              </Button>
+              <Button type="button" variant="secondary" size="md" onClick={handleCopyLink}>
+                <Copy size={16} />
+                {copied ? 'Copied!' : 'Copy Link'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

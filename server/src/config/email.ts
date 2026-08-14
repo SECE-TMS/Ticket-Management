@@ -17,6 +17,9 @@ const getTransporter = (): Transporter | null => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
   }
   return transporter;
@@ -41,6 +44,12 @@ export const sendEmail = async ({ to, subject, text, html }: SendEmailOptions) =
     return { stub: true as const, to, subject };
   }
 
-  const info = await tx.sendMail({ from, to, subject, text, html });
-  return info;
+  try {
+    const info = await tx.sendMail({ from, to, subject, text, html });
+    logger.info(`[email-sent] MessageId: ${info.messageId} | To: ${to} | Subject: ${subject}`);
+    return info;
+  } catch (err: any) {
+    logger.error(`[email-error] Failed to send email to ${to}: ${err?.message || err}`);
+    throw err;
+  }
 };

@@ -5,6 +5,8 @@ import type { LucideIcon } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { logout } from '../../store/slices/authSlice'
 import { cn } from '../../lib/utils'
+import isaiiCleanLogo from '../../assets/isaii_clean.png'
+import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
 export interface SidebarItem {
   to: string
@@ -44,7 +46,7 @@ export function Sidebar({ items, title }: SidebarProps) {
       {/* ── Mobile Sticky Top Header (Visible only on < lg screens) ──────────── */}
       <header className="sticky top-0 z-40 flex flex-col w-full border-b border-[var(--border)] bg-[var(--white)] shadow-xs lg:hidden">
         {/* Top bar with logo, menu toggle, user badge */}
-        <div className="flex h-14 w-full items-center justify-between px-4">
+        <div className="flex h-16 w-full items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -55,10 +57,21 @@ export function Sidebar({ items, title }: SidebarProps) {
               <Menu size={20} />
             </button>
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--primary-blue)] text-[var(--gold)] font-bold text-xs shadow-xs">
-                TM
+              <div className="flex items-center rounded-xl bg-white px-2.5 py-1 border border-slate-200 shadow-xs">
+                <img
+                  src={sriEshwarCleanLogo}
+                  alt="Sri Eshwar College Logo"
+                  className="h-7 w-auto max-w-[100px] object-contain"
+                />
               </div>
-              <span className="font-bold text-sm text-[var(--ink)]">TMS Portal</span>
+              <div className="flex items-center rounded-xl bg-white px-2.5 py-1 border border-slate-200 shadow-xs">
+                <img
+                  src={isaiiCleanLogo}
+                  alt="ISAII Logo"
+                  className="h-7 w-auto max-w-[65px] object-contain scale-115"
+                />
+              </div>
+              <span className="font-bold text-sm text-[var(--ink)] hidden sm:inline">TMS Portal</span>
             </div>
           </div>
 
@@ -122,26 +135,42 @@ export function Sidebar({ items, title }: SidebarProps) {
         aria-label="Main navigation"
       >
         {/* Brand Header */}
-        <div className="flex items-center gap-3 px-5 pt-6 pb-4 border-b border-white/10">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--gold)] text-[var(--primary-blue-deeper)] font-bold text-sm shrink-0 shadow-xs">
-            TM
+        <div className="flex flex-col px-4 pt-5 pb-4 border-b border-white/10 gap-3">
+          <div className="flex items-center justify-between gap-2">
+            {/* Split College Logo Badge */}
+            <div className="flex flex-1 items-center justify-center rounded-xl bg-white p-2 shadow-sm border border-white/20">
+              <img
+                src={sriEshwarCleanLogo}
+                alt="Sri Eshwar College Logo"
+                className="h-8 w-auto max-w-[110px] object-contain"
+              />
+            </div>
+
+            {/* Split ISAII Logo Badge (Zoomed) */}
+            <div className="flex flex-1 items-center justify-center rounded-xl bg-white p-2 shadow-sm border border-white/20">
+              <img
+                src={isaiiCleanLogo}
+                alt="ISAII Logo"
+                className="h-8 w-auto max-w-[80px] object-contain scale-120"
+              />
+            </div>
+            <button
+              type="button"
+              className="ml-2 flex h-7 w-7 items-center justify-center shrink-0 rounded-lg bg-white/10 text-white/70 hover:bg-white/20 hover:text-white lg:hidden cursor-pointer"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close navigation"
+            >
+              <X size={16} />
+            </button>
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col text-center">
             <span className="text-base font-bold text-[var(--white)] leading-tight tracking-tight">
               TMS Portal
             </span>
-            <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">
-              Ticket Management
+            <span className="text-[10px] font-semibold text-white/60 uppercase tracking-wider">
+              Ticket Management System
             </span>
           </div>
-          <button
-            type="button"
-            className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white/70 hover:bg-white/20 hover:text-white lg:hidden cursor-pointer"
-            onClick={() => setMobileOpen(false)}
-            aria-label="Close navigation"
-          >
-            <X size={16} />
-          </button>
         </div>
 
         {/* Section title */}

@@ -8,6 +8,7 @@ export const createUserSchema = z.object({
   role: z.enum(['manager', 'employee']),
   department: objectId,
   phone: z.string().max(20).optional().default(''),
+  rollNumber: z.string().max(50).optional().default(''),
 });
 
 export const createEmployeeSchema = z.object({
@@ -15,11 +16,13 @@ export const createEmployeeSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6).max(128),
   phone: z.string().max(20).optional().default(''),
+  rollNumber: z.string().max(50).optional().default(''),
 });
 
 export const updateUserSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   phone: z.string().max(20).optional(),
+  rollNumber: z.string().max(50).optional(),
   avatarUrl: z.string().url().or(z.literal('')).optional(),
   department: objectId.optional().nullable(),
   role: z.enum(['manager', 'employee']).optional(),

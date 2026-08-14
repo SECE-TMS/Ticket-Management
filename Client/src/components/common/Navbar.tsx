@@ -5,6 +5,8 @@ import type { LucideIcon } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { logout } from '../../store/slices/authSlice'
 import { cn } from '../../lib/utils'
+import isaiiCleanLogo from '../../assets/isaii_clean.png'
+import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
 export interface NavItem {
   to: string
@@ -45,15 +47,30 @@ export function Navbar({ items = [], brandTo = '/' }: NavbarProps) {
       id="main-navbar"
       className="sticky top-0 z-40 bg-[var(--primary-blue)] text-[var(--white)] shadow-md"
     >
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-        {/* Brand Logo */}
-        <Link to={brandTo} className="flex items-center gap-2.5 group">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold bg-[var(--gold)] text-[var(--primary-blue-deeper)] shadow-xs transition-transform group-hover:scale-105">
-            TM
-          </span>
-          <div className="flex flex-col">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+        {/* Brand Logo - Split into two separate elements */}
+        <Link to={brandTo} className="flex items-center gap-2.5 sm:gap-3.5 group">
+          {/* College Logo Badge */}
+          <div className="flex items-center rounded-xl bg-white px-3 py-1.5 shadow-sm border border-white/30 transition-transform group-hover:scale-105">
+            <img
+              src={sriEshwarCleanLogo}
+              alt="Sri Eshwar College Logo"
+              className="h-8 sm:h-9 w-auto max-w-[135px] object-contain"
+            />
+          </div>
+
+          {/* ISAII Logo Badge (Zoomed) */}
+          <div className="flex items-center rounded-xl bg-white px-3 py-1.5 shadow-sm border border-white/30 transition-transform group-hover:scale-105">
+            <img
+              src={isaiiCleanLogo}
+              alt="ISAII Logo"
+              className="h-8 sm:h-9 w-auto max-w-[90px] object-contain scale-120"
+            />
+          </div>
+
+          <div className="hidden md:flex flex-col ml-1">
             <span className="text-base font-bold tracking-tight text-[var(--white)] leading-none">
-              TMS
+              TMS Portal
             </span>
             <span className="text-[10px] font-medium text-white/60 tracking-wider uppercase">
               Ticket Management

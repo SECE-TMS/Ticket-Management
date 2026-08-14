@@ -24,12 +24,34 @@ router.post(
   ticketController.create
 );
 router.get('/track', validate(trackTicketSchema, 'query'), ticketController.track);
+router.post('/feedback', ticketController.submitFeedback);
+
+router.get(
+  '/admin/feedback',
+  authenticate,
+  requireRole('admin'),
+  ticketController.getAdminFeedbackList
+);
+
+router.get(
+  '/admin/feedback/department-analytics',
+  authenticate,
+  requireRole('admin'),
+  ticketController.getDepartmentFeedbackAnalytics
+);
 
 router.get(
   '/export',
   authenticate,
   requireRole('admin', 'manager'),
   ticketController.exportCsv
+);
+
+router.get(
+  '/export-excel',
+  authenticate,
+  requireRole('admin', 'manager'),
+  ticketController.exportExcel
 );
 
 router.get(

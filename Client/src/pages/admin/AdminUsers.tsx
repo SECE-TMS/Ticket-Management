@@ -19,6 +19,7 @@ interface UserForm {
   role: 'manager' | 'employee'
   department: string
   phone: string
+  rollNumber: string
 }
 
 const emptyForm: UserForm = {
@@ -28,6 +29,7 @@ const emptyForm: UserForm = {
   role: 'employee',
   department: '',
   phone: '',
+  rollNumber: '',
 }
 
 function getInitials(name: string) {
@@ -118,6 +120,7 @@ export function AdminUsers() {
       role: u.role === 'admin' ? 'manager' : u.role,
       department: getId(u.department),
       phone: u.phone || '',
+      rollNumber: u.rollNumber || '',
     })
     setOpen(true)
   }
@@ -132,6 +135,7 @@ export function AdminUsers() {
           role: form.role,
           department: form.department,
           phone: form.phone || '',
+          rollNumber: form.rollNumber || '',
         }
         if (form.password) {
           payload.password = form.password
@@ -142,6 +146,7 @@ export function AdminUsers() {
         await userService.create({
           ...form,
           phone: form.phone || undefined,
+          rollNumber: form.rollNumber || undefined,
         })
         toast.success('User created successfully')
       }
@@ -263,7 +268,7 @@ export function AdminUsers() {
                             {u.name}
                           </p>
                           <p className="text-xs text-[var(--ink-muted)]">
-                            {u.email}
+                            {u.email} {u.rollNumber ? `• ID: ${u.rollNumber}` : ''}
                           </p>
                         </div>
                       </div>
@@ -406,6 +411,14 @@ export function AdminUsers() {
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               className={inputClass}
               placeholder="10-digit number"
+            />
+          </Field>
+          <Field label="Roll Number / Staff ID (optional)">
+            <input
+              value={form.rollNumber}
+              onChange={(e) => setForm((f) => ({ ...f, rollNumber: e.target.value }))}
+              className={inputClass}
+              placeholder="e.g. STF-2026-001"
             />
           </Field>
 

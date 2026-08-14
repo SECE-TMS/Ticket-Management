@@ -13,7 +13,7 @@ import {
 import { dashboardService } from '../../services/dashboardService'
 import { KpiCard, PageHeader } from '../../components/common/KpiCard'
 import { PageLoader } from '../../components/common/LoadingSpinner'
-import { StatusBadge } from '../../components/common/Badge'
+import { PriorityBadge, StatusBadge } from '../../components/common/Badge'
 import { Button } from '../../components/common/Button'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage } from '../../lib/utils'
@@ -155,10 +155,12 @@ export function AdminDashboard() {
         <table className="w-full text-left text-sm border-collapse">
           <thead>
             <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
-              <th className="px-5 py-3">Code</th>
+              <th className="px-5 py-3">Ticket ID & Requester</th>
               <th className="px-5 py-3">Department</th>
               <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3">Assignee</th>
+              <th className="px-5 py-3">Priority</th>
+              <th className="px-5 py-3">Assigned</th>
+              <th className="px-5 py-3">Complaint</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
@@ -176,10 +178,18 @@ export function AdminDashboard() {
                   >
                     {t.ticketCode}
                   </Link>
+                  <div className="text-xs text-[var(--ink-muted)] font-medium mt-0.5">
+                    {t.requester?.name || '—'}
+                  </div>
                 </td>
                 <td className="px-5 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
                 <td className="px-5 py-3.5"><StatusBadge status={t.status} /></td>
-                <td className="px-5 py-3.5 text-[var(--ink-muted)]">{getName(t.assignedTo, '—')}</td>
+                <td className="px-5 py-3.5"><PriorityBadge priority={t.priority} /></td>
+                <td className="px-5 py-3.5 text-[var(--ink-muted)]">{getName(t.assignedTo, 'Unassigned')}</td>
+                <td className="px-5 py-3.5">
+                  <div className="font-semibold text-[var(--ink)]">{t.complaintType}</div>
+                  <div className="text-xs text-[var(--ink-muted)] truncate max-w-xs">{t.description}</div>
+                </td>
               </tr>
             ))}
           </tbody>

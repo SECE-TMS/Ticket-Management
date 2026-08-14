@@ -98,7 +98,8 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const canAssign =
     (role === 'admin' || role === 'manager') &&
     ['new', 'reopened', 'assigned'].includes(ticket.status)
-  const canClose = (role === 'admin' || role === 'manager') && ticket.status === 'resolved'
+  const canClose =
+    (role === 'admin' || role === 'manager') && ticket.status !== 'closed'
   const canReopen =
     (role === 'admin' || role === 'manager') &&
     ['resolved', 'closed'].includes(ticket.status)
@@ -106,8 +107,8 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
     role === 'employee' && (ticket.status === 'assigned' || ticket.status === 'reopened')
   const canStart = role === 'employee' && ticket.status === 'accepted'
   const canResolve =
-    role === 'employee' &&
-    ['assigned', 'accepted', 'in_progress', 'reopened'].includes(ticket.status)
+    ['admin', 'manager', 'employee'].includes(role || '') &&
+    ['new', 'assigned', 'accepted', 'in_progress', 'reopened'].includes(ticket.status)
 
   const run = async (fn: () => Promise<void>, success: string) => {
     setActionLoading(true)
@@ -165,36 +166,6 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               Assign Ticket
             </Button>
           )}
-          {canClose && (
-            <Button
-              id="action-close"
-              type="button"
-              variant="outline"
-              loading={actionLoading}
-              onClick={() =>
-                void run(async () => {
-                  await ticketService.close(ticket._id)
-                }, 'Ticket closed')
-              }
-            >
-              Close Ticket
-            </Button>
-          )}
-          {canReopen && (
-            <Button
-              id="action-reopen"
-              type="button"
-              variant="ghost"
-              loading={actionLoading}
-              onClick={() =>
-                void run(async () => {
-                  await ticketService.reopen(ticket._id, 'Reopened by manager')
-                }, 'Ticket reopened')
-              }
-            >
-              Reopen
-            </Button>
-          )}
           {canAccept && (
             <Button
               id="action-accept"
@@ -231,6 +202,36 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               onClick={() => setResolveOpen(true)}
             >
               Mark Resolved
+            </Button>
+          )}
+          {canReopen && (
+            <Button
+              id="action-reopen"
+              type="button"
+              variant="ghost"
+              loading={actionLoading}
+              onClick={() =>
+                void run(async () => {
+                  await ticketService.reopen(ticket._id, 'Reopened by manager')
+                }, 'Ticket reopened')
+              }
+            >
+              Reopen
+            </Button>
+          )}
+          {canClose && (
+            <Button
+              id="action-close"
+              type="button"
+              variant="outline"
+              loading={actionLoading}
+              onClick={() =>
+                void run(async () => {
+                  await ticketService.close(ticket._id)
+                }, 'Ticket closed')
+              }
+            >
+              Close Ticket
             </Button>
           )}
         </div>

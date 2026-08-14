@@ -6,6 +6,7 @@ import ticketRoutes from './ticket.routes';
 import dashboardRoutes from './dashboard.routes';
 import notificationRoutes from './notification.routes';
 import otpRoutes from './otp.routes';
+import settingRoutes from './setting.routes';
 
 const router = express.Router();
 
@@ -20,6 +21,8 @@ router.use('/tickets', ticketRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/otp', otpRoutes);
+router.use('/settings', settingRoutes);
 
 export default router;
+
 

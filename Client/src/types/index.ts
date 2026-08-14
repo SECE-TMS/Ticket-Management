@@ -27,6 +27,7 @@ export interface Pagination {
   limit: number
   total: number
   pages: number
+  totalPages?: number
 }
 
 export interface Department {
@@ -47,6 +48,7 @@ export interface UserRef {
   name: string
   email?: string
   phone?: string
+  rollNumber?: string
   role?: Role
 }
 
@@ -58,6 +60,7 @@ export interface User {
   role: Role
   department: Department | string | null
   phone?: string
+  rollNumber?: string
   avatarUrl?: string
   isActive: boolean
   lastLogin?: string | null
@@ -65,10 +68,54 @@ export interface User {
   updatedAt?: string
 }
 
+export interface SystemSettings {
+  smsOtpEnabled: boolean
+  emailOtpEnabled?: boolean
+  emailNotificationsEnabled: boolean
+  feedbackEnabled: boolean
+  notifyRequesterOnEveryAction: boolean
+  requireRequesterEmail: boolean
+  mobileMode: 'hidden' | 'optional' | 'required' | 'otp_required'
+  emailMode: 'hidden' | 'optional' | 'required' | 'otp_required'
+  notifyEvents: {
+    created: boolean
+    assigned: boolean
+    statusChanged: boolean
+    resolved: boolean
+    closed: boolean
+    reopened: boolean
+    commented: boolean
+  }
+}
+
 export interface Attachment {
   url: string
   type: 'image' | 'audio' | 'video'
   publicId?: string | null
+}
+
+export interface TicketFeedback {
+  rating: number
+  comment?: string
+  tags?: string[]
+  submittedAt: string
+}
+
+export interface DepartmentFeedbackAnalytics {
+  _id: string
+  departmentName: string
+  departmentCode: string
+  departmentIcon?: string
+  totalFeedback: number
+  avgRating: number
+  satisfactionRate: number
+  distribution: {
+    1: number
+    2: number
+    3: number
+    4: number
+    5: number
+  }
 }
 
 export interface Ticket {
@@ -99,6 +146,7 @@ export interface Ticket {
   closedBy?: UserRef | string | null
   closedAt?: string | null
   reopenCount?: number
+  feedback?: TicketFeedback | null
   comments?: Array<{
     _id?: string
     author: UserRef | string

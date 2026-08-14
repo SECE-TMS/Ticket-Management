@@ -18,9 +18,10 @@ interface EmpForm {
   email: string
   password: string
   phone: string
+  rollNumber: string
 }
 
-const emptyForm: EmpForm = { name: '', email: '', password: '', phone: '' }
+const emptyForm: EmpForm = { name: '', email: '', password: '', phone: '', rollNumber: '' }
 
 function getInitials(name: string) {
   return name
@@ -78,6 +79,7 @@ export function ManagerEmployees() {
       email: emp.email,
       password: '',
       phone: emp.phone || '',
+      rollNumber: emp.rollNumber || '',
     })
     setOpen(true)
   }
@@ -100,6 +102,7 @@ export function ManagerEmployees() {
           name: form.name,
           email: form.email,
           phone: form.phone || '',
+          rollNumber: form.rollNumber || '',
         }
         if (form.password) {
           payload.password = form.password
@@ -112,6 +115,7 @@ export function ManagerEmployees() {
           email: form.email,
           password: form.password,
           phone: form.phone || undefined,
+          rollNumber: form.rollNumber || undefined,
         })
         toast.success('Employee created successfully')
       }
@@ -189,7 +193,9 @@ export function ManagerEmployees() {
                       </p>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-[var(--ink-muted)]">{e.email}</td>
+                  <td className="px-4 py-3.5 text-[var(--ink-muted)]">
+                    {e.email} {e.rollNumber ? `• ID: ${e.rollNumber}` : ''}
+                  </td>
                   <td className="px-4 py-3.5 text-[var(--ink-muted)]">{e.phone || '—'}</td>
                   <td className="px-4 py-3.5">
                     <Badge
@@ -301,6 +307,20 @@ export function ManagerEmployees() {
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               className={inputClass}
               placeholder="10-digit mobile"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="emp-rollNumber" className="text-sm font-semibold text-[var(--ink)]">
+              Roll Number / Staff ID (optional)
+            </label>
+            <input
+              id="emp-rollNumber"
+              type="text"
+              value={form.rollNumber}
+              onChange={(e) => setForm((f) => ({ ...f, rollNumber: e.target.value }))}
+              className={inputClass}
+              placeholder="e.g. STF-2026-001"
             />
           </div>
 

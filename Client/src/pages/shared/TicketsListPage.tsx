@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ticketService, type TicketListParams } from '../../services/ticketService'
+import { departmentService } from '../../services/departmentService'
 import { TicketFilters } from '../../components/tickets/TicketFilters'
 import { TicketTable } from '../../components/tickets/TicketTable'
 import { Pagination } from '../../components/common/Pagination'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { PageHeader } from '../../components/common/KpiCard'
 import { useToast } from '../../context/ToastContext'
+import { useAppSelector } from '../../store/hooks'
 import { getErrorMessage } from '../../lib/utils'
-import type { Ticket, TicketPriority, TicketStatus } from '../../types'
+import type { Department, Ticket, TicketPriority, TicketStatus } from '../../types'
 
 interface TicketsPageProps {
   title: string
@@ -17,14 +19,22 @@ interface TicketsPageProps {
 
 export function TicketsListPage({ title, description, detailBase }: TicketsPageProps) {
   const toast = useToast()
+  const user = useAppSelector((s) => s.auth.user)
+  const role = user?.role
+
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
   const [tickets, setTickets] = useState<Ticket[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<TicketStatus | ''>('')
   const [priority, setPriority] = useState<TicketPriority | ''>('')
+  const [department, setDepartment] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [limit, setLimit] = useState(10)
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
@@ -32,6 +42,12 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
     const t = window.setTimeout(() => setDebouncedSearch(search), 300)
     return () => window.clearTimeout(t)
   }, [search])
+
+  useEffect(() => {
+    if (role === 'admin') {
+      departmentService.listAll().then(setDepartments).catch(() => {})
+    }
+  }, [role])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -42,6 +58,9 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
         search: debouncedSearch || undefined,
         status: status || undefined,
         priority: priority || undefined,
+        department: department || undefined,
+        from: fromDate || undefined,
+        to: toDate || undefined,
       }
       const data = await ticketService.list(params)
       setTickets(data.items)
@@ -52,7 +71,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
     } finally {
       setLoading(false)
     }
-  }, [page, limit, debouncedSearch, status, priority, toast])
+  }, [page, limit, debouncedSearch, status, priority, department, fromDate, toDate, toast])
 
   useEffect(() => {
     void load()
@@ -60,7 +79,27 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, status, priority, limit])
+  }, [debouncedSearch, status, priority, department, fromDate, toDate, limit])
+
+  const handleExportExcel = async () => {
+    setExporting(true)
+    try {
+      const params: TicketListParams = {
+        search: debouncedSearch || undefined,
+        status: status || undefined,
+        priority: priority || undefined,
+        department: department || undefined,
+        from: fromDate || undefined,
+        to: toDate || undefined,
+      }
+      await ticketService.exportExcel(params)
+      toast.success('Colorful Excel Report downloaded successfully')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to export Excel report'))
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div>
@@ -80,9 +119,18 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
         search={search}
         status={status}
         priority={priority}
+        department={department}
+        fromDate={fromDate}
+        toDate={toDate}
+        departments={departments}
         onSearchChange={setSearch}
         onStatusChange={setStatus}
         onPriorityChange={setPriority}
+        onDepartmentChange={role === 'admin' ? setDepartment : undefined}
+        onFromDateChange={setFromDate}
+        onToDateChange={setToDate}
+        onExportExcel={role === 'admin' || role === 'manager' ? handleExportExcel : undefined}
+        exporting={exporting}
       />
 
       {loading ? (

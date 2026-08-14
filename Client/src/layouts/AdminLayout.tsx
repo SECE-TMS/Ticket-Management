@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom'
-import { Building2, LayoutDashboard, QrCode, Ticket, Users } from 'lucide-react'
+import { Building2, LayoutDashboard, MessageSquare, QrCode, Settings, Ticket, Users } from 'lucide-react'
 import { Sidebar, type SidebarItem } from '../components/common/Sidebar'
 
 const adminItems: SidebarItem[] = [
@@ -7,7 +7,9 @@ const adminItems: SidebarItem[] = [
   { to: '/admin/tickets', label: 'Tickets', icon: Ticket },
   { to: '/admin/departments', label: 'Departments', icon: Building2 },
   { to: '/admin/users', label: 'Users', icon: Users },
+  { to: '/admin/feedback', label: 'Feedback', icon: MessageSquare },
   { to: '/admin/qr-generator', label: 'QR Generator', icon: QrCode },
+  { to: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
 export function AdminLayout() {

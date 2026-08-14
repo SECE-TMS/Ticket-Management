@@ -45,6 +45,13 @@ export interface IRequester {
   rollNumber?: string;
 }
 
+export interface ITicketFeedback {
+  rating: number;
+  comment?: string;
+  tags?: string[];
+  submittedAt: Date;
+}
+
 export interface ITicket {
   ticketCode: string;
   requester: IRequester;
@@ -63,6 +70,7 @@ export interface ITicket {
   closedAt: Date | null;
   reopenCount: number;
   comments: ITicketComment[];
+  feedback?: ITicketFeedback | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -112,6 +120,12 @@ const ticketSchema = new Schema<ITicket>(
     closedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     closedAt: { type: Date, default: null },
     reopenCount: { type: Number, default: 0 },
+    feedback: {
+      rating: { type: Number, min: 1, max: 5 },
+      comment: { type: String, trim: true, default: '' },
+      tags: { type: [String], default: [] },
+      submittedAt: { type: Date, default: Date.now },
+    },
     comments: [
       {
         author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -125,6 +139,7 @@ const ticketSchema = new Schema<ITicket>(
 
 ticketSchema.index({ status: 1, department: 1 });
 ticketSchema.index({ 'requester.mobile': 1, ticketCode: 1 });
+ticketSchema.index({ 'feedback.rating': 1 });
 ticketSchema.index({ createdAt: -1 });
 
 const Ticket: Model<ITicket> = mongoose.model<ITicket>('Ticket', ticketSchema);

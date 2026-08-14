@@ -13,8 +13,14 @@ import {
   ExternalLink,
   FileText,
   Headset,
+  MessageSquare,
   Phone,
+  Printer,
   Search,
+  Send,
+  Share2,
+  Star,
+  ThumbsUp,
   Ticket as TicketIcon,
   Volume2,
   X,
@@ -23,6 +29,8 @@ import { ticketService } from '../../services/ticketService'
 import { Button } from '../../components/common/Button'
 import { PriorityBadge, StatusBadge } from '../../components/common/Badge'
 import { TicketTimeline } from '../../components/tickets/TicketTimeline'
+import { ShareTicketModal } from '../../components/tickets/ShareTicketModal'
+import { TicketReceiptModal } from '../../components/tickets/TicketReceiptModal'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage, getAttachmentUrl } from '../../lib/utils'
 import type { Activity, Ticket } from '../../types'
@@ -59,6 +67,8 @@ export function TrackTicket() {
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
   const [activeImageModal, setActiveImageModal] = useState<string | null>(null)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [showReceiptModal, setShowReceiptModal] = useState(false)
 
   const {
     register,
@@ -87,7 +97,7 @@ export function TrackTicket() {
   const activeStep = ticket ? getProgressStep(ticket.status) : 1
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+    <div className="font-poppins mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
       {/* Back button */}
       <Link
         to="/"
@@ -208,6 +218,24 @@ export function TrackTicket() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowShareModal(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition-colors cursor-pointer"
+                    title="Share Ticket"
+                  >
+                    <Share2 size={14} /> Share
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowReceiptModal(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition-colors cursor-pointer"
+                    title="Download/Print Receipt"
+                  >
+                    <Printer size={14} /> Download Receipt
+                  </button>
+
                   <StatusBadge status={ticket.status} />
                   <PriorityBadge priority={ticket.priority} />
                 </div>
@@ -461,6 +489,11 @@ export function TrackTicket() {
                   </p>
                 </div>
               )}
+
+              {/* ── FEEDBACK & RATING SECTION FOR COMPLETED TICKETS ──────────────── */}
+              {(ticket.status === 'resolved' || ticket.status === 'closed') && (
+                <FeedbackCard ticket={ticket} onFeedbackSubmitted={(updatedTicket) => setTicket(updatedTicket)} />
+              )}
             </div>
           </div>
 
@@ -496,6 +529,191 @@ export function TrackTicket() {
           </div>
         </div>
       )}
+
+      {/* Share Ticket Modal */}
+      {ticket && (
+        <ShareTicketModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          ticketCode={ticket.ticketCode}
+          mobile={ticket.requester.mobile}
+          departmentName={getName(ticket.department)}
+          complaintType={ticket.complaintType}
+        />
+      )}
+
+      {/* Ticket Receipt Printable Modal */}
+      {ticket && (
+        <TicketReceiptModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          ticket={ticket}
+        />
+      )}
+    </div>
+  )
+}
+
+const RATING_LABELS: Record<number, string> = {
+  1: 'Poor — Needs Improvement',
+  2: 'Fair — Acceptable Service',
+  3: 'Good — Satisfactory Work',
+  4: 'Very Good — Great Job',
+  5: 'Excellent — Outstanding Support!',
+}
+
+function FeedbackCard({
+  ticket,
+  onFeedbackSubmitted,
+}: {
+  ticket: Ticket
+  onFeedbackSubmitted: (updated: Ticket) => void
+}) {
+  const toast = useToast()
+  const [rating, setRating] = useState<number>(ticket.feedback?.rating || 5)
+  const [hoverRating, setHoverRating] = useState<number>(0)
+  const [comment, setComment] = useState<string>(ticket.feedback?.comment || '')
+  const [loading, setLoading] = useState(false)
+
+  const hasFeedback = Boolean(ticket.feedback && ticket.feedback.rating && ticket.feedback.rating >= 1)
+
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!rating) {
+      toast.error('Please select a star rating')
+      return
+    }
+    setLoading(true)
+    try {
+      const updated = await ticketService.submitFeedback({
+        ticketCode: ticket.ticketCode,
+        mobile: ticket.requester.mobile,
+        rating,
+        comment,
+      })
+      toast.success('Thank you for your feedback!')
+      onFeedbackSubmitted(updated)
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to submit feedback'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (hasFeedback && ticket.feedback) {
+    const existingFeedback = ticket.feedback
+    return (
+      <div className="rounded-2xl border border-[var(--gold)]/40 bg-[var(--gold-light)]/40 p-6 shadow-xs">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <ThumbsUp size={18} className="text-[var(--gold-dark)]" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--gold-dark)]">
+              Your Submitted Feedback
+            </h4>
+          </div>
+          <span className="text-xs text-[var(--ink-muted)] font-medium">
+            {format(new Date(existingFeedback.submittedAt), 'dd MMM yyyy')}
+          </span>
+        </div>
+
+        {/* Stars */}
+        <div className="flex items-center gap-1.5 mb-3">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              size={22}
+              className={`${
+                star <= (existingFeedback.rating || 0)
+                  ? 'fill-[var(--gold)] text-[var(--gold)]'
+                  : 'text-slate-300'
+              }`}
+            />
+          ))}
+          <span className="ml-2 text-sm font-bold text-[var(--ink)]">
+            {existingFeedback.rating}/5 — {RATING_LABELS[existingFeedback.rating]}
+          </span>
+        </div>
+
+        {/* Remarks */}
+        {existingFeedback.comment && (
+          <p className="text-sm italic text-[var(--ink)] bg-white/70 p-3 rounded-xl border border-[var(--border)]">
+            "{existingFeedback.comment}"
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-2xl border border-[var(--primary-blue)]/30 bg-[var(--primary-blue-light)]/30 p-6 shadow-sm">
+      <div className="flex items-center gap-2 mb-2">
+        <MessageSquare size={18} className="text-[var(--primary-blue)]" />
+        <h4 className="text-sm font-bold uppercase tracking-wider text-[var(--primary-blue)]">
+          Rate Your Resolution Experience
+        </h4>
+      </div>
+      <p className="text-xs text-[var(--ink-muted)] mb-5">
+        How satisfied are you with the resolution of ticket <strong>{ticket.ticketCode}</strong>?
+      </p>
+
+      <form onSubmit={handleSubmitFeedback} className="space-y-5">
+        {/* Interactive 5 Star Selector */}
+        <div className="flex flex-col items-start gap-2">
+          <div className="flex items-center gap-2">
+            {[1, 2, 3, 4, 5].map((star) => {
+              const active = star <= (hoverRating || rating)
+              return (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  className="p-1 transition-transform hover:scale-125 cursor-pointer focus:outline-none"
+                  aria-label={`Rate ${star} stars`}
+                >
+                  <Star
+                    size={32}
+                    className={`transition-colors ${
+                      active
+                        ? 'fill-[var(--gold)] text-[var(--gold)] drop-shadow-xs'
+                        : 'text-slate-300 hover:text-yellow-300'
+                    }`}
+                  />
+                </button>
+              )
+            })}
+          </div>
+          <span className="text-xs font-bold text-[var(--primary-blue)]">
+            {RATING_LABELS[hoverRating || rating] || 'Select Rating'}
+          </span>
+        </div>
+
+        {/* Remarks Input */}
+        <div>
+          <label htmlFor="feedback-comment" className="text-xs font-bold text-[var(--ink-muted)] uppercase tracking-wider block mb-1">
+            Additional Comments / Suggestions:
+          </label>
+          <textarea
+            id="feedback-comment"
+            rows={3}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Tell us what went well or how we can improve..."
+            className="w-full rounded-xl border border-[var(--border)] bg-white p-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
+          />
+        </div>
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          loading={loading}
+          className="w-full font-bold shadow-md hover:scale-[1.01]"
+        >
+          <Send size={15} /> Submit Feedback
+        </Button>
+      </form>
     </div>
   )
 }

@@ -28,6 +28,7 @@ export const userService = {
     role: 'manager' | 'employee'
     department: string
     phone?: string
+    rollNumber?: string
   }) {
     const { data } = await api.post('/users', payload)
     return data.data as User
@@ -38,6 +39,7 @@ export const userService = {
     email: string
     password: string
     phone?: string
+    rollNumber?: string
   }) {
     const { data } = await api.post('/users/employee', payload)
     return data.data as User
@@ -48,6 +50,7 @@ export const userService = {
     payload: Partial<{
       name: string
       phone: string
+      rollNumber: string
       department: string | null
       role: 'manager' | 'employee'
     }>

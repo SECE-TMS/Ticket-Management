@@ -8,6 +8,8 @@ import { Button } from '../../components/common/Button'
 import { roleHome } from '../../components/common/ProtectedRoute'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { clearAuthError, login } from '../../store/slices/authSlice'
+import isaiiCleanLogo from '../../assets/isaii_clean.png'
+import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -61,10 +63,25 @@ export function Login() {
 
         {/* Logo */}
         <div className="relative flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--gold)] text-[var(--primary-blue-deeper)] font-bold text-sm">
-            TM
+          {/* Split College Logo Badge */}
+          <div className="flex items-center rounded-2xl bg-white px-3.5 py-1.5 shadow-md border border-white/30">
+            <img
+              src={sriEshwarCleanLogo}
+              alt="Sri Eshwar College Logo"
+              className="h-9 w-auto max-w-[140px] object-contain"
+            />
           </div>
-          <span className="text-lg font-bold text-[var(--white)]">TMS Portal</span>
+
+          {/* Split ISAII Logo Badge (Zoomed) */}
+          <div className="flex items-center rounded-2xl bg-white px-3.5 py-1.5 shadow-md border border-white/30">
+            <img
+              src={isaiiCleanLogo}
+              alt="ISAII Logo"
+              className="h-9 w-auto max-w-[95px] object-contain scale-120"
+            />
+          </div>
+
+          <span className="text-xl font-bold text-[var(--white)] ml-1">TMS Portal</span>
         </div>
 
         {/* Main copy */}
@@ -89,9 +106,20 @@ export function Login() {
       <div className="flex flex-1 flex-col items-center justify-center px-5 py-12 sm:px-10">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
-          <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--primary-blue)] text-[var(--white)] text-xs font-bold">
-              TM
+          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+            <div className="flex items-center rounded-xl bg-white px-2.5 py-1 border border-slate-200 shadow-xs">
+              <img
+                src={sriEshwarCleanLogo}
+                alt="Sri Eshwar College Logo"
+                className="h-7 w-auto max-w-[110px] object-contain"
+              />
+            </div>
+            <div className="flex items-center rounded-xl bg-white px-2.5 py-1 border border-slate-200 shadow-xs">
+              <img
+                src={isaiiCleanLogo}
+                alt="ISAII Logo"
+                className="h-7 w-auto max-w-[70px] object-contain scale-115"
+              />
             </div>
             <span className="font-bold text-[var(--ink)]">TMS Portal</span>
           </div>
