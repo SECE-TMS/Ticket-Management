@@ -96,22 +96,24 @@ export const ticketService = {
     rating?: number
     period?: string
     search?: string
+    from?: string
+    to?: string
   } = {}) {
     const { data } = await api.get('/tickets/admin/feedback', { params })
     return data.data as { items?: Ticket[]; tickets?: Ticket[]; pagination: Pagination }
   },
 
-  async getDepartmentFeedbackAnalytics(params: { period?: string; department?: string } = {}) {
+  async getDepartmentFeedbackAnalytics(params: { period?: string; department?: string; from?: string; to?: string } = {}) {
     const { data } = await api.get('/tickets/admin/feedback/department-analytics', { params })
     return data.data as import('../types').DepartmentFeedbackAnalytics[]
   },
 
-  async getCategoryFeedbackAnalytics(params: { period?: string; department?: string } = {}) {
+  async getCategoryFeedbackAnalytics(params: { period?: string; department?: string; from?: string; to?: string } = {}) {
     const { data } = await api.get('/tickets/admin/feedback/category-analytics', { params })
     return data.data as import('../types').CategoryFeedbackAnalytics[]
   },
 
-  async getTimeWiseFeedbackAnalytics(params: { department?: string; category?: string } = {}) {
+  async getTimeWiseFeedbackAnalytics(params: { department?: string; category?: string; from?: string; to?: string } = {}) {
     const { data } = await api.get('/tickets/admin/feedback/timewise-analytics', { params })
     return data.data as import('../types').TimeWiseFeedbackAnalytics
   },

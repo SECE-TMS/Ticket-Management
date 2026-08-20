@@ -968,25 +968,37 @@ const getFeedbackPeriodMatch = (query: Record<string, unknown>) => {
     'feedback.rating': { $exists: true, $ne: null },
   };
 
-  const period = String(query.period || query.timeRange || '');
-  const now = new Date();
-  let startDate: Date | undefined;
+  // Custom date range takes priority over period presets
+  if (query.from || query.to) {
+    const dateFilter: Record<string, Date> = {};
+    if (query.from) dateFilter.$gte = new Date(String(query.from));
+    if (query.to) {
+      const to = new Date(String(query.to));
+      to.setHours(23, 59, 59, 999);
+      dateFilter.$lte = to;
+    }
+    match['feedback.submittedAt'] = dateFilter;
+  } else {
+    const period = String(query.period || query.timeRange || '');
+    const now = new Date();
+    let startDate: Date | undefined;
 
-  if (period === '7d' || period === 'week' || period === 'this_week') {
-    startDate = new Date();
-    startDate.setDate(now.getDate() - 7);
-  } else if (period === '30d' || period === 'month' || period === 'this_month') {
-    startDate = new Date();
-    startDate.setDate(now.getDate() - 30);
-  } else if (period === '90d') {
-    startDate = new Date();
-    startDate.setDate(now.getDate() - 90);
-  } else if (period === 'year') {
-    startDate = new Date(now.getFullYear(), 0, 1);
-  }
+    if (period === '7d' || period === 'week' || period === 'this_week') {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 7);
+    } else if (period === '30d' || period === 'month' || period === 'this_month') {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 30);
+    } else if (period === '90d') {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 90);
+    } else if (period === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
 
-  if (startDate) {
-    match['feedback.submittedAt'] = { $gte: startDate };
+    if (startDate) {
+      match['feedback.submittedAt'] = { $gte: startDate };
+    }
   }
 
   if (query.department) {
@@ -1025,7 +1037,17 @@ export const getAdminFeedbackList = async (query: Record<string, unknown>) => {
     filter['feedback.rating'] = Number(query.rating);
   }
 
-  if (query.period || query.timeRange) {
+  // Custom date range takes priority over period presets
+  if (query.from || query.to) {
+    const dateFilter: Record<string, Date> = {};
+    if (query.from) dateFilter.$gte = new Date(String(query.from));
+    if (query.to) {
+      const to = new Date(String(query.to));
+      to.setHours(23, 59, 59, 999);
+      dateFilter.$lte = to;
+    }
+    filter['feedback.submittedAt'] = dateFilter;
+  } else if (query.period || query.timeRange) {
     const period = String(query.period || query.timeRange);
     const now = new Date();
     let startDate: Date | undefined;
@@ -1220,19 +1242,7 @@ export const getCategoryFeedbackAnalytics = async (query: Record<string, unknown
  * Week-wise and Month-wise Category & Overall Feedback Analytics
  */
 export const getTimeWiseFeedbackAnalytics = async (query: Record<string, unknown> = {}) => {
-  const match: Record<string, unknown> = {
-    'feedback.rating': { $exists: true, $ne: null },
-  };
-
-  if (query.department) {
-    match.department =
-      typeof query.department === 'string'
-        ? new mongoose.Types.ObjectId(query.department)
-        : query.department;
-  }
-  if (query.category || query.complaintType) {
-    match.complaintType = String(query.category || query.complaintType);
-  }
+  const match = getFeedbackPeriodMatch(query);
 
   // Aggregate by Year & ISO Week
   const weeklyPipeline = [

@@ -52,13 +52,13 @@ const schema = z
   })
   .refine(
     (data) => {
-      if (data.userType === 'student') {
+      if (data.userType === 'student' || data.userType === 'staff') {
         return !!data.rollNumber && data.rollNumber.trim().length >= 2
       }
       return true
     },
     {
-      message: 'Roll number is required for students',
+      message: 'Roll Number / Staff ID is required',
       path: ['rollNumber'],
     }
   )
@@ -126,6 +126,7 @@ export function RaiseTicket() {
     handleSubmit,
     watch,
     setValue,
+    clearErrors,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -394,7 +395,7 @@ export function RaiseTicket() {
     try {
       const formData = new FormData()
       formData.append('userType', values.userType)
-      if (values.userType === 'student' && values.rollNumber) {
+      if ((values.userType === 'student' || values.userType === 'staff') && values.rollNumber) {
         formData.append('rollNumber', values.rollNumber.trim())
       }
       formData.append('name', values.name)
@@ -677,7 +678,12 @@ export function RaiseTicket() {
                       <button
                         key={role.id}
                         type="button"
-                        onClick={() => setValue('userType', role.id as 'student' | 'staff' | 'guest')}
+                        onClick={() => {
+                          setValue('userType', role.id as 'student' | 'staff' | 'guest')
+                          if (role.id === 'guest') {
+                            clearErrors('rollNumber')
+                          }
+                        }}
                         className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-3.5 text-center transition-all cursor-pointer ${isSelected
                           ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-bold shadow-xs ring-2 ring-[var(--primary-blue)]/20'
                           : 'border-[var(--border)] bg-[var(--white)] text-[var(--ink-muted)] hover:border-[var(--primary-blue-muted)] hover:bg-[var(--surface)]'
@@ -712,11 +718,12 @@ export function RaiseTicket() {
                   )}
                 </div>
 
-                {/* Roll Number (Conditional for Student) */}
-                {selectedUserType === 'student' && (
+                {/* Roll Number / Staff ID (Conditional for Student & Staff) */}
+                {(selectedUserType === 'student' || selectedUserType === 'staff') && (
                   <div className="flex flex-col gap-1.5 animate-fade-in">
                     <label htmlFor="rt-roll" className="text-xs font-bold text-[var(--ink)]">
-                      Student Roll Number <span className="text-[var(--danger)]">*</span>
+                      {selectedUserType === 'student' ? 'Student Roll Number' : 'Staff ID / Employee Code'}{' '}
+                      <span className="text-[var(--danger)]">*</span>
                     </label>
                     <div className="relative">
                       <IdCard
@@ -728,7 +735,7 @@ export function RaiseTicket() {
                         id="rt-roll"
                         className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] uppercase outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.rollNumber ? 'border-[var(--danger)]' : 'border-[var(--border)]'
                           }`}
-                        placeholder="  21CS045"
+                        placeholder={selectedUserType === 'student' ? '  21CS045' : '  EMP-1042'}
                       />
                     </div>
                     {errors.rollNumber && (

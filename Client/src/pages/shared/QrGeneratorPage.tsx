@@ -10,7 +10,6 @@ import {
   Printer,
   QrCode as QrIcon,
   Sparkles,
-  Zap,
   Palette,
   Check,
   Upload,
@@ -639,15 +638,6 @@ export function QrGeneratorPage() {
     }
   }, [selectedDept, locationName, complaintType])
 
-  const applyPreset = (preset: { deptName: string; location: string; complaint: string }) => {
-    setLocationName(preset.location)
-    setComplaintType(preset.complaint)
-    const found = departments.find((d) => d.name.toLowerCase().includes(preset.deptName.toLowerCase()))
-    if (found) {
-      setSelectedDeptId(getId(found))
-    }
-  }
-
   const handleSecondaryLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -743,14 +733,14 @@ export function QrGeneratorPage() {
             <QrIcon className="text-[var(--primary-blue)]" size={30} />
             Campus Maintenance QR Poster Generator
           </h1>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+          {/* <p className="mt-1 text-sm text-[var(--ink-muted)]">
             Generate and print official high-resolution 4" × 6" campus maintenance QR code posters for facility areas.
-          </p>
+          </p> */}
         </div>
       </div>
 
       {/* Facility Quick Presets */}
-      <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-sm">
+      {/* <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-sm">
         <p className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">
           <Sparkles size={14} className="text-[var(--gold)]" /> Campus Facility Quick Presets
         </p>
@@ -772,7 +762,7 @@ export function QrGeneratorPage() {
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Main Grid Workspace */}
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
@@ -1032,9 +1022,9 @@ export function QrGeneratorPage() {
           <div className="sticky top-6 flex w-full flex-col items-center">
             <div className="mb-2 flex w-full max-w-[420px] items-center justify-between px-1 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">
               <span>Live Poster Preview</span>
-              <span className="rounded-full bg-slate-200 px-2.5 py-0.5 font-mono text-[10px]">
+              {/* <span className="rounded-full bg-slate-200 px-2.5 py-0.5 font-mono text-[10px]">
                 Postcard 4"×6" (300 DPI)
-              </span>
+              </span> */}
             </div>
 
             {/* Live Visual Card Preview Container */}

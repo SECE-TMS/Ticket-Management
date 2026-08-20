@@ -10,6 +10,8 @@ export const createTicketSchema = z.object({
   complaintType: z.string().min(1).max(100),
   description: z.string().min(5).max(5000),
   priority: z.enum(PRIORITIES).optional().default('medium'),
+  userType: z.enum(['student', 'staff', 'guest']).optional().default('guest'),
+  rollNumber: z.string().max(50).optional().default(''),
 });
 
 export const trackTicketSchema = z.object({
