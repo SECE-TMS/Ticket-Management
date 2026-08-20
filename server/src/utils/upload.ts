@@ -81,13 +81,12 @@ export const uploadBuffer = async (
     );
   }
 
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const isCloudValid = isCloudinaryConfigured() && cloudName && cloudName !== 'Root';
+  const isCloudValid = isCloudinaryConfigured();
 
   if (isCloudValid) {
     try {
       configureCloudinary();
-      const resourceType = type === 'image' ? 'image' : 'video';
+      const resourceType = type === 'image' ? 'image' : type === 'audio' ? 'video' : 'auto';
       const result = await new Promise<UploadApiResponse>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
@@ -112,6 +111,6 @@ export const uploadBuffer = async (
     }
   }
 
-  // Local storage fallback when Cloudinary is not configured or set to dummy 'Root'
+  // Local storage fallback when Cloudinary is not configured
   return saveFileLocally(file, type);
 };
