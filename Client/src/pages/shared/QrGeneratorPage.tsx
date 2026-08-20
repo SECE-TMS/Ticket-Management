@@ -303,7 +303,7 @@ async function composePosterPng(opts: {
   collegeSrc: string
   secondarySrc: string | null
 }): Promise<string> {
-  await document.fonts.ready.catch(() => {})
+  await document.fonts.ready.catch(() => { })
 
   const W = POSTCARD_W
   const H = POSTCARD_H
@@ -793,9 +793,8 @@ export function QrGeneratorPage() {
                     type="button"
                     title={theme.name}
                     onClick={() => setSelectedTheme(theme)}
-                    className={`group relative flex h-14 flex-col items-center justify-center rounded-xl border transition-all ${
-                      active ? 'border-2 border-[var(--primary-blue)] ring-2 ring-[var(--primary-blue)]/20' : 'border-transparent'
-                    }`}
+                    className={`group relative flex h-14 flex-col items-center justify-center rounded-xl border transition-all ${active ? 'border-2 border-[var(--primary-blue)] ring-2 ring-[var(--primary-blue)]/20' : 'border-transparent'
+                      }`}
                     style={{ background: theme.cssGradient }}
                   >
                     {active && (
@@ -824,7 +823,7 @@ export function QrGeneratorPage() {
                   type="text"
                   value={topText}
                   onChange={(e) => setTopText(e.target.value)}
-                  placeholder="e.g. SCAN TO REPORT"
+                  placeholder="  SCAN TO REPORT"
                   className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
                 />
               </div>
@@ -835,7 +834,7 @@ export function QrGeneratorPage() {
                   type="text"
                   value={scriptText}
                   onChange={(e) => setScriptText(e.target.value)}
-                  placeholder="e.g. Campus Maintenance Desk"
+                  placeholder="  Campus Maintenance Desk"
                   className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
                 />
               </div>
@@ -847,7 +846,7 @@ export function QrGeneratorPage() {
                 type="text"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="e.g. Sri Eshwar College of Engineering"
+                placeholder="  Sri Eshwar College of Engineering"
                 className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
               />
             </div>
@@ -937,7 +936,7 @@ export function QrGeneratorPage() {
                 type="text"
                 value={footerText}
                 onChange={(e) => setFooterText(e.target.value)}
-                placeholder="e.g. POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED"
+                placeholder="  POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED"
                 className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
               />
             </div>
@@ -963,7 +962,7 @@ export function QrGeneratorPage() {
                   type="text"
                   value={locationName}
                   onChange={(e) => setLocationName(e.target.value)}
-                  placeholder="e.g. Water Tank Area, Block B Washroom..."
+                  placeholder="  Water Tank Area, Block B Washroom..."
                   className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] pl-10 pr-3.5 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
                 />
               </div>
@@ -1014,7 +1013,7 @@ export function QrGeneratorPage() {
                 type="text"
                 value={customNote}
                 onChange={(e) => setCustomNote(e.target.value)}
-                placeholder="e.g. Scan with mobile camera to log issue & verify via OTP"
+                placeholder="  Scan with mobile camera to log issue & verify via OTP"
                 className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
               />
             </div>

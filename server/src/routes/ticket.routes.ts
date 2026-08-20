@@ -41,6 +41,20 @@ router.get(
 );
 
 router.get(
+  '/admin/feedback/category-analytics',
+  authenticate,
+  requireRole('admin'),
+  ticketController.getCategoryFeedbackAnalytics
+);
+
+router.get(
+  '/admin/feedback/timewise-analytics',
+  authenticate,
+  requireRole('admin'),
+  ticketController.getTimeWiseFeedbackAnalytics
+);
+
+router.get(
   '/export',
   authenticate,
   requireRole('admin', 'manager'),

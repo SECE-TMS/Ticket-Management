@@ -464,8 +464,8 @@ export function RaiseTicket() {
                 type="button"
                 onClick={handleCopy}
                 className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${copied
-                    ? 'border-[var(--success)] bg-[var(--success-light)] text-[var(--success)]'
-                    : 'border-[var(--primary-blue)] bg-white text-[var(--primary-blue)] hover:bg-[var(--primary-blue-light)]'
+                  ? 'border-[var(--success)] bg-[var(--success-light)] text-[var(--success)]'
+                  : 'border-[var(--primary-blue)] bg-white text-[var(--primary-blue)] hover:bg-[var(--primary-blue-light)]'
                   }`}
               >
                 <Copy size={14} />
@@ -679,8 +679,8 @@ export function RaiseTicket() {
                         type="button"
                         onClick={() => setValue('userType', role.id as 'student' | 'staff' | 'guest')}
                         className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-3.5 text-center transition-all cursor-pointer ${isSelected
-                            ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-bold shadow-xs ring-2 ring-[var(--primary-blue)]/20'
-                            : 'border-[var(--border)] bg-[var(--white)] text-[var(--ink-muted)] hover:border-[var(--primary-blue-muted)] hover:bg-[var(--surface)]'
+                          ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-bold shadow-xs ring-2 ring-[var(--primary-blue)]/20'
+                          : 'border-[var(--border)] bg-[var(--white)] text-[var(--ink-muted)] hover:border-[var(--primary-blue-muted)] hover:bg-[var(--surface)]'
                           }`}
                       >
                         <IconComp size={20} className={isSelected ? 'text-[var(--primary-blue)]' : 'text-[var(--ink-muted)]'} />
@@ -703,7 +703,7 @@ export function RaiseTicket() {
                       id="rt-name"
                       className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.name ? 'border-[var(--danger)]' : 'border-[var(--border)]'
                         }`}
-                      placeholder="e.g. Rahul "
+                      placeholder="  Rahul "
                       autoComplete="name"
                     />
                   </div>
@@ -728,7 +728,7 @@ export function RaiseTicket() {
                         id="rt-roll"
                         className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] uppercase outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.rollNumber ? 'border-[var(--danger)]' : 'border-[var(--border)]'
                           }`}
-                        placeholder="e.g. 21CS045"
+                        placeholder="  21CS045"
                       />
                     </div>
                     {errors.rollNumber && (
@@ -765,12 +765,12 @@ export function RaiseTicket() {
                           type="email"
                           disabled={emailMode === 'otp_required' && isEmailVerified}
                           className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${emailMode === 'otp_required' && isEmailVerified
-                              ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
-                              : errors.email
-                                ? 'border-[var(--danger)]'
-                                : 'border-[var(--border)]'
+                            ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
+                            : errors.email
+                              ? 'border-[var(--danger)]'
+                              : 'border-[var(--border)]'
                             }`}
-                          placeholder="mail@sece.ac.in"
+                          placeholder="your mail@sece.ac.in"
                           autoComplete="email"
                         />
                       </div>
@@ -817,7 +817,7 @@ export function RaiseTicket() {
                             maxLength={6}
                             value={emailOtpValue}
                             onChange={(e) => setEmailOtpValue(e.target.value.replace(/\D/g, ''))}
-                            placeholder="e.g. 583920"
+                            placeholder="  583920"
                             className="h-11 flex-1 rounded-xl border border-[var(--border)] bg-white px-3.5 font-mono text-base font-bold text-[var(--ink)] tracking-widest outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 text-center sm:text-left"
                           />
                           <Button
@@ -880,10 +880,10 @@ export function RaiseTicket() {
                           maxLength={10}
                           disabled={mobileMode === 'otp_required' && isVerified}
                           className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${mobileMode === 'otp_required' && isVerified
-                              ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
-                              : errors.mobile
-                                ? 'border-[var(--danger)]'
-                                : 'border-[var(--border)]'
+                            ? 'border-[var(--success)] bg-[var(--success-light)]/40 font-semibold'
+                            : errors.mobile
+                              ? 'border-[var(--danger)]'
+                              : 'border-[var(--border)]'
                             }`}
                           placeholder="10-digit mobile number"
                         />

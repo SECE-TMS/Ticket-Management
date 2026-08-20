@@ -180,11 +180,10 @@ export function ManagerEmployees() {
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${
-                          e.isActive
+                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${e.isActive
                             ? 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]'
                             : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
-                        }`}
+                          }`}
                       >
                         {getInitials(e.name)}
                       </div>
@@ -278,7 +277,7 @@ export function ManagerEmployees() {
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className={inputClass}
-              placeholder="e.g. Rahul "
+              placeholder="  Rahul "
             />
           </div>
 
@@ -292,7 +291,7 @@ export function ManagerEmployees() {
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               className={inputClass}
-              placeholder="e.g. rahul@isaii.in"
+              placeholder="  rahul@isaii.in"
             />
           </div>
 
@@ -320,7 +319,7 @@ export function ManagerEmployees() {
               value={form.rollNumber}
               onChange={(e) => setForm((f) => ({ ...f, rollNumber: e.target.value }))}
               className={inputClass}
-              placeholder="e.g. STF-2026-001"
+              placeholder="  STF-2026-001"
             />
           </div>
 

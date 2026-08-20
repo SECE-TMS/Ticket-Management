@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "isolatedModules": true,
+    "declaration": false,
+    "sourceMap": false,
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo"
+  }
+}

@@ -118,6 +118,38 @@ export interface DepartmentFeedbackAnalytics {
   }
 }
 
+export interface CategoryFeedbackAnalytics {
+  _id: string
+  categoryName: string
+  totalFeedback: number
+  avgRating: number
+  satisfactionRate: number
+  distribution: {
+    1: number
+    2: number
+    3: number
+    4: number
+    5: number
+  }
+  departmentNames?: string[]
+}
+
+export interface FeedbackTimeTrendItem {
+  year: number
+  week?: number
+  month?: number
+  label: string
+  category: string
+  totalFeedback: number
+  avgRating: number
+  satisfactionRate: number
+}
+
+export interface TimeWiseFeedbackAnalytics {
+  weekly: FeedbackTimeTrendItem[]
+  monthly: FeedbackTimeTrendItem[]
+}
+
 export interface Ticket {
   _id: string
   ticketCode: string

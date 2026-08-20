@@ -255,11 +255,10 @@ export function AdminUsers() {
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${
-                            u.isActive
+                          className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${u.isActive
                               ? 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]'
                               : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
-                          }`}
+                            }`}
                         >
                           {getInitials(u.name)}
                         </div>
@@ -418,7 +417,7 @@ export function AdminUsers() {
               value={form.rollNumber}
               onChange={(e) => setForm((f) => ({ ...f, rollNumber: e.target.value }))}
               className={inputClass}
-              placeholder="e.g. STF-2026-001"
+              placeholder="  STF-2026-001"
             />
           </Field>
 

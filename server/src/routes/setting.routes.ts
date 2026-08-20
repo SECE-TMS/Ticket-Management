@@ -5,7 +5,7 @@ import { requireRole } from '../middlewares/role.middleware';
 
 const router = Router();
 
-// Public endpoint to get basic settings (e.g., whether OTP is required)
+// Public endpoint to get basic settings ( , whether OTP is required)
 router.get('/public', settingController.getSettings);
 
 // Protected routes (Admin only for updating)

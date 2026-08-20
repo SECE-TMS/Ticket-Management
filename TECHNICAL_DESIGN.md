@@ -69,7 +69,7 @@ The scope of this document covers functional requirements, non-functional requir
 | RBAC | Role-Based Access Control |
 | SLA | Service Level Agreement — target time to resolve a ticket |
 | Ticket | A single complaint / service request raised by a User |
-| Department | An organizational unit (e.g., Plumbing, Electrical) that owns a category of tickets |
+| Department | An organizational unit ( , Plumbing, Electrical) that owns a category of tickets |
 | Requester | The person (User) who raised the ticket; captured via name & contact, not necessarily a logged-in account |
 | Assignee | The Employee to whom a ticket is assigned for resolution |
 | REST | Representational State Transfer — the API architectural style used |
@@ -128,7 +128,7 @@ Admin  →  Manager (one per Department)  →  Employee (many per Department)  �
 
 The Admin is the super-user of the platform with organization-wide authority.
 
-- Create, update, deactivate and delete Departments (e.g., Plumbing, Electrical, Gardening, IT, Housekeeping).
+- Create, update, deactivate and delete Departments ( , Plumbing, Electrical, Gardening, IT, Housekeeping).
 - Create, update, and deactivate user accounts of any role — Manager or Employee — and assign a Manager to a Department.
 - View, filter, search, and export every ticket raised across all departments.
 - View the global analytics dashboard: open/closed ticket counts, average resolution time, department-wise load, SLA breaches.
@@ -281,7 +281,7 @@ Client/
 | FR-TKT-02 | Capture: full name, department, mobile, complaint type, description, attachment |
 | FR-TKT-03 | Mobile number validated for 10-digit format |
 | FR-TKT-04 | Image (JPEG/PNG/WEBP, max 5 MB) or audio (MP3/WAV/M4A/WEBM, max 10 MB) |
-| FR-TKT-05 | Generate unique Ticket ID (e.g., TMS-2026-000123) on submission |
+| FR-TKT-05 | Generate unique Ticket ID ( , TMS-2026-000123) on submission |
 | FR-TKT-06 | Optional email acknowledgement when contact email provided |
 | FR-TKT-07 | Public Track Ticket page via Ticket ID + mobile |
 | FR-TKT-08 | New tickets start in `new` status and appear in Manager queue |
