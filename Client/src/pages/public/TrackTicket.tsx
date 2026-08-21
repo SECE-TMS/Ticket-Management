@@ -146,10 +146,9 @@ export function TrackTicket() {
                 <input
                   id="track-code"
                   {...register('ticketCode')}
-                  className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 font-mono text-sm font-bold uppercase tracking-wider text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                    errors.ticketCode ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                  }`}
-                  placeholder="e.g. TMS-2026-000001"
+                  className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 font-mono text-sm font-bold uppercase tracking-wider text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.ticketCode ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                    }`}
+                  placeholder="  TMS-2026-000001"
                   autoComplete="off"
                 />
               </div>
@@ -172,9 +171,8 @@ export function TrackTicket() {
                   {...register('mobile')}
                   inputMode="numeric"
                   maxLength={10}
-                  className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                    errors.mobile ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                  }`}
+                  className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.mobile ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                    }`}
                   placeholder="10-digit mobile number"
                 />
               </div>
@@ -258,18 +256,16 @@ export function TrackTicket() {
                     return (
                       <div key={item.step} className="flex flex-col items-center gap-2">
                         <div
-                          className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                            isDone
+                          className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition-all ${isDone
                               ? 'bg-[var(--gold)] text-[var(--primary-blue-deeper)] shadow-md'
                               : 'bg-white/10 text-white/40'
-                          } ${isCurrent ? 'ring-4 ring-yellow-400/30' : ''}`}
+                            } ${isCurrent ? 'ring-4 ring-yellow-400/30' : ''}`}
                         >
                           {isDone ? '✓' : item.step}
                         </div>
                         <span
-                          className={`text-xs font-semibold ${
-                            isDone ? 'text-[var(--white)]' : 'text-white/40'
-                          }`}
+                          className={`text-xs font-semibold ${isDone ? 'text-[var(--white)]' : 'text-white/40'
+                            }`}
                         >
                           {item.title}
                         </span>
@@ -357,8 +353,8 @@ export function TrackTicket() {
                         const allAtts = ticket.userAttachments?.length
                           ? ticket.userAttachments
                           : ticket.userAttachment?.url
-                          ? [ticket.userAttachment]
-                          : []
+                            ? [ticket.userAttachment]
+                            : []
 
                         if (!allAtts.length) {
                           return (
@@ -424,11 +420,10 @@ export function TrackTicket() {
                             <span className={`text-xs font-bold uppercase tracking-wider ${isCompleted ? 'text-[var(--success)]' : 'text-[var(--ink-muted)]'}`}>
                               {isCompleted ? '✅ Completion Proof' : '⏳ Completion Proof'}
                             </span>
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                              isCompleted
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isCompleted
                                 ? 'bg-[var(--success-light)] text-[var(--success)]'
                                 : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
-                            }`}>
+                              }`}>
                               {isCompleted ? 'After' : 'Pending'}
                             </span>
                           </div>
@@ -622,11 +617,10 @@ function FeedbackCard({
             <Star
               key={star}
               size={22}
-              className={`${
-                star <= (existingFeedback.rating || 0)
+              className={`${star <= (existingFeedback.rating || 0)
                   ? 'fill-[var(--gold)] text-[var(--gold)]'
                   : 'text-slate-300'
-              }`}
+                }`}
             />
           ))}
           <span className="ml-2 text-sm font-bold text-[var(--ink)]">
@@ -674,11 +668,10 @@ function FeedbackCard({
                 >
                   <Star
                     size={32}
-                    className={`transition-colors ${
-                      active
+                    className={`transition-colors ${active
                         ? 'fill-[var(--gold)] text-[var(--gold)] drop-shadow-xs'
                         : 'text-slate-300 hover:text-yellow-300'
-                    }`}
+                      }`}
                   />
                 </button>
               )

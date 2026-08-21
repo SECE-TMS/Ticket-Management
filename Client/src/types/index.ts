@@ -118,6 +118,38 @@ export interface DepartmentFeedbackAnalytics {
   }
 }
 
+export interface CategoryFeedbackAnalytics {
+  _id: string
+  categoryName: string
+  totalFeedback: number
+  avgRating: number
+  satisfactionRate: number
+  distribution: {
+    1: number
+    2: number
+    3: number
+    4: number
+    5: number
+  }
+  departmentNames?: string[]
+}
+
+export interface FeedbackTimeTrendItem {
+  year: number
+  week?: number
+  month?: number
+  label: string
+  category: string
+  totalFeedback: number
+  avgRating: number
+  satisfactionRate: number
+}
+
+export interface TimeWiseFeedbackAnalytics {
+  weekly: FeedbackTimeTrendItem[]
+  monthly: FeedbackTimeTrendItem[]
+}
+
 export interface Ticket {
   _id: string
   ticketCode: string
@@ -178,16 +210,65 @@ export interface NotificationItem {
   createdAt: string
 }
 
+export interface DepartmentPerformance {
+  departmentId: string
+  name: string
+  code: string
+  total: number
+  open: number
+  resolved: number
+  overdue: number
+  totalFeedback: number
+  avgRating: number
+  satisfactionRate: number
+  resolutionRate: number
+  star5: number
+  star4: number
+  star3: number
+  star2: number
+  star1: number
+}
+
+export interface MonthlyTrend {
+  month: string
+  year: number
+  monthNum: number
+  created: number
+  resolved: number
+}
+
+export interface FeedbackMonthlyTrend {
+  month: string
+  year: number
+  monthNum: number
+  totalFeedback: number
+  avgRating: number
+  satisfactionRate: number
+  star5: number
+  star4: number
+  star3: number
+  star2: number
+  star1: number
+}
+
 export interface AdminDashboard {
   totals: {
     tickets: number
     open: number
+    resolved: number
     departments: number
     users: number
     overdue: number
+    resolutionRate: number
+    avgRating: number
+    totalFeedback: number
   }
   byStatus: Record<string, number>
+  byPriority: Record<string, number>
   byDepartment: Array<{ departmentId: string; name: string; count: number }>
+  monthlyTrend: MonthlyTrend[]
+  deptPerformance: DepartmentPerformance[]
+  feedbackMonthlyTrend: FeedbackMonthlyTrend[]
   recent: Ticket[]
 }
 

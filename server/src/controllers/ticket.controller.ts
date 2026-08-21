@@ -155,12 +155,44 @@ export const getAdminFeedbackList = async (req: AuthRequest, res: Response, next
 };
 
 export const getDepartmentFeedbackAnalytics = async (
-  _req: AuthRequest,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const data = await ticketService.getDepartmentFeedbackAnalytics();
+    const data = await ticketService.getDepartmentFeedbackAnalytics(
+      req.query as Record<string, unknown>
+    );
+    return sendSuccess(res, { data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCategoryFeedbackAnalytics = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const data = await ticketService.getCategoryFeedbackAnalytics(
+      req.query as Record<string, unknown>
+    );
+    return sendSuccess(res, { data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getTimeWiseFeedbackAnalytics = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const data = await ticketService.getTimeWiseFeedbackAnalytics(
+      req.query as Record<string, unknown>
+    );
     return sendSuccess(res, { data });
   } catch (err) {
     next(err);

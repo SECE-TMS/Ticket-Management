@@ -137,21 +137,12 @@ export function Sidebar({ items, title }: SidebarProps) {
         {/* Brand Header */}
         <div className="flex flex-col px-4 pt-5 pb-4 border-b border-white/10 gap-3">
           <div className="flex items-center justify-between gap-2">
-            {/* Split College Logo Badge */}
-            <div className="flex flex-1 items-center justify-center rounded-xl bg-white p-2 shadow-sm border border-white/20">
+            {/* College Logo Badge */}
+            <div className="flex flex-1 items-center justify-center rounded-xl bg-white px-3.5 py-2.5 shadow-sm border border-white/20">
               <img
                 src={sriEshwarCleanLogo}
                 alt="Sri Eshwar College Logo"
-                className="h-8 w-auto max-w-[110px] object-contain"
-              />
-            </div>
-
-            {/* Split ISAII Logo Badge (Zoomed) */}
-            <div className="flex flex-1 items-center justify-center rounded-xl bg-white p-2 shadow-sm border border-white/20">
-              <img
-                src={isaiiCleanLogo}
-                alt="ISAII Logo"
-                className="h-8 w-auto max-w-[80px] object-contain scale-120"
+                className="h-9 w-auto object-contain block"
               />
             </div>
             <button
@@ -162,14 +153,6 @@ export function Sidebar({ items, title }: SidebarProps) {
             >
               <X size={16} />
             </button>
-          </div>
-          <div className="flex flex-col text-center">
-            <span className="text-base font-bold text-[var(--white)] leading-tight tracking-tight">
-              TMS Portal
-            </span>
-            <span className="text-[10px] font-semibold text-white/60 uppercase tracking-wider">
-              Ticket Management System
-            </span>
           </div>
         </div>
 
@@ -192,7 +175,7 @@ export function Sidebar({ items, title }: SidebarProps) {
                     'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-150 border-l-3 border-transparent',
                     'hover:bg-white/10 hover:text-[var(--white)]',
                     isActive &&
-                      'bg-white/14 text-[var(--white)] border-l-[var(--gold)] shadow-xs'
+                    'bg-white/14 text-[var(--white)] border-l-[var(--gold)] shadow-xs'
                   )
                 }
               >

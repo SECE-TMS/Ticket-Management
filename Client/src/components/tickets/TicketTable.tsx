@@ -34,9 +34,9 @@ export function TicketTable({ tickets, detailBase }: TicketTableProps) {
       <table className="w-full text-left text-sm border-collapse" id="tickets-table">
         <thead>
           <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
-            <th className="px-4 py-3 first:rounded-tl-xl">Ticket</th>
-            <th className="px-4 py-3">Requester</th>
+            <th className="px-4 py-3 first:rounded-tl-xl">Requester &amp; Ticket ID</th>
             <th className="px-4 py-3">Department</th>
+            <th className="px-4 py-3">Complaint</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3">Priority</th>
             <th className="px-4 py-3">Assignee</th>
@@ -51,32 +51,26 @@ export function TicketTable({ tickets, detailBase }: TicketTableProps) {
               className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
             >
               <td className="px-4 py-3.5">
-                <Link
-                  to={`${detailBase}/${t._id}`}
-                  className="font-bold text-[var(--primary-blue)] hover:underline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {t.ticketCode}
-                </Link>
-                <p className="mt-0.5 max-w-[14rem] truncate text-xs text-[var(--ink-muted)]">
-                  {t.complaintType}
-                </p>
-              </td>
-              <td className="px-4 py-3.5">
-                <p className="font-semibold text-[var(--ink)]">
-                  {t.requester.name}
-                  {t.requester.rollNumber && (
+                <p className="font-bold text-[var(--ink)]">
+                  {t.requester?.name || 'Valued User'}
+                  {t.requester?.rollNumber && (
                     <span className="ml-1.5 inline-block rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
                       {t.requester.rollNumber}
                     </span>
                   )}
                 </p>
-                <p className="text-xs text-[var(--ink-muted)]">
-                  {t.requester.mobile}
-                  {t.requester.userType && ` • ${t.requester.userType}`}
-                </p>
+                <Link
+                  to={`${detailBase}/${t._id}`}
+                  className="font-mono text-xs font-bold text-[var(--primary-blue)] hover:underline block mt-0.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {t.ticketCode}
+                </Link>
               </td>
               <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
+              <td className="px-4 py-3.5 font-medium text-[var(--ink)]">
+                {t.complaintType}
+              </td>
               <td className="px-4 py-3.5">
                 <StatusBadge status={t.status} />
               </td>

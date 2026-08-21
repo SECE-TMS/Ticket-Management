@@ -3,9 +3,9 @@ import * as dashboardService from '../services/dashboard.service';
 import { sendSuccess } from '../utils/apiResponse';
 import type { AuthRequest } from '../types/auth';
 
-export const admin = async (_req: AuthRequest, res: Response, next: NextFunction) => {
+export const admin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await dashboardService.adminDashboard();
+    const data = await dashboardService.adminDashboard(req.query as Record<string, unknown>);
     return sendSuccess(res, { data });
   } catch (err) {
     next(err);

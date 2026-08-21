@@ -10,9 +10,12 @@ import {
   Printer,
   QrCode as QrIcon,
   Sparkles,
-  Zap,
   Palette,
   Check,
+  Upload,
+  Image as ImageIcon,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import { departmentService } from '../../services/departmentService'
 import { Button } from '../../components/common/Button'
@@ -24,7 +27,7 @@ import { getId } from '../../types'
 
 import sriEshwarLogo from '../../assets/Sri Eshwar.png'
 import isaiiLogo from '../../assets/isaii.jpg'
-import qrCenterLogo from '../../assets/logo_remove-removebg-preview.png'
+// import qrCenterLogo from '../../assets/logo_remove-removebg-preview.png'
 
 /** Standard Card (4" x 6" 300DPI) dimensions */
 const POSTCARD_W = 1200
@@ -32,7 +35,7 @@ const POSTCARD_H = 1800
 const POSTCARD_PRINT_WIDTH_MM = 101.6
 const POSTCARD_PRINT_HEIGHT_MM = 152.4
 
-const CONSTANT_FOOTER = 'POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED'
+const DEFAULT_FOOTER = 'POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED'
 
 export interface ThemePreset {
   id: string
@@ -113,31 +116,63 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 function knockoutBlackBackground(img: HTMLImageElement): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
-  canvas.width = img.naturalWidth || img.width
-  canvas.height = img.naturalHeight || img.height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return canvas
+  const rawCanvas = document.createElement('canvas')
+  const width = img.naturalWidth || img.width
+  const height = img.naturalHeight || img.height
+  rawCanvas.width = width
+  rawCanvas.height = height
+  const ctx = rawCanvas.getContext('2d')
+  if (!ctx) return rawCanvas
 
   ctx.drawImage(img, 0, 0)
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const imageData = ctx.getImageData(0, 0, width, height)
   const data = imageData.data
 
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i]
-    const g = data[i + 1]
-    const b = data[i + 2]
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
-    const isNearBlack = max < 28
-    const isNeutralDark = max < 42 && max - min < 10
-    if (isNearBlack || isNeutralDark) {
-      data[i + 3] = 0
+  let minX = width
+  let maxX = 0
+  let minY = height
+  let maxY = 0
+  let hasPixels = false
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4
+      const r = data[idx]
+      const g = data[idx + 1]
+      const b = data[idx + 2]
+      const max = Math.max(r, g, b)
+      const min = Math.min(r, g, b)
+      const isNearBlack = max < 28
+      const isNeutralDark = max < 42 && max - min < 10
+
+      if (isNearBlack || isNeutralDark) {
+        data[idx + 3] = 0
+      } else if (data[idx + 3] > 10) {
+        hasPixels = true
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+      }
     }
   }
 
   ctx.putImageData(imageData, 0, 0)
-  return canvas
+
+  if (!hasPixels || minX > maxX || minY > maxY) {
+    return rawCanvas
+  }
+
+  const cropW = maxX - minX + 1
+  const cropH = maxY - minY + 1
+  const trimmedCanvas = document.createElement('canvas')
+  trimmedCanvas.width = cropW
+  trimmedCanvas.height = cropH
+  const trimmedCtx = trimmedCanvas.getContext('2d')
+  if (!trimmedCtx) return rawCanvas
+
+  trimmedCtx.drawImage(rawCanvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH)
+  return trimmedCanvas
 }
 
 function roundRect(
@@ -263,11 +298,11 @@ async function composePosterPng(opts: {
   businessName: string
   locationName: string
   customNote: string
-  showCollegeLogo: boolean
-  sriSrc: string
-  isaiiSrc: string
+  footerText: string
+  collegeSrc: string
+  secondarySrc: string | null
 }): Promise<string> {
-  await document.fonts.ready.catch(() => {})
+  await document.fonts.ready.catch(() => { })
 
   const W = POSTCARD_W
   const H = POSTCARD_H
@@ -278,8 +313,8 @@ async function composePosterPng(opts: {
   const ctx = canvas.getContext('2d')
   if (!ctx) return opts.qrSrc
 
-  const sriImg = await loadImage(opts.sriSrc)
-  const isaiiImg = await loadImage(opts.isaiiSrc)
+  const collegeImg = await loadImage(opts.collegeSrc)
+  const secondaryImg = opts.secondarySrc ? await loadImage(opts.secondarySrc) : null
   const qrImg = await loadImage(opts.qrSrc)
 
   // Gradient Background
@@ -339,10 +374,10 @@ async function composePosterPng(opts: {
   ctx.fillStyle = '#FFFFFF'
   ctx.fill()
 
-  if (opts.showCollegeLogo) {
-    // Dual Logos side-by-side
+  if (secondaryImg) {
+    // Dual Logos side-by-side: College Main Logo (left) + Secondary Logo (right)
     const colW = (innerW - 40) / 2
-    drawContainedImage(ctx, sriImg, innerX + 16, innerY + 16, colW, innerH - 32)
+    drawContainedImage(ctx, collegeImg, innerX + 16, innerY + 16, colW, innerH - 32)
 
     // Divider Line
     ctx.strokeStyle = '#E2E8F0'
@@ -352,10 +387,10 @@ async function composePosterPng(opts: {
     ctx.lineTo(innerX + colW + 20, innerY + innerH - 24)
     ctx.stroke()
 
-    drawContainedImage(ctx, isaiiImg, innerX + colW + 24, innerY + 16, colW, innerH - 32)
+    drawContainedImage(ctx, secondaryImg, innerX + colW + 24, innerY + 16, colW, innerH - 32)
   } else {
-    // Single Isaii AI Logo
-    drawContainedImage(ctx, isaiiImg, innerX + 32, innerY + 16, innerW - 64, innerH - 32)
+    // Single Main College Logo (Fits container in both size & perfectly centered)
+    drawContainedImage(ctx, collegeImg, innerX + 24, innerY + 12, innerW - 48, innerH - 24)
   }
 
   currentY += boxH / 2 + 65
@@ -413,10 +448,11 @@ async function composePosterPng(opts: {
     currentY += 34
   })
 
-  // Fixed Constant Footer Line (POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED)
+  // Footer Line
   ctx.font = '900 22px Inter, sans-serif'
   ctx.fillStyle = opts.theme.accentColor || '#FFFFFF'
-  ctx.fillText(CONSTANT_FOOTER, W / 2, H - 70)
+  const footerStr = (opts.footerText || DEFAULT_FOOTER).toUpperCase()
+  ctx.fillText(footerStr, W / 2, H - 70)
 
   return canvas.toDataURL('image/png')
 }
@@ -512,7 +548,6 @@ export function QrGeneratorPage() {
 
   // Configuration States
   const [selectedTheme, setSelectedTheme] = useState<ThemePreset>(THEME_PRESETS[0])
-  const [showCollegeLogo, setShowCollegeLogo] = useState(true)
 
   const [topText, setTopText] = useState('SCAN TO REPORT')
   const [scriptText, setScriptText] = useState('Campus Maintenance Desk')
@@ -522,6 +557,12 @@ export function QrGeneratorPage() {
   const [locationName, setLocationName] = useState('Water Tank Area')
   const [complaintType, setComplaintType] = useState('')
   const [customNote, setCustomNote] = useState('Scan with your mobile camera to report issue & verify via OTP.')
+  const [footerText, setFooterText] = useState('POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED')
+
+  // Logo States (College Logo is Compulsory Fixed Main Logo; Secondary Logo is Optional / Default Empty)
+  const [secondaryLogoSrc, setSecondaryLogoSrc] = useState<string | null>(null)
+
+  const collegeLogoSrc = sriEshwarClean
 
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [targetUrl, setTargetUrl] = useState('')
@@ -583,7 +624,7 @@ export function QrGeneratorPage() {
       setTargetUrl(generatedUrl)
 
       try {
-        const dataUrl = await generateCleanQrDataUrl(generatedUrl, qrCenterLogo)
+        const dataUrl = await generateCleanQrDataUrl(generatedUrl)
         if (isMounted) {
           setQrDataUrl(dataUrl)
         }
@@ -597,13 +638,19 @@ export function QrGeneratorPage() {
     }
   }, [selectedDept, locationName, complaintType])
 
-  const applyPreset = (preset: { deptName: string; location: string; complaint: string }) => {
-    setLocationName(preset.location)
-    setComplaintType(preset.complaint)
-    const found = departments.find((d) => d.name.toLowerCase().includes(preset.deptName.toLowerCase()))
-    if (found) {
-      setSelectedDeptId(getId(found))
+  const handleSecondaryLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file.')
+      return
     }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setSecondaryLogoSrc(reader.result as string)
+      toast.success('Secondary Logo added!')
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleCopyLink = () => {
@@ -623,9 +670,9 @@ export function QrGeneratorPage() {
       businessName,
       locationName,
       customNote,
-      showCollegeLogo,
-      sriSrc: sriEshwarClean,
-      isaiiSrc: isaiiLogo,
+      footerText,
+      collegeSrc: collegeLogoSrc,
+      secondarySrc: secondaryLogoSrc,
     })
   }
 
@@ -686,14 +733,14 @@ export function QrGeneratorPage() {
             <QrIcon className="text-[var(--primary-blue)]" size={30} />
             Campus Maintenance QR Poster Generator
           </h1>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+          {/* <p className="mt-1 text-sm text-[var(--ink-muted)]">
             Generate and print official high-resolution 4" × 6" campus maintenance QR code posters for facility areas.
-          </p>
+          </p> */}
         </div>
       </div>
 
       {/* Facility Quick Presets */}
-      <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-sm">
+      {/* <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-sm">
         <p className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">
           <Sparkles size={14} className="text-[var(--gold)]" /> Campus Facility Quick Presets
         </p>
@@ -715,7 +762,7 @@ export function QrGeneratorPage() {
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Main Grid Workspace */}
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
@@ -736,9 +783,8 @@ export function QrGeneratorPage() {
                     type="button"
                     title={theme.name}
                     onClick={() => setSelectedTheme(theme)}
-                    className={`group relative flex h-14 flex-col items-center justify-center rounded-xl border transition-all ${
-                      active ? 'border-2 border-[var(--primary-blue)] ring-2 ring-[var(--primary-blue)]/20' : 'border-transparent'
-                    }`}
+                    className={`group relative flex h-14 flex-col items-center justify-center rounded-xl border transition-all ${active ? 'border-2 border-[var(--primary-blue)] ring-2 ring-[var(--primary-blue)]/20' : 'border-transparent'
+                      }`}
                     style={{ background: theme.cssGradient }}
                   >
                     {active && (
@@ -767,7 +813,7 @@ export function QrGeneratorPage() {
                   type="text"
                   value={topText}
                   onChange={(e) => setTopText(e.target.value)}
-                  placeholder="e.g. SCAN TO REPORT"
+                  placeholder="  SCAN TO REPORT"
                   className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
                 />
               </div>
@@ -778,7 +824,7 @@ export function QrGeneratorPage() {
                   type="text"
                   value={scriptText}
                   onChange={(e) => setScriptText(e.target.value)}
-                  placeholder="e.g. Campus Maintenance Desk"
+                  placeholder="  Campus Maintenance Desk"
                   className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
                 />
               </div>
@@ -790,29 +836,100 @@ export function QrGeneratorPage() {
                 type="text"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="e.g. Sri Eshwar College of Engineering"
+                placeholder="  Sri Eshwar College of Engineering"
                 className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
               />
             </div>
 
-            {/* College Logo Toggle */}
-            <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-[var(--ink)]">Show College Logo alongside Isaii AI</span>
-                <span className="text-[11px] text-[var(--ink-muted)]">Display dual Sri Eshwar & Isaii logos in header</span>
+            {/* Logo Customizer Section */}
+            <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
+                  <ImageIcon size={14} className="text-[var(--primary-blue)]" />
+                  Header Logos Customization
+                </span>
               </div>
-              <input
-                type="checkbox"
-                checked={showCollegeLogo}
-                onChange={(e) => setShowCollegeLogo(e.target.checked)}
-                className="h-5 w-5 cursor-pointer accent-[var(--primary-blue)]"
-              />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {/* College / Primary Logo (Main - Compulsory Fixed) */}
+                {/* <div className="flex flex-col justify-between gap-1.5 rounded-lg border border-[var(--border)] bg-white p-2.5">
+                  <div>
+                    <span className="text-[11px] font-bold text-[var(--ink)] flex items-center gap-1">
+                      College / Primary Logo <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">(Main)</span>
+                    </span>
+                    <p className="text-[10px] text-[var(--ink-muted)]">Fixed institutional main logo</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-10 w-20 items-center justify-center rounded border border-slate-200 bg-slate-50 p-1">
+                      <img src={collegeLogoSrc} alt="College Logo" className="max-h-full max-w-full object-contain" />
+                    </div>
+                    <span className="text-[11px] font-medium text-[var(--ink-muted)] italic">Fixed Main Logo</span>
+                  </div>
+                </div> */}
+
+                {/* Secondary Logo (Optional - Default Empty) */}
+                <div className="flex flex-col justify-between gap-1.5 rounded-lg border border-[var(--border)] bg-white p-2.5">
+                  <div>
+                    <span className="text-[11px] font-bold text-[var(--ink)]">Secondary Logo (Optional)</span>
+                    <p className="text-[10px] text-[var(--ink-muted)]">Dual logo alongside main logo</p>
+                  </div>
+
+                  {secondaryLogoSrc ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-10 w-14 items-center justify-center rounded border border-slate-200 bg-slate-50 p-1">
+                        <img src={secondaryLogoSrc} alt="Secondary Logo" className="max-h-full max-w-full object-contain" />
+                      </div>
+                      <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[var(--ink)] hover:bg-slate-50">
+                        <Upload size={12} />
+                        <span>Change</span>
+                        <input type="file" accept="image/*" onChange={handleSecondaryLogoChange} className="hidden" />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSecondaryLogoSrc(null)
+                          toast.success('Secondary logo removed')
+                        }}
+                        className="flex cursor-pointer items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[11px] font-medium text-rose-600 hover:bg-rose-100"
+                        title="Remove secondary logo"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-dashed border-[var(--border)] bg-slate-50 px-2 py-1 text-[11px] font-semibold text-[var(--primary-blue)] hover:bg-blue-50">
+                        <Upload size={12} />
+                        <span>Upload Logo</span>
+                        <input type="file" accept="image/*" onChange={handleSecondaryLogoChange} className="hidden" />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSecondaryLogoSrc(isaiiLogo)
+                          toast.success('Isaii AI logo added as secondary logo')
+                        }}
+                        className="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <Plus size={12} />
+                        <span>Add Logo</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* <div className="rounded-xl border border-[var(--border)] bg-slate-50 p-3">
-              <p className="text-[11px] font-bold text-[var(--ink-muted)]">Footer Attribution (Constant)</p>
-              <p className="mt-0.5 font-mono text-xs font-bold text-[var(--ink)]">{CONSTANT_FOOTER}</p>
-            </div> */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-[var(--ink)]">Footer Attribution Text</label>
+              <input
+                type="text"
+                value={footerText}
+                onChange={(e) => setFooterText(e.target.value)}
+                placeholder="  POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED"
+                className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+              />
+            </div>
           </div>
 
           {/* QR Code Target Location Controls */}
@@ -835,7 +952,7 @@ export function QrGeneratorPage() {
                   type="text"
                   value={locationName}
                   onChange={(e) => setLocationName(e.target.value)}
-                  placeholder="e.g. Water Tank Area, Block B Washroom..."
+                  placeholder="  Water Tank Area, Block B Washroom..."
                   className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] pl-10 pr-3.5 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
                 />
               </div>
@@ -886,7 +1003,7 @@ export function QrGeneratorPage() {
                 type="text"
                 value={customNote}
                 onChange={(e) => setCustomNote(e.target.value)}
-                placeholder="e.g. Scan with mobile camera to log issue & verify via OTP"
+                placeholder="  Scan with mobile camera to log issue & verify via OTP"
                 className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
               />
             </div>
@@ -905,9 +1022,9 @@ export function QrGeneratorPage() {
           <div className="sticky top-6 flex w-full flex-col items-center">
             <div className="mb-2 flex w-full max-w-[420px] items-center justify-between px-1 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">
               <span>Live Poster Preview</span>
-              <span className="rounded-full bg-slate-200 px-2.5 py-0.5 font-mono text-[10px]">
+              {/* <span className="rounded-full bg-slate-200 px-2.5 py-0.5 font-mono text-[10px]">
                 Postcard 4"×6" (300 DPI)
-              </span>
+              </span> */}
             </div>
 
             {/* Live Visual Card Preview Container */}
@@ -932,19 +1049,19 @@ export function QrGeneratorPage() {
                 {/* Broad & Beautiful Dashed Logo Container */}
                 <div className="mt-5 flex h-28 w-[92%] max-w-[340px] items-center justify-center rounded-[32px] border-2 border-dashed border-white/95 p-2 shadow-lg">
                   <div className="flex h-full w-full items-center justify-between rounded-[24px] bg-white px-4 py-2 shadow-md">
-                    {showCollegeLogo ? (
+                    {secondaryLogoSrc ? (
                       <>
                         <div className="flex h-full flex-1 items-center justify-center pr-2">
-                          <img src={sriEshwarClean} alt="Sri Eshwar Logo" className="max-h-full max-w-full object-contain" />
+                          <img src={collegeLogoSrc} alt="College Logo" className="max-h-full max-w-full object-contain" />
                         </div>
                         <div className="h-10 w-[2px] bg-slate-200" />
                         <div className="flex h-full flex-1 items-center justify-center pl-2">
-                          <img src={isaiiLogo} alt="Isaii AI Logo" className="max-h-full max-w-full object-contain" />
+                          <img src={secondaryLogoSrc} alt="Secondary Logo" className="max-h-full max-w-full object-contain" />
                         </div>
                       </>
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <img src={isaiiLogo} alt="Isaii AI Logo" className="max-h-full max-w-full object-contain" />
+                      <div className="flex h-full w-full items-center justify-center p-1">
+                        <img src={collegeLogoSrc} alt="College Main Logo" className="h-full w-full object-contain" />
                       </div>
                     )}
                   </div>
@@ -979,12 +1096,12 @@ export function QrGeneratorPage() {
                 </p>
               </div>
 
-              {/* Constant Footer Bar */}
+              {/* Editable Footer Bar */}
               <div
-                className="px-4 py-3.5 text-xs font-black tracking-widest text-center"
+                className="px-4 py-3.5 text-xs font-black tracking-widest text-center uppercase"
                 style={{ backgroundColor: 'rgba(0, 0, 0, 0.28)', color: selectedTheme.accentColor || '#FFFFFF' }}
               >
-                {CONSTANT_FOOTER}
+                {footerText || DEFAULT_FOOTER}
               </div>
             </div>
 

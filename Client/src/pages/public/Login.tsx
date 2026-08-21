@@ -8,7 +8,6 @@ import { Button } from '../../components/common/Button'
 import { roleHome } from '../../components/common/ProtectedRoute'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { clearAuthError, login } from '../../store/slices/authSlice'
-import isaiiCleanLogo from '../../assets/isaii_clean.png'
 import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
 const schema = z.object({
@@ -62,30 +61,19 @@ export function Login() {
         />
 
         {/* Logo */}
-        <div className="relative flex items-center gap-3">
-          {/* Split College Logo Badge */}
-          <div className="flex items-center rounded-2xl bg-white px-3.5 py-1.5 shadow-md border border-white/30">
+        <div className="relative flex items-center">
+          {/* Snug Sri Eshwar College Logo Badge */}
+          <div className="inline-flex w-fit items-center justify-center rounded-2xl bg-white px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-md border border-white/40">
             <img
               src={sriEshwarCleanLogo}
               alt="Sri Eshwar College Logo"
-              className="h-9 w-auto max-w-[140px] object-contain"
+              className="h-10 sm:h-12 w-auto object-contain block"
             />
           </div>
-
-          {/* Split ISAII Logo Badge (Zoomed) */}
-          <div className="flex items-center rounded-2xl bg-white px-3.5 py-1.5 shadow-md border border-white/30">
-            <img
-              src={isaiiCleanLogo}
-              alt="ISAII Logo"
-              className="h-9 w-auto max-w-[95px] object-contain scale-120"
-            />
-          </div>
-
-          <span className="text-xl font-bold text-[var(--white)] ml-1">TMS Portal</span>
         </div>
 
         {/* Main copy */}
-        <div className="relative">
+        <div className="relative text-left">
           <p className="font-display text-3xl font-bold leading-snug text-[var(--white)]">
             Manage tickets,<br />
             <span className="text-[var(--gold)]">resolve issues faster.</span>
@@ -106,22 +94,14 @@ export function Login() {
       <div className="flex flex-1 flex-col items-center justify-center px-5 py-12 sm:px-10">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
-          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <div className="flex items-center rounded-xl bg-white px-2.5 py-1 border border-slate-200 shadow-xs">
+          <div className="mb-8 flex items-center lg:hidden">
+            <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-4 border border-slate-200 shadow-xs">
               <img
                 src={sriEshwarCleanLogo}
                 alt="Sri Eshwar College Logo"
-                className="h-7 w-auto max-w-[110px] object-contain"
+                className="h-8 w-auto max-w-[170px] object-contain"
               />
             </div>
-            <div className="flex items-center rounded-xl bg-white px-2.5 py-1 border border-slate-200 shadow-xs">
-              <img
-                src={isaiiCleanLogo}
-                alt="ISAII Logo"
-                className="h-7 w-auto max-w-[70px] object-contain scale-115"
-              />
-            </div>
-            <span className="font-bold text-[var(--ink)]">TMS Portal</span>
           </div>
 
           <h1 className="font-display text-2xl font-bold text-[var(--ink)]">
@@ -145,7 +125,7 @@ export function Login() {
                 className={`h-10 w-full rounded-lg border bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
                   errors.email ? 'border-[var(--danger)]' : 'border-[var(--border)]'
                 }`}
-                placeholder="you@company.com"
+                placeholder="admin@sece.ac.in"
               />
               {errors.email && (
                 <span className="text-xs text-[var(--danger)]">{errors.email.message}</span>

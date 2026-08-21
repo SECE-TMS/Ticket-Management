@@ -20,7 +20,7 @@ const refreshSecret = (): string => {
 
 export const generateAccessToken = (payload: TokenPayload): string => {
   const options: SignOptions = {
-    expiresIn: (process.env.JWT_ACCESS_EXPIRES || '15m') as SignOptions['expiresIn'],
+    expiresIn: (process.env.JWT_ACCESS_EXPIRES || '1d') as SignOptions['expiresIn'],
   };
   return jwt.sign(payload, accessSecret(), options);
 };

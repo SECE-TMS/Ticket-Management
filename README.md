@@ -54,23 +54,20 @@ docker compose up --build
 
 Then run the Client separately with `VITE_API_URL=http://localhost:5000/api/v1`.
 
-## Seed accounts
+## Seed accounts & Departments
 
-Seed creates **1 admin**, **5 managers**, **10 employees**, and **15 tickets** across all departments and statuses (`new` → `closed` / `reopened`), plus activity logs and notifications.
+Seed initializes **1 admin** account and **5 active departments** ready for manager and employee creation:
 
 | Role | Email | Password |
 | --- | --- | --- |
-| Admin | `admin@tms.local` | `Admin@123` |
-| Manager (Plumbing) | `manager.plumbing@tms.local` | `Manager@123` |
-| Employee | `emp1.plumbing@tms.local` / `emp2.plumbing@tms.local` | `Employee@123` |
-| Manager (Electrical) | `manager.electrical@tms.local` | `Manager@123` |
-| Employee | `emp1.electrical@tms.local` / `emp2.electrical@tms.local` | `Employee@123` |
-| Manager (Gardening) | `manager.gardening@tms.local` | `Manager@123` |
-| Employee | `emp1.gardening@tms.local` / `emp2.gardening@tms.local` | `Employee@123` |
-| Manager (IT) | `manager.it@tms.local` | `Manager@123` |
-| Employee | `emp1.it@tms.local` / `emp2.it@tms.local` | `Employee@123` |
-| Manager (Housekeeping) | `manager.housekeeping@tms.local` | `Manager@123` |
-| Employee | `emp1.housekeeping@tms.local` / `emp2.housekeeping@tms.local` | `Employee@123` |
+| Admin | `admin@sece.ac.in` | `Admin@123` |
+
+### Initial Departments:
+- **Plumbing** (SLA: 24h)
+- **Electrical** (SLA: 24h)
+- **Gardening** (SLA: 72h)
+- **IT** (SLA: 8h)
+- **Housekeeping** (SLA: 12h)
 
 ## Project structure
 

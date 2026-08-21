@@ -4,7 +4,7 @@
   "description": "Ticket Management System - Express + MongoDB backend",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch server.ts",
+    "dev": "tsx watch --tsconfig tsconfig.dev.json server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "tsx src/scripts/seed.ts"

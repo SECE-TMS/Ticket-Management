@@ -1,5 +1,5 @@
-import type { Query } from 'mongoose';
-import ExcelJS from 'exceljs';
+import mongoose, { type Query } from 'mongoose';
+// ExcelJS is lazy-loaded inside exportExcel() to avoid slow startup
 import Ticket, { OPEN_STATUSES, type ITicket, type TicketStatus } from '../models/Ticket';
 import Department from '../models/Department';
 import User, { type IUserDocument } from '../models/User';
@@ -711,6 +711,8 @@ export const exportCsv = async (actor: IUserDocument, query: Record<string, unkn
 };
 
 export const exportExcel = async (actor: IUserDocument, query: Record<string, unknown>) => {
+  // Lazy-load ExcelJS so it doesn't bloat server startup time
+  const ExcelJS = (await import('exceljs')).default;
   const filter = buildListFilter(actor, query);
   const tickets = await populateTicket(Ticket.find(filter).sort({ createdAt: -1 }).limit(10000));
 
@@ -959,6 +961,61 @@ export const submitFeedback = async (
 };
 
 /**
+ * Helper to generate feedback period match filter
+ */
+const getFeedbackPeriodMatch = (query: Record<string, unknown>) => {
+  const match: Record<string, unknown> = {
+    'feedback.rating': { $exists: true, $ne: null },
+  };
+
+  // Custom date range takes priority over period presets
+  if (query.from || query.to) {
+    const dateFilter: Record<string, Date> = {};
+    if (query.from) dateFilter.$gte = new Date(String(query.from));
+    if (query.to) {
+      const to = new Date(String(query.to));
+      to.setHours(23, 59, 59, 999);
+      dateFilter.$lte = to;
+    }
+    match['feedback.submittedAt'] = dateFilter;
+  } else {
+    const period = String(query.period || query.timeRange || '');
+    const now = new Date();
+    let startDate: Date | undefined;
+
+    if (period === '7d' || period === 'week' || period === 'this_week') {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 7);
+    } else if (period === '30d' || period === 'month' || period === 'this_month') {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 30);
+    } else if (period === '90d') {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 90);
+    } else if (period === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
+
+    if (startDate) {
+      match['feedback.submittedAt'] = { $gte: startDate };
+    }
+  }
+
+  if (query.department) {
+    match.department =
+      typeof query.department === 'string'
+        ? new mongoose.Types.ObjectId(query.department)
+        : query.department;
+  }
+
+  if (query.category || query.complaintType) {
+    match.complaintType = String(query.category || query.complaintType);
+  }
+
+  return match;
+};
+
+/**
  * Admin view of all ticket feedback with search & filters
  */
 export const getAdminFeedbackList = async (query: Record<string, unknown>) => {
@@ -973,13 +1030,49 @@ export const getAdminFeedbackList = async (query: Record<string, unknown>) => {
   if (query.department) {
     filter.department = query.department;
   }
+  if (query.category || query.complaintType) {
+    filter.complaintType = query.category || query.complaintType;
+  }
   if (query.rating) {
     filter['feedback.rating'] = Number(query.rating);
   }
+
+  // Custom date range takes priority over period presets
+  if (query.from || query.to) {
+    const dateFilter: Record<string, Date> = {};
+    if (query.from) dateFilter.$gte = new Date(String(query.from));
+    if (query.to) {
+      const to = new Date(String(query.to));
+      to.setHours(23, 59, 59, 999);
+      dateFilter.$lte = to;
+    }
+    filter['feedback.submittedAt'] = dateFilter;
+  } else if (query.period || query.timeRange) {
+    const period = String(query.period || query.timeRange);
+    const now = new Date();
+    let startDate: Date | undefined;
+    if (period === '7d' || period === 'week' || period === 'this_week') {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 7);
+    } else if (period === '30d' || period === 'month' || period === 'this_month') {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 30);
+    } else if (period === '90d') {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 90);
+    } else if (period === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
+    if (startDate) {
+      filter['feedback.submittedAt'] = { $gte: startDate };
+    }
+  }
+
   if (query.search) {
     const searchRegex = new RegExp(String(query.search).trim(), 'i');
     filter.$or = [
       { ticketCode: searchRegex },
+      { complaintType: searchRegex },
       { 'requester.name': searchRegex },
       { 'requester.mobile': searchRegex },
       { 'feedback.comment': searchRegex },
@@ -1009,12 +1102,12 @@ export const getAdminFeedbackList = async (query: Record<string, unknown>) => {
 /**
  * Admin analytics for department-wise feedback scores
  */
-export const getDepartmentFeedbackAnalytics = async () => {
+export const getDepartmentFeedbackAnalytics = async (query: Record<string, unknown> = {}) => {
+  const match = getFeedbackPeriodMatch(query);
+
   const pipeline = [
     {
-      $match: {
-        'feedback.rating': { $exists: true, $ne: null },
-      },
+      $match: match,
     },
     {
       $group: {
@@ -1050,7 +1143,13 @@ export const getDepartmentFeedbackAnalytics = async () => {
         avgRating: { $round: ['$avgRating', 1] },
         satisfactionRate: {
           $round: [
-            { $multiply: [{ $divide: ['$satisfiedCount', '$totalFeedback'] }, 100] },
+            {
+              $cond: [
+                { $gt: ['$totalFeedback', 0] },
+                { $multiply: [{ $divide: ['$satisfiedCount', '$totalFeedback'] }, 100] },
+                0,
+              ],
+            },
             1,
           ],
         },
@@ -1070,6 +1169,146 @@ export const getDepartmentFeedbackAnalytics = async () => {
 
   const analytics = await Ticket.aggregate(pipeline as any);
   return analytics;
+};
+
+/**
+ * Admin analytics for category-wise (complaintType) feedback scores
+ */
+export const getCategoryFeedbackAnalytics = async (query: Record<string, unknown> = {}) => {
+  const match = getFeedbackPeriodMatch(query);
+
+  const pipeline = [
+    { $match: match },
+    {
+      $group: {
+        _id: '$complaintType',
+        totalFeedback: { $sum: 1 },
+        avgRating: { $avg: '$feedback.rating' },
+        star5Count: { $sum: { $cond: [{ $eq: ['$feedback.rating', 5] }, 1, 0] } },
+        star4Count: { $sum: { $cond: [{ $eq: ['$feedback.rating', 4] }, 1, 0] } },
+        star3Count: { $sum: { $cond: [{ $eq: ['$feedback.rating', 3] }, 1, 0] } },
+        star2Count: { $sum: { $cond: [{ $eq: ['$feedback.rating', 2] }, 1, 0] } },
+        star1Count: { $sum: { $cond: [{ $eq: ['$feedback.rating', 1] }, 1, 0] } },
+        satisfiedCount: { $sum: { $cond: [{ $gte: ['$feedback.rating', 4] }, 1, 0] } },
+        departments: { $addToSet: '$department' },
+      },
+    },
+    {
+      $lookup: {
+        from: 'departments',
+        localField: 'departments',
+        foreignField: '_id',
+        as: 'departmentDocs',
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        categoryName: '$_id',
+        totalFeedback: 1,
+        avgRating: { $round: ['$avgRating', 1] },
+        satisfactionRate: {
+          $round: [
+            {
+              $cond: [
+                { $gt: ['$totalFeedback', 0] },
+                { $multiply: [{ $divide: ['$satisfiedCount', '$totalFeedback'] }, 100] },
+                0,
+              ],
+            },
+            1,
+          ],
+        },
+        distribution: {
+          5: '$star5Count',
+          4: '$star4Count',
+          3: '$star3Count',
+          2: '$star2Count',
+          1: '$star1Count',
+        },
+        departmentNames: '$departmentDocs.name',
+      },
+    },
+    {
+      $sort: { avgRating: -1, totalFeedback: -1 },
+    },
+  ];
+
+  const analytics = await Ticket.aggregate(pipeline as any);
+  return analytics;
+};
+
+/**
+ * Week-wise and Month-wise Category & Overall Feedback Analytics
+ */
+export const getTimeWiseFeedbackAnalytics = async (query: Record<string, unknown> = {}) => {
+  const match = getFeedbackPeriodMatch(query);
+
+  // Aggregate by Year & ISO Week
+  const weeklyPipeline = [
+    { $match: match },
+    {
+      $group: {
+        _id: {
+          year: { $isoWeekYear: '$feedback.submittedAt' },
+          week: { $isoWeek: '$feedback.submittedAt' },
+          category: '$complaintType',
+        },
+        totalFeedback: { $sum: 1 },
+        avgRating: { $avg: '$feedback.rating' },
+        satisfiedCount: { $sum: { $cond: [{ $gte: ['$feedback.rating', 4] }, 1, 0] } },
+      },
+    },
+    { $sort: { '_id.year': -1, '_id.week': -1 } },
+  ];
+
+  // Aggregate by Year & Month
+  const monthlyPipeline = [
+    { $match: match },
+    {
+      $group: {
+        _id: {
+          year: { $year: '$feedback.submittedAt' },
+          month: { $month: '$feedback.submittedAt' },
+          category: '$complaintType',
+        },
+        totalFeedback: { $sum: 1 },
+        avgRating: { $avg: '$feedback.rating' },
+        satisfiedCount: { $sum: { $cond: [{ $gte: ['$feedback.rating', 4] }, 1, 0] } },
+      },
+    },
+    { $sort: { '_id.year': -1, '_id.month': -1 } },
+  ];
+
+  const [weeklyRaw, monthlyRaw] = await Promise.all([
+    Ticket.aggregate(weeklyPipeline as any),
+    Ticket.aggregate(monthlyPipeline as any),
+  ]);
+
+  return {
+    weekly: weeklyRaw.map((w: any) => ({
+      year: w._id.year,
+      week: w._id.week,
+      label: `Week ${w._id.week}, ${w._id.year}`,
+      category: w._id.category,
+      totalFeedback: w.totalFeedback,
+      avgRating: Number(w.avgRating.toFixed(1)),
+      satisfactionRate: Number(((w.satisfiedCount / w.totalFeedback) * 100).toFixed(1)),
+    })),
+    monthly: monthlyRaw.map((m: any) => {
+      const date = new Date(m._id.year, m._id.month - 1, 1);
+      const monthName = date.toLocaleString('default', { month: 'short' });
+      return {
+        year: m._id.year,
+        month: m._id.month,
+        label: `${monthName} ${m._id.year}`,
+        category: m._id.category,
+        totalFeedback: m.totalFeedback,
+        avgRating: Number(m.avgRating.toFixed(1)),
+        satisfactionRate: Number(((m.satisfiedCount / m.totalFeedback) * 100).toFixed(1)),
+      };
+    }),
+  };
 };
 
 export { OPEN_STATUSES };

@@ -119,7 +119,7 @@ export const sendEmailOtp = async (email: string): Promise<{ sessionId: string }
     throw ApiError.badRequest('Invalid email address format');
   }
 
-  // Generate 6-digit numeric OTP (e.g. 583920)
+  // Generate 6-digit numeric OTP (  583920)
   const numericOtp = Math.floor(100000 + Math.random() * 900000).toString();
   const sessionId = `EMAIL_OTP_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
