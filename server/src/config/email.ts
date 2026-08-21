@@ -17,6 +17,9 @@ const getTransporter = (): Transporter | null => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
       tls: {
         rejectUnauthorized: false,
       },
@@ -36,7 +39,7 @@ export interface SendEmailOptions {
  * Send email if SMTP is configured; otherwise log and return stub result.
  */
 export const sendEmail = async ({ to, subject, text, html }: SendEmailOptions) => {
-  const from = process.env.SMTP_FROM || 'noreply@tms.local';
+  const from = process.env.SMTP_FROM || 'noreply@sece.ac.in';
   const tx = getTransporter();
 
   if (!tx) {

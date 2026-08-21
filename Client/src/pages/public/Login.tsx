@@ -125,7 +125,7 @@ export function Login() {
                 className={`h-10 w-full rounded-lg border bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
                   errors.email ? 'border-[var(--danger)]' : 'border-[var(--border)]'
                 }`}
-                placeholder="you@company.com"
+                placeholder="admin@sece.ac.in"
               />
               {errors.email && (
                 <span className="text-xs text-[var(--danger)]">{errors.email.message}</span>

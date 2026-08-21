@@ -364,7 +364,7 @@ export function AdminUsers() {
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               className={inputClass}
-              placeholder="john@company.com"
+              placeholder="john@sece.ac.in"
             />
           </Field>
           <Field label={editing ? 'New Password (optional)' : 'Password'}>
