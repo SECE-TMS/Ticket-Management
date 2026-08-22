@@ -769,12 +769,12 @@ export function QrGeneratorPage() {
         {/* Left Form Controls */}
         <div className="space-y-6 lg:col-span-6">
           {/* Theme Selector */}
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-sm">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 sm:p-5 shadow-sm">
             <label className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
               <Palette size={16} className="text-[var(--primary-blue)]" />
               Poster Color Gradient Theme
             </label>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
               {THEME_PRESETS.map((theme) => {
                 const active = selectedTheme.id === theme.id
                 return (
@@ -783,7 +783,7 @@ export function QrGeneratorPage() {
                     type="button"
                     title={theme.name}
                     onClick={() => setSelectedTheme(theme)}
-                    className={`group relative flex h-14 flex-col items-center justify-center rounded-xl border transition-all ${active ? 'border-2 border-[var(--primary-blue)] ring-2 ring-[var(--primary-blue)]/20' : 'border-transparent'
+                    className={`group relative flex h-12 sm:h-14 flex-col items-center justify-center rounded-xl border transition-all cursor-pointer ${active ? 'border-2 border-[var(--primary-blue)] ring-2 ring-[var(--primary-blue)]/20' : 'border-transparent'
                       }`}
                     style={{ background: theme.cssGradient }}
                   >

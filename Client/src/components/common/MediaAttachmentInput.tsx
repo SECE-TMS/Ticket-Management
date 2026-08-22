@@ -318,20 +318,20 @@ export function MediaAttachmentInput({
           onDrop={handleDrop}
         >
           {/* Top Quick Actions Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-[var(--border)] pb-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-[var(--ink)]">
                 {currentFiles.length === 0
                   ? 'Add Attachments'
-                  : `Attached Files (${currentFiles.length} file${currentFiles.length > 1 ? 's' : ''}, ${formatBytes(totalSize)})`}
+                  : `Attached (${currentFiles.length} file${currentFiles.length > 1 ? 's' : ''}, ${formatBytes(totalSize)})`}
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
                 onClick={() => setCameraOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary-blue-light)] px-3 py-1.5 text-xs font-bold text-[var(--primary-blue)] hover:bg-[var(--primary-blue)] hover:text-white transition-all cursor-pointer"
+                className="inline-flex flex-1 sm:flex-initial justify-center items-center gap-1.5 rounded-xl bg-[var(--primary-blue-light)] px-3 py-2 text-xs font-bold text-[var(--primary-blue)] hover:bg-[var(--primary-blue)] hover:text-white transition-all cursor-pointer active:scale-95 whitespace-nowrap"
               >
                 <Camera size={14} /> Take Photo
               </button>
@@ -339,17 +339,17 @@ export function MediaAttachmentInput({
               <button
                 type="button"
                 onClick={startRecording}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--gold-light)] px-3 py-1.5 text-xs font-bold text-[var(--gold-dark)] hover:bg-[var(--gold)] hover:text-[var(--primary-blue-deeper)] transition-all cursor-pointer"
+                className="inline-flex flex-1 sm:flex-initial justify-center items-center gap-1.5 rounded-xl bg-[var(--gold-light)] px-3 py-2 text-xs font-bold text-[var(--gold-dark)] hover:bg-[var(--gold)] hover:text-[var(--primary-blue-deeper)] transition-all cursor-pointer active:scale-95 whitespace-nowrap"
               >
-                <Mic size={14} /> Record Audio
+                <Mic size={14} /> Record Voice
               </button>
 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 py-1.5 text-xs font-bold text-[var(--ink)] hover:bg-[var(--surface-2)] shadow-xs cursor-pointer"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 py-2 text-xs font-bold text-[var(--ink)] hover:bg-[var(--surface-2)] shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
               >
-                <Upload size={14} /> Browse Files (Photos, Videos, Audio)
+                <Upload size={14} /> Upload Files
               </button>
             </div>
           </div>

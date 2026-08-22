@@ -46,36 +46,36 @@ export function Sidebar({ items, title }: SidebarProps) {
       {/* ── Mobile Sticky Top Header (Visible only on < lg screens) ──────────── */}
       <header className="sticky top-0 z-40 flex flex-col w-full border-b border-[var(--border)] bg-[var(--white)] shadow-xs lg:hidden">
         {/* Top bar with logo, menu toggle, user badge */}
-        <div className="flex h-16 w-full items-center justify-between px-4">
-          <div className="flex items-center gap-3">
+        <div className="flex h-16 w-full items-center justify-between px-3 sm:px-4 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--ink)] cursor-pointer hover:bg-[var(--primary-blue-light)] hover:text-[var(--primary-blue)] transition-colors"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--ink)] cursor-pointer hover:bg-[var(--primary-blue-light)] hover:text-[var(--primary-blue)] transition-colors active:scale-95"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
               <Menu size={20} />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center rounded-xl bg-white px-2.5 py-1 border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <div className="flex items-center rounded-xl bg-white px-2 py-1 border border-slate-200 shadow-xs shrink-0">
                 <img
                   src={sriEshwarCleanLogo}
                   alt="Sri Eshwar College Logo"
-                  className="h-7 w-auto max-w-[100px] object-contain"
+                  className="h-6 sm:h-7 w-auto max-w-[85px] sm:max-w-[100px] object-contain"
                 />
               </div>
-              <div className="flex items-center rounded-xl bg-white px-2.5 py-1 border border-slate-200 shadow-xs">
+              <div className="flex items-center rounded-xl bg-white px-1.5 sm:px-2.5 py-1 border border-slate-200 shadow-xs shrink-0">
                 <img
                   src={isaiiCleanLogo}
                   alt="ISAII Logo"
-                  className="h-7 w-auto max-w-[65px] object-contain scale-115"
+                  className="h-6 sm:h-7 w-auto max-w-[50px] sm:max-w-[65px] object-contain scale-110"
                 />
               </div>
-              <span className="font-bold text-sm text-[var(--ink)] hidden sm:inline">TMS Portal</span>
+              <span className="font-bold text-xs sm:text-sm text-[var(--ink)] hidden md:inline truncate">TMS Portal</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--gold)] text-[var(--primary-blue-deeper)] text-xs font-bold uppercase shadow-xs">
               {getInitials(user?.name)}
             </div>
@@ -92,7 +92,7 @@ export function Sidebar({ items, title }: SidebarProps) {
         </div>
 
         {/* Scrollable quick nav pills for mobile */}
-        <div className="flex items-center gap-1.5 overflow-x-auto px-4 py-2 border-t border-[var(--border)] bg-[var(--surface)] no-scrollbar">
+        <div className="flex items-center gap-1.5 overflow-x-auto px-3 sm:px-4 py-2 border-t border-[var(--border)] bg-[var(--surface)] no-scrollbar touch-pan-x">
           {items.map((item) => {
             const Icon = item.icon
             return (
@@ -101,7 +101,7 @@ export function Sidebar({ items, title }: SidebarProps) {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all border',
+                    'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all border whitespace-nowrap active:scale-95',
                     isActive
                       ? 'bg-[var(--primary-blue)] text-[var(--white)] border-[var(--primary-blue)] shadow-xs'
                       : 'bg-[var(--white)] text-[var(--ink-muted)] border-[var(--border)] hover:bg-[var(--primary-blue-light)] hover:text-[var(--primary-blue)]'

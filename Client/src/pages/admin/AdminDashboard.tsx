@@ -710,70 +710,110 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── Recent Tickets Table ────────────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+      {/* ── Recent Tickets Table & Mobile Cards ────────────────────────────── */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 sm:px-5 py-4">
           <h2 className="text-base font-bold text-[var(--ink)]">Recent Tickets Log</h2>
           <RouterLink to="/admin/tickets" className="text-xs font-semibold text-[var(--primary-blue)] hover:underline">
             View all tickets →
           </RouterLink>
         </div>
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="bg-[var(--primary-blue)] text-white/90 font-bold uppercase tracking-wider">
-              <th className="px-5 py-3">Ticket ID &amp; Requester</th>
-              <th className="px-5 py-3">Department</th>
-              <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3">Priority</th>
-              <th className="px-5 py-3">Assigned To</th>
-              <th className="px-5 py-3">Complaint Description</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border)]">
-            {data?.recent && data.recent.length > 0 ? (
-              data.recent.map((t) => (
-                <tr
-                  key={t._id}
-                  onClick={() => navigate(`/admin/tickets/${t._id}`)}
-                  className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
-                >
-                  <td className="px-5 py-3.5">
-                    <div className="font-bold text-[var(--ink)]">
-                      {t.requester?.name || 'Valued User'}
-                    </div>
-                    <Link
-                      to={`/admin/tickets/${t._id}`}
-                      className="font-mono text-xs font-bold text-[var(--primary-blue)] hover:underline block mt-0.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {t.ticketCode}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3.5 text-[var(--ink-muted)] font-medium">{getName(t.department)}</td>
-                  <td className="px-5 py-3.5">
+
+        {/* Mobile View (< md) */}
+        <div className="flex flex-col divide-y divide-[var(--border)] md:hidden">
+          {data?.recent && data.recent.length > 0 ? (
+            data.recent.map((t) => (
+              <div
+                key={t._id}
+                onClick={() => navigate(`/admin/tickets/${t._id}`)}
+                className="p-4 hover:bg-[var(--primary-blue-light)] transition-colors cursor-pointer space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-[var(--primary-blue)]">
+                    {t.ticketCode}
+                  </span>
+                  <div className="flex items-center gap-1.5">
                     <StatusBadge status={t.status} />
-                  </td>
-                  <td className="px-5 py-3.5">
                     <PriorityBadge priority={t.priority} />
-                  </td>
-                  <td className="px-5 py-3.5 text-[var(--ink-muted)] font-medium">
-                    {getName(t.assignedTo, 'Unassigned')}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="font-semibold text-[var(--ink)]">{t.complaintType}</div>
-                    <div className="text-[11px] text-[var(--ink-muted)] truncate max-w-xs">{t.description}</div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[var(--ink)]">{t.requester?.name || 'Valued User'}</p>
+                  <p className="text-xs font-semibold text-[var(--ink)] mt-0.5">{t.complaintType}</p>
+                  {t.description && (
+                    <p className="text-[11px] text-[var(--ink-muted)] line-clamp-1 mt-0.5">{t.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-[var(--ink-muted)] pt-1">
+                  <span>{getName(t.department)}</span>
+                  <span className="font-semibold text-[var(--primary-blue)]">{getName(t.assignedTo, 'Unassigned')}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-6 text-center text-xs text-[var(--ink-muted)]">No recent tickets found.</div>
+          )}
+        </div>
+
+        {/* Desktop View (≥ md) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-[var(--primary-blue)] text-white/90 font-bold uppercase tracking-wider">
+                <th className="px-5 py-3">Ticket ID &amp; Requester</th>
+                <th className="px-5 py-3">Department</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Priority</th>
+                <th className="px-5 py-3">Assigned To</th>
+                <th className="px-5 py-3">Complaint Description</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {data?.recent && data.recent.length > 0 ? (
+                data.recent.map((t) => (
+                  <tr
+                    key={t._id}
+                    onClick={() => navigate(`/admin/tickets/${t._id}`)}
+                    className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
+                  >
+                    <td className="px-5 py-3.5">
+                      <div className="font-bold text-[var(--ink)]">
+                        {t.requester?.name || 'Valued User'}
+                      </div>
+                      <Link
+                        to={`/admin/tickets/${t._id}`}
+                        className="font-mono text-xs font-bold text-[var(--primary-blue)] hover:underline block mt-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {t.ticketCode}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3.5 text-[var(--ink-muted)] font-medium">{getName(t.department)}</td>
+                    <td className="px-5 py-3.5">
+                      <StatusBadge status={t.status} />
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <PriorityBadge priority={t.priority} />
+                    </td>
+                    <td className="px-5 py-3.5 text-[var(--ink-muted)] font-medium">
+                      {getName(t.assignedTo, 'Unassigned')}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="font-semibold text-[var(--ink)]">{t.complaintType}</div>
+                      <div className="text-[11px] text-[var(--ink-muted)] truncate max-w-xs">{t.description}</div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-5 py-6 text-center text-xs text-[var(--ink-muted)]">
+                    No recent tickets found.
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="px-5 py-6 text-center text-xs text-[var(--ink-muted)]">
-                  No recent tickets found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )

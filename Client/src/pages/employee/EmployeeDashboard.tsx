@@ -85,49 +85,74 @@ export function EmployeeDashboard() {
         </div>
 
         {/* Recent assignments */}
-        <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs lg:col-span-3">
-          <div className="border-b border-[var(--border)] px-5 py-4">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] shadow-xs lg:col-span-3">
+          <div className="border-b border-[var(--border)] px-4 sm:px-5 py-4">
             <h2 className="text-base font-bold text-[var(--ink)]">Recent Assignments</h2>
           </div>
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
-                <th className="px-5 py-3">Code</th>
-                <th className="px-5 py-3">Department</th>
-                <th className="px-5 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)]">
+
+          {/* Mobile Cards (< md) */}
+          <div className="flex flex-col divide-y divide-[var(--border)] md:hidden">
             {data.recent.map((t) => (
-              <tr
+              <div
                 key={t._id}
                 onClick={() => navigate(`/employee/tickets/${t._id}`)}
-                className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
+                className="p-4 hover:bg-[var(--primary-blue-light)] transition-colors cursor-pointer space-y-2"
               >
-                <td className="px-5 py-3.5">
-                  <Link
-                    to={`/employee/tickets/${t._id}`}
-                    className="font-bold text-[var(--primary-blue)] hover:underline"
-                    onClick={(e) => e.stopPropagation()}
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-[var(--primary-blue)]">{t.ticketCode}</span>
+                  <StatusBadge status={t.status} />
+                </div>
+                <div className="text-xs font-semibold text-[var(--ink)]">{t.complaintType}</div>
+                <div className="text-[11px] text-[var(--ink-muted)]">{getName(t.department)}</div>
+              </div>
+            ))}
+            {!data.recent.length && (
+              <div className="p-6 text-center text-xs text-[var(--ink-muted)]">No recent assignments.</div>
+            )}
+          </div>
+
+          {/* Desktop Table (≥ md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
+                  <th className="px-5 py-3">Code</th>
+                  <th className="px-5 py-3">Department</th>
+                  <th className="px-5 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {data.recent.map((t) => (
+                  <tr
+                    key={t._id}
+                    onClick={() => navigate(`/employee/tickets/${t._id}`)}
+                    className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
                   >
-                      {t.ticketCode}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
-                  <td className="px-5 py-3.5">
-                    <StatusBadge status={t.status} />
-                  </td>
-                </tr>
-              ))}
-              {!data.recent.length && (
-                <tr>
-                  <td colSpan={3} className="py-8 text-center text-sm text-[var(--ink-muted)]">
-                    No recent assignments.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <td className="px-5 py-3.5">
+                      <Link
+                        to={`/employee/tickets/${t._id}`}
+                        className="font-bold text-[var(--primary-blue)] hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {t.ticketCode}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
+                    <td className="px-5 py-3.5">
+                      <StatusBadge status={t.status} />
+                    </td>
+                  </tr>
+                ))}
+                {!data.recent.length && (
+                  <tr>
+                    <td colSpan={3} className="py-8 text-center text-sm text-[var(--ink-muted)]">
+                      No recent assignments.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

@@ -327,7 +327,7 @@ export function AdminFeedback() {
           </div>
 
           {/* Date Presets Button Group */}
-          <div className="flex items-center gap-1.5 flex-wrap bg-[var(--surface-2)] p-1 rounded-2xl border border-[var(--border)] text-xs font-bold">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-pan-x bg-[var(--surface-2)] p-1 rounded-2xl border border-[var(--border)] text-xs font-bold w-full lg:w-auto">
             {(
               [
                 { id: 'all', label: 'All Time' },
@@ -343,7 +343,7 @@ export function AdminFeedback() {
                 key={p.id}
                 type="button"
                 onClick={() => handlePeriodChange(p.id)}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   period === p.id
                     ? 'bg-white text-[var(--primary-blue)] shadow-xs font-black'
                     : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
@@ -517,35 +517,35 @@ export function AdminFeedback() {
           </div>
 
           {/* View Toggles */}
-          <div className="flex items-center bg-[var(--surface-2)] p-1 rounded-2xl border border-[var(--border)] text-xs font-bold">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar touch-pan-x bg-[var(--surface-2)] p-1 rounded-2xl border border-[var(--border)] text-xs font-bold w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setViewMode('category')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 viewMode === 'category'
                   ? 'bg-white text-[var(--primary-blue)] shadow-xs font-black'
                   : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
               }`}
             >
-              <Tag size={13} /> Category Wise ({categoryAnalytics.length})
+              <Tag size={13} /> Category ({categoryAnalytics.length})
             </button>
 
             <button
               type="button"
               onClick={() => setViewMode('department')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 viewMode === 'department'
                   ? 'bg-white text-[var(--primary-blue)] shadow-xs font-black'
                   : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
               }`}
             >
-              <Building2 size={13} /> Department Wise ({departmentAnalytics.length})
+              <Building2 size={13} /> Department ({departmentAnalytics.length})
             </button>
 
             <button
               type="button"
               onClick={() => setViewMode('timewise')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 viewMode === 'timewise'
                   ? 'bg-white text-[var(--primary-blue)] shadow-xs font-black'
                   : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'

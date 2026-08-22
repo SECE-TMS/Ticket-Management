@@ -634,10 +634,10 @@ export function RaiseTicket() {
         </div>
 
         {/* Right Column: High-End Form */}
-        <div className="col-span-12 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-6 shadow-sm sm:p-8 lg:col-span-8">
+        <div className="col-span-12 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 sm:p-6 lg:p-8 shadow-sm lg:col-span-8">
           {/* QR Code Banner Notification */}
           {qrPrefillInfo && (
-            <div className="mb-6 flex items-center gap-3 rounded-xl border border-[var(--primary-blue)]/30 bg-[var(--primary-blue-light)] p-3.5 text-xs text-[var(--primary-blue-deeper)] animate-fade-in">
+            <div className="mb-6 flex items-center gap-3 rounded-xl border border-[var(--primary-blue)]/30 bg-[var(--primary-blue-light)] p-3 sm:p-3.5 text-xs text-[var(--primary-blue-deeper)] animate-fade-in">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-blue)] text-white">
                 <QrCode size={18} />
               </div>
@@ -666,7 +666,7 @@ export function RaiseTicket() {
                 <label className="text-xs font-bold text-[var(--ink)]">
                   I am a <span className="text-[var(--danger)]">*</span>
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {[
                     { id: 'student', label: 'Student', icon: GraduationCap },
                     { id: 'staff', label: 'Staff', icon: UserCheck },
@@ -684,12 +684,12 @@ export function RaiseTicket() {
                             clearErrors('rollNumber')
                           }
                         }}
-                        className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-3.5 text-center transition-all cursor-pointer ${isSelected
+                        className={`flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-xl border p-2.5 sm:p-3.5 text-center transition-all cursor-pointer ${isSelected
                           ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-bold shadow-xs ring-2 ring-[var(--primary-blue)]/20'
                           : 'border-[var(--border)] bg-[var(--white)] text-[var(--ink-muted)] hover:border-[var(--primary-blue-muted)] hover:bg-[var(--surface)]'
                           }`}
                       >
-                        <IconComp size={20} className={isSelected ? 'text-[var(--primary-blue)]' : 'text-[var(--ink-muted)]'} />
+                        <IconComp size={18} className={isSelected ? 'text-[var(--primary-blue)]' : 'text-[var(--ink-muted)]'} />
                         <span className="text-xs font-bold">{role.label}</span>
                       </button>
                     )
@@ -955,7 +955,7 @@ export function RaiseTicket() {
                           onClick={handleVerifyOtp}
                           loading={otpVerifying}
                           disabled={otpValue.length < 4}
-                          className="h-11 shadow-sm"
+                          className="w-full sm:w-auto font-bold h-11 shadow-sm"
                         >
                           Verify OTP
                         </Button>

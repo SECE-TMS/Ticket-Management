@@ -47,24 +47,24 @@ export function Navbar({ items = [], brandTo = '/' }: NavbarProps) {
       id="main-navbar"
       className="sticky top-0 z-40 bg-[var(--primary-blue)] text-[var(--white)] shadow-md"
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 sm:gap-4 px-3 sm:px-6">
         {/* Brand Logo - Split into two separate elements */}
-        <Link to={brandTo} className="flex items-center gap-2.5 sm:gap-3.5 group">
+        <Link to={brandTo} className="flex items-center gap-1.5 sm:gap-3 group min-w-0">
           {/* College Logo Badge */}
-          <div className="flex items-center rounded-xl bg-white px-3 py-1.5 shadow-sm border border-white/30 transition-transform group-hover:scale-105">
+          <div className="flex items-center rounded-xl bg-white px-2 sm:px-3 py-1 sm:py-1.5 shadow-sm border border-white/30 transition-transform group-hover:scale-105 shrink-0">
             <img
               src={sriEshwarCleanLogo}
               alt="Sri Eshwar College Logo"
-              className="h-8 sm:h-9 w-auto max-w-[135px] object-contain"
+              className="h-7 sm:h-9 w-auto max-w-[95px] sm:max-w-[135px] object-contain"
             />
           </div>
 
           {/* ISAII Logo Badge (Zoomed) */}
-          <div className="flex items-center rounded-xl bg-white px-3 py-1.5 shadow-sm border border-white/30 transition-transform group-hover:scale-105">
+          <div className="flex items-center rounded-xl bg-white px-2 sm:px-3 py-1 sm:py-1.5 shadow-sm border border-white/30 transition-transform group-hover:scale-105 shrink-0">
             <img
               src={isaiiCleanLogo}
               alt="ISAII Logo"
-              className="h-8 sm:h-9 w-auto max-w-[90px] object-contain scale-120"
+              className="h-7 sm:h-9 w-auto max-w-[55px] sm:max-w-[90px] object-contain scale-110 sm:scale-120"
             />
           </div>
 
@@ -99,9 +99,9 @@ export function Navbar({ items = [], brandTo = '/' }: NavbarProps) {
         </nav>
 
         {/* Right Actions (User info / Logout / Staff Login / Hamburger) */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {user ? (
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <div className="hidden flex-col items-end sm:flex">
                 <span className="text-sm font-bold text-[var(--white)] leading-tight">
                   {user.name}
@@ -125,7 +125,7 @@ export function Navbar({ items = [], brandTo = '/' }: NavbarProps) {
           ) : (
             <Link
               to="/login"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-4 text-xs font-bold bg-[var(--gold)] text-[var(--primary-blue-deeper)] hover:bg-[var(--gold-dark)] transition-colors shadow-xs"
+              className="inline-flex h-8 items-center gap-1 rounded-lg px-3 sm:px-4 text-xs font-bold bg-[var(--gold)] text-[var(--primary-blue-deeper)] hover:bg-[var(--gold-dark)] transition-colors shadow-xs shrink-0 whitespace-nowrap"
             >
               Staff Login
             </Link>
@@ -134,7 +134,7 @@ export function Navbar({ items = [], brandTo = '/' }: NavbarProps) {
           {/* Mobile Menu Hamburger Toggle */}
           <button
             type="button"
-            className="rounded-lg p-2 text-white/80 hover:bg-white/10 hover:text-[var(--white)] md:hidden cursor-pointer"
+            className="rounded-lg p-1.5 sm:p-2 text-white/80 hover:bg-white/10 hover:text-[var(--white)] md:hidden cursor-pointer"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
           >

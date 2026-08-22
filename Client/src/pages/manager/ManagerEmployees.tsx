@@ -161,7 +161,85 @@ export function ManagerEmployees() {
         }
       />
 
-      <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
+      {/* ── Mobile Card View (< md) ────────────────────────────────────────── */}
+      <div className="flex flex-col gap-3 md:hidden" id="employees-mobile-cards">
+        {employees
+          .slice((page - 1) * limit, page * limit)
+          .map((e) => (
+            <div
+              key={getId(e)}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-xs space-y-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${e.isActive
+                        ? 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]'
+                        : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
+                      }`}
+                  >
+                    {getInitials(e.name)}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-[var(--ink)]">{e.name}</h3>
+                    <p className="text-xs text-[var(--ink-muted)] truncate max-w-[180px]">{e.email}</p>
+                  </div>
+                </div>
+                <Badge
+                  className={
+                    e.isActive
+                      ? 'bg-[var(--success-light)] text-[var(--success)] shrink-0'
+                      : 'bg-[var(--surface-2)] text-[var(--ink-muted)] shrink-0'
+                  }
+                >
+                  {e.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+
+              {/* Phone and ID details */}
+              <div className="grid grid-cols-2 gap-2 text-xs bg-[var(--surface)] p-2.5 rounded-xl border border-slate-100">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[var(--ink-muted)]">Phone</span>
+                  <p className="font-bold text-[var(--ink)]">{e.phone || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[var(--ink-muted)]">Staff ID</span>
+                  <p className="font-bold text-[var(--ink)] truncate">{e.rollNumber || '—'}</p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openEdit(e)}
+                  className="flex-1 font-bold"
+                >
+                  Edit Details
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={e.isActive ? 'ghost' : 'primary'}
+                  onClick={() => void toggleActive(e)}
+                  className="flex-1 font-bold"
+                >
+                  {e.isActive ? 'Deactivate' : 'Activate'}
+                </Button>
+              </div>
+            </div>
+          ))}
+        {!employees.length && (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-8 text-center text-sm text-[var(--ink-muted)]">
+            No employees in this department yet. Add your first employee to get started.
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop Data Table (≥ md) ───────────────────────────────────────── */}
+      <div className="hidden md:block overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
         <table className="w-full text-left text-sm border-collapse" id="employees-table">
           <thead>
             <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
@@ -232,7 +310,7 @@ export function ManagerEmployees() {
             {!employees.length && (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-sm text-[var(--ink-muted)]">
-                  No employees yet. Add your first technician to start assigning tickets.
+                  No employees in this department yet. Add your first employee to get started.
                 </td>
               </tr>
             )}

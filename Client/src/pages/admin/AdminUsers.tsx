@@ -238,7 +238,85 @@ export function AdminUsers() {
         <PageLoader />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
+          {/* ── Mobile Card View (< md) ────────────────────────────────────────── */}
+          <div className="flex flex-col gap-3 md:hidden" id="users-mobile-cards">
+            {users.map((u) => (
+              <div
+                key={getId(u)}
+                className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-xs space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold uppercase shrink-0 ${u.isActive
+                          ? 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]'
+                          : 'bg-[var(--surface-2)] text-[var(--ink-muted)]'
+                        }`}
+                    >
+                      {getInitials(u.name)}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-[var(--ink)]">{u.name}</h3>
+                      <p className="text-xs text-[var(--ink-muted)] truncate max-w-[180px]">{u.email}</p>
+                    </div>
+                  </div>
+                  <Badge
+                    className={
+                      u.isActive
+                        ? 'bg-[var(--success-light)] text-[var(--success)] shrink-0'
+                        : 'bg-[var(--surface-2)] text-[var(--ink-muted)] shrink-0'
+                    }
+                  >
+                    {u.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+
+                {/* Role & Dept Info */}
+                <div className="grid grid-cols-2 gap-2 text-xs bg-[var(--surface)] p-2.5 rounded-xl border border-slate-100">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-[var(--ink-muted)]">Role</span>
+                    <p className="font-bold text-[var(--ink)] capitalize">{formatLabel(u.role)}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-[var(--ink-muted)]">Department</span>
+                    <p className="font-bold text-[var(--ink)] truncate">{getName(u.department, 'All Departments')}</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openEdit(u)}
+                    className="flex-1 font-bold"
+                  >
+                    Edit
+                  </Button>
+                  {u.role !== 'admin' && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={u.isActive ? 'ghost' : 'primary'}
+                      onClick={() => void toggleActive(u)}
+                      className="flex-1 font-bold"
+                    >
+                      {u.isActive ? 'Deactivate' : 'Activate'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {!users.length && (
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-8 text-center text-sm text-[var(--ink-muted)]">
+                No users match your filters.
+              </div>
+            )}
+          </div>
+
+          {/* ── Desktop Data Table (≥ md) ───────────────────────────────────────── */}
+          <div className="hidden md:block overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
             <table className="w-full text-left text-sm border-collapse" id="users-table">
               <thead>
                 <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">

@@ -9,5 +9,11 @@
     "seed": "npm run seed --prefix server",
     "build:client": "npm run build --prefix Client",
     "start:server": "npm start --prefix server"
+  },
+  "dependencies": {
+    "@vercel/config": "^0.6.1"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.10.2"
   }
 }

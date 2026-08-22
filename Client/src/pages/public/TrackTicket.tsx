@@ -199,27 +199,27 @@ export function TrackTicket() {
 
       {/* Ticket Details View */}
       {ticket && (
-        <div className="mt-8 space-y-6 animate-fade-in">
+        <div className="mt-6 sm:mt-8 space-y-6 animate-fade-in">
           {/* Main Status & Progress Header */}
           <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--white)] shadow-md">
-            <div className="bg-gradient-to-r from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[var(--primary-blue-dark)] p-6 text-[var(--white)] sm:p-8">
-              <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="bg-gradient-to-r from-[var(--primary-blue-deeper)] via-[var(--primary-blue)] to-[var(--primary-blue-dark)] p-4 sm:p-6 lg:p-8 text-[var(--white)]">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">
+                  <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--gold)]">
                     Active Ticket Record
                   </p>
-                  <h2 className="mt-1 font-mono text-3xl font-bold tracking-wider text-[var(--white)]">
+                  <h2 className="mt-1 font-mono text-2xl sm:text-3xl font-bold tracking-wider text-[var(--white)]">
                     {ticket.ticketCode}
                   </h2>
-                  <p className="mt-1 text-sm text-white/80 font-medium">
+                  <p className="mt-1 text-xs sm:text-sm text-white/80 font-medium">
                     {ticket.complaintType} • {getName(ticket.department)}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <button
                     type="button"
                     onClick={() => setShowShareModal(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/10 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition-colors cursor-pointer"
                     title="Share Ticket"
                   >
                     <Share2 size={14} /> Share
@@ -228,10 +228,10 @@ export function TrackTicket() {
                   <button
                     type="button"
                     onClick={() => setShowReceiptModal(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/10 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition-colors cursor-pointer"
                     title="Download/Print Receipt"
                   >
-                    <Printer size={14} /> Download Receipt
+                    <Printer size={14} /> Receipt
                   </button>
 
                   <StatusBadge status={ticket.status} />
@@ -240,11 +240,11 @@ export function TrackTicket() {
               </div>
 
               {/* 4-Step Visual Progress Bar */}
-              <div className="mt-8 border-t border-white/10 pt-6">
-                <p className="text-xs font-bold uppercase tracking-wider text-white/70 mb-4">
+              <div className="mt-6 sm:mt-8 border-t border-white/10 pt-5 sm:pt-6">
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white/70 mb-3 sm:mb-4">
                   Resolution Progress Pipeline
                 </p>
-                <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 text-center">
                   {[
                     { step: 1, title: 'Submitted' },
                     { step: 2, title: 'Assigned' },
@@ -254,17 +254,17 @@ export function TrackTicket() {
                     const isDone = activeStep >= item.step
                     const isCurrent = activeStep === item.step
                     return (
-                      <div key={item.step} className="flex flex-col items-center gap-2">
+                      <div key={item.step} className="flex flex-col items-center gap-1 sm:gap-2">
                         <div
-                          className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition-all ${isDone
+                          className={`flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[11px] sm:text-xs font-bold transition-all ${isDone
                               ? 'bg-[var(--gold)] text-[var(--primary-blue-deeper)] shadow-md'
                               : 'bg-white/10 text-white/40'
-                            } ${isCurrent ? 'ring-4 ring-yellow-400/30' : ''}`}
+                            } ${isCurrent ? 'ring-2 sm:ring-4 ring-yellow-400/30' : ''}`}
                         >
                           {isDone ? '✓' : item.step}
                         </div>
                         <span
-                          className={`text-xs font-semibold ${isDone ? 'text-[var(--white)]' : 'text-white/40'
+                          className={`text-[10px] sm:text-xs font-semibold leading-tight ${isDone ? 'text-[var(--white)] font-bold' : 'text-white/40'
                             }`}
                         >
                           {item.title}
@@ -277,10 +277,10 @@ export function TrackTicket() {
             </div>
 
             {/* Key Information Cards */}
-            <div className="p-6 sm:p-8 space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)] mb-1">
+            <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-4">
+                  <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)] mb-1">
                     Requester
                   </p>
                   <p className="text-sm font-bold text-[var(--ink)]">{ticket.requester.name}</p>

@@ -38,17 +38,17 @@ export function Pagination({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--white)] px-4 py-3 shadow-xs text-xs text-[var(--ink-muted)]">
-      {/* Left: Summary text */}
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--white)] px-4 py-3 shadow-xs text-xs text-[var(--ink-muted)]">
+      {/* Left: Summary text & Per-page selector */}
+      <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-3">
         <p className="text-xs">
           Showing <strong className="text-[var(--ink)]">{startItem}–{endItem}</strong> of{' '}
-          <strong className="text-[var(--ink)]">{total}</strong> items
+          <strong className="text-[var(--ink)]">{total}</strong>
         </p>
 
         {/* Page Limit Selector */}
         {onLimitChange && (
-          <div className="flex items-center gap-1.5 border-l border-[var(--border)] pl-3">
+          <div className="flex items-center gap-1.5 border-l border-[var(--border)] pl-2.5 sm:pl-3">
             <span>Per page:</span>
             <select
               value={currentLimit}
@@ -66,13 +66,13 @@ export function Pagination({
       </div>
 
       {/* Right: Page Navigation Controls */}
-      <div className="flex items-center gap-2">
-        <span className="mr-1 hidden sm:inline">
+      <div className="flex items-center justify-between sm:justify-end gap-2 border-t border-slate-100 sm:border-0 pt-2 sm:pt-0">
+        <span className="text-xs font-semibold text-[var(--ink-muted)]">
           Page <strong className="text-[var(--ink)]">{page}</strong> of{' '}
           <strong className="text-[var(--ink)]">{Math.max(1, pages)}</strong>
         </span>
 
-        <nav className="pagination" aria-label="Pagination">
+        <nav className="pagination flex items-center gap-1" aria-label="Pagination">
           {/* Prev Button */}
           <button
             type="button"
@@ -84,30 +84,32 @@ export function Pagination({
             <ChevronLeft size={14} />
           </button>
 
-          {/* Page numbers */}
-          {pages > 1 &&
-            pageNums.map((p, idx) =>
-              p === '…' ? (
-                <span
-                  key={`ellipsis-${idx}`}
-                  className="page-btn"
-                  style={{ border: 'none', cursor: 'default', opacity: 0.4 }}
-                >
-                  …
-                </span>
-              ) : (
-                <button
-                  key={p}
-                  type="button"
-                  className={`page-btn ${p === page ? 'active' : ''}`}
-                  onClick={() => onPageChange(p as number)}
-                  aria-label={`Page ${p}`}
-                  aria-current={p === page ? 'page' : undefined}
-                >
-                  {p}
-                </button>
-              )
-            )}
+          {/* Desktop/Tablet Page numbers */}
+          <div className="hidden sm:inline-flex items-center gap-1">
+            {pages > 1 &&
+              pageNums.map((p, idx) =>
+                p === '…' ? (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="page-btn"
+                    style={{ border: 'none', cursor: 'default', opacity: 0.4 }}
+                  >
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`page-btn ${p === page ? 'active' : ''}`}
+                    onClick={() => onPageChange(p as number)}
+                    aria-label={`Page ${p}`}
+                    aria-current={p === page ? 'page' : undefined}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+          </div>
 
           {/* Next Button */}
           <button

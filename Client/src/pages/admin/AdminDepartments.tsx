@@ -146,7 +146,95 @@ export function AdminDepartments() {
         }
       />
 
-      <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
+      {/* ── Mobile Card View (< md) ────────────────────────────────────────── */}
+      <div className="flex flex-col gap-3 md:hidden" id="departments-mobile-cards">
+        {departments
+          .slice((page - 1) * limit, page * limit)
+          .map((d) => (
+            <div
+              key={getId(d)}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-xs space-y-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-blue-light)] text-[var(--primary-blue)]">
+                    <Building2 size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-[var(--ink)]">{d.name}</h3>
+                    {d.description && (
+                      <p className="text-xs text-[var(--ink-muted)] line-clamp-1">{d.description}</p>
+                    )}
+                  </div>
+                </div>
+                <Badge
+                  className={
+                    d.isActive
+                      ? 'bg-[var(--success-light)] text-[var(--success)] shrink-0'
+                      : 'bg-[var(--surface-2)] text-[var(--ink-muted)] shrink-0'
+                  }
+                >
+                  {d.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+
+              {/* SLA & Manager */}
+              <div className="grid grid-cols-2 gap-2 text-xs bg-[var(--surface)] p-2.5 rounded-xl border border-slate-100">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[var(--ink-muted)]">SLA Target</span>
+                  <p className="font-bold text-[var(--ink)]">{d.slaHours}h Target</p>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[var(--ink-muted)]">Manager</span>
+                  <p className="font-bold text-[var(--ink)] truncate">{getName(d.manager, 'Unassigned')}</p>
+                </div>
+              </div>
+
+              {/* Complaint types */}
+              {(d.complaintTypes || []).length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {(d.complaintTypes || []).slice(0, 3).map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center rounded-full bg-[var(--gold-light)] px-2 py-0.5 text-[11px] font-semibold text-[var(--gold-dark)]"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                  {(d.complaintTypes || []).length > 3 && (
+                    <span className="inline-flex items-center rounded-full bg-[var(--primary-blue-light)] px-2 py-0.5 text-[10px] font-semibold text-[var(--primary-blue)]">
+                      +{d.complaintTypes.length - 3} more
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                <Button type="button" size="sm" variant="outline" onClick={() => openEdit(d)} className="flex-1 font-bold">
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={d.isActive ? 'ghost' : 'primary'}
+                  onClick={() => void toggleActive(d)}
+                  className="flex-1 font-bold"
+                >
+                  {d.isActive ? 'Deactivate' : 'Activate'}
+                </Button>
+              </div>
+            </div>
+          ))}
+        {!departments.length && (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-8 text-center text-sm text-[var(--ink-muted)]">
+            No departments found. Add your first department to get started.
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop Data Table (≥ md) ───────────────────────────────────────── */}
+      <div className="hidden md:block overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
         <table className="w-full text-left text-sm border-collapse" id="departments-table">
           <thead>
             <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">

@@ -59,14 +59,14 @@ export function Modal({
       {/* Modal box */}
       <div
         className={cn(
-          'relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-[var(--white)] shadow-2xl sm:rounded-2xl',
+          'relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-[var(--white)] shadow-2xl sm:rounded-2xl',
           maxWidth,
           className
         )}
       >
         {/* Header */}
-        <div className="sticky top-0 z-1 flex items-center justify-between bg-[var(--primary-blue)] px-6 py-4 rounded-t-2xl text-[var(--white)]">
-          <h2 id="modal-title" className="text-base font-bold text-[var(--white)]">
+        <div className="sticky top-0 z-1 flex items-center justify-between bg-[var(--primary-blue)] px-4 sm:px-6 py-3.5 sm:py-4 rounded-t-3xl sm:rounded-t-2xl text-[var(--white)]">
+          <h2 id="modal-title" className="text-sm sm:text-base font-bold text-[var(--white)]">
             {title}
           </h2>
           <button
@@ -80,7 +80,7 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </div>
     </div>
   )

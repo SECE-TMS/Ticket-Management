@@ -135,20 +135,20 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
       </Link>
 
       {/* Ticket header banner */}
-      <div className="mb-5 rounded-xl bg-[var(--primary-blue)] p-5 text-[var(--white)] shadow-md">
+      <div className="mb-5 rounded-2xl bg-[var(--primary-blue)] p-4 sm:p-6 text-[var(--white)] shadow-md">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-white/65">
               Ticket
             </p>
-            <h1 className="mt-1 font-display text-2xl font-bold tracking-tight">
+            <h1 className="mt-1 font-display text-xl sm:text-2xl font-bold tracking-tight">
               {ticket.ticketCode}
             </h1>
-            <p className="mt-1 text-sm text-white/75">
+            <p className="mt-1 text-xs sm:text-sm text-white/75">
               {ticket.complaintType}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
           </div>
@@ -157,12 +157,12 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
 
       {/* Action buttons */}
       {(canAssign || canClose || canReopen || canAccept || canStart || canResolve) && (
-        <div className="mb-5 flex flex-wrap gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-          <p className="w-full text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+        <div className="mb-5 flex flex-col sm:flex-row sm:flex-wrap gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+          <p className="w-full text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)] mb-1">
             Actions
           </p>
           {canAssign && (
-            <Button type="button" id="action-assign" onClick={() => setAssignOpen(true)}>
+            <Button type="button" id="action-assign" onClick={() => setAssignOpen(true)} className="w-full sm:w-auto font-bold">
               Assign Ticket
             </Button>
           )}
@@ -171,6 +171,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               id="action-accept"
               type="button"
               loading={actionLoading}
+              className="w-full sm:w-auto font-bold"
               onClick={() =>
                 void run(async () => {
                   await ticketService.updateStatus(ticket._id, { status: 'accepted' })
@@ -185,6 +186,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               id="action-start"
               type="button"
               loading={actionLoading}
+              className="w-full sm:w-auto font-bold"
               onClick={() =>
                 void run(async () => {
                   await ticketService.updateStatus(ticket._id, { status: 'in_progress' })
@@ -199,6 +201,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               id="action-resolve"
               type="button"
               variant="secondary"
+              className="w-full sm:w-auto font-bold"
               onClick={() => setResolveOpen(true)}
             >
               Mark Resolved
@@ -210,6 +213,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               type="button"
               variant="ghost"
               loading={actionLoading}
+              className="w-full sm:w-auto font-bold"
               onClick={() =>
                 void run(async () => {
                   await ticketService.reopen(ticket._id, 'Reopened by manager')
@@ -225,6 +229,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               type="button"
               variant="outline"
               loading={actionLoading}
+              className="w-full sm:w-auto font-bold"
               onClick={() =>
                 void run(async () => {
                   await ticketService.close(ticket._id)

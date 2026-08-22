@@ -19,8 +19,8 @@ export function AdminLayout() {
       <Sidebar items={adminItems} title="Admin" />
 
       {/* Main Content Area (Offset by 260px sidebar width on desktop) */}
-      <div className="flex flex-col min-h-screen lg:pl-[260px]">
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col min-h-screen min-w-0 w-full overflow-x-hidden lg:pl-[260px]">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-full">
           <Outlet />
         </main>
       </div>
