@@ -24,14 +24,19 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      const configuredClientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+      const configuredClientUrls = (process.env.CLIENT_URL || 'http://localhost:5173')
+        .split(',')
+        .map((u) => u.trim().replace(/\/+$/, ''));
+      const normalizedOrigin = origin.replace(/\/+$/, '');
       if (
-        origin === configuredClientUrl ||
-        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+        configuredClientUrls.includes(normalizedOrigin) ||
+        configuredClientUrls.includes('*') ||
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalizedOrigin) ||
+        /\.vercel\.app$/.test(normalizedOrigin)
       ) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
     },
     credentials: true,
   })
