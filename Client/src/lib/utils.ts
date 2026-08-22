@@ -20,7 +20,7 @@ export function getErrorMessage(err: unknown, fallback = 'Something went wrong')
   return fallback
 }
 
-export const BACKEND_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1').replace(/\/api\/v1\/?$/, '')
+export const BACKEND_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_PROD ).replace(/\/api\/v1\/?$/, '')
 
 export function getAttachmentUrl(url?: string | null): string {
   if (!url) return ''
