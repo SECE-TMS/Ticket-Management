@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "description": "TMS - MERN Ticket Management System",
+  "workspaces": [
+    "Client",
+    "server"
+  ],
   "scripts": {
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix Client",
