@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Core Theme Palette */
+  --primary-blue: #235EAA;
+  --primary-blue-dark: #1a4885;
+  --primary-blue-deeper: #112f57;
+  --primary-blue-light: #e8f0fc;
+  --primary-blue-muted: #b8cfe8;
+
+  --gold: #F9C301;
+  --gold-dark: #d9a800;
+  --gold-light: #fef9d9;
+
+  --white: #FFFFFF;
+  --surface: #F5F7FB;
+  --surface-2: #EDF1F7;
+
+  --ink: #0F172A;
+  --ink-muted: #64748B;
+  --border: #E2E8F0;
+
+  --danger: #DC2626;
+  --danger-light: #FEE2E2;
+  --success: #16A34A;
+  --success-light: #DCFCE7;
+  --warning: #D97706;
+  --warning-light: #FEF3C7;
+
+  --font-sans: "Inter", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: var(--surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-poppins,
+.font-poppins * {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+/* Custom Scrollbar using Theme Variables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary-blue-muted);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-blue);
+}
