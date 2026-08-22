@@ -1,15 +1,8 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build --workspace=client",
-  "outputDirectory": "Client/dist",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.ts"
-    },
-    {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/"
     }
   ]
 }
