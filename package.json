@@ -8,11 +8,12 @@
     "server"
   ],
   "scripts": {
-    "dev:server": "npm run dev --prefix server",
-    "dev:client": "npm run dev --prefix Client",
-    "seed": "npm run seed --prefix server",
-    "build:client": "npm run build --prefix Client",
-    "start:server": "npm start --prefix server"
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd Client && npm run dev",
+    "seed": "cd server && npm run seed",
+    "build:client": "cd Client && npm run build",
+    "build:server": "cd server && npm run build",
+    "start:server": "cd server && npm start"
   },
   "dependencies": {
     "@vercel/config": "^0.6.1"

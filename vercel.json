@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "installCommand": "npm install",
-  "buildCommand": "npm run build:client",
+  "installCommand": "cd Client && npm install && cd ../server && npm install && cd ..",
+  "buildCommand": "cd Client && npm run build",
   "outputDirectory": "Client/dist",
   "rewrites": [
     {
