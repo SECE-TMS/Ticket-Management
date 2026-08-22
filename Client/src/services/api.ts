@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || '/api/v1'
+const API_URL = import.meta.env.VITE_API_URL || 'https://ticket-management-1-yh5g.onrender.com/api/v1'
 
 export const api = axios.create({
   baseURL: API_URL,
