@@ -7,7 +7,7 @@ export function ProtectedRoute() {
   const { accessToken, user, status } = useAppSelector((s) => s.auth)
   const location = useLocation()
 
-  if (status === 'loading') return <PageLoader />
+  if (status === 'loading') return <PageLoader fullScreen />
 
   if (!accessToken || !user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
@@ -19,7 +19,7 @@ export function ProtectedRoute() {
 export function RoleRoute({ allow }: { allow: Role[] }) {
   const { user, status } = useAppSelector((s) => s.auth)
 
-  if (status === 'loading') return <PageLoader />
+  if (status === 'loading') return <PageLoader fullScreen />
   if (!user) return <Navigate to="/login" replace />
 
   if (!allow.includes(user.role)) {
