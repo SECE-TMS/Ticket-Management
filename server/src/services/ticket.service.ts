@@ -34,7 +34,8 @@ const notifyRequesterOnAction = async (
     if (!ticket.requester || !ticket.requester.email) return;
 
     const deptName = (ticket.department as unknown as { name?: string })?.name || 'Support Department';
-    const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+    const rawOrigin = process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'https://tms.sece.ac.in';
+    const clientOrigin = rawOrigin.split(',')[0].trim().replace(/\/+$/, '');
     const trackUrl = `${clientOrigin}/track-ticket?ticketCode=${encodeURIComponent(ticket.ticketCode)}&mobile=${encodeURIComponent(ticket.requester.mobile)}`;
 
     const subject = `[TMS Ticket #${ticket.ticketCode}] ${actionTitle}`;

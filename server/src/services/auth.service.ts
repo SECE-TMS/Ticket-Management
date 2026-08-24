@@ -119,7 +119,8 @@ export const forgotPassword = async ({ email }: { email: string }) => {
   user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
   await user.save({ validateBeforeSave: false });
 
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const rawClientUrl = process.env.CLIENT_URL || 'https://tms.sece.ac.in';
+  const clientUrl = rawClientUrl.split(',')[0].trim().replace(/\/+$/, '');
   const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
 
   await sendEmail({

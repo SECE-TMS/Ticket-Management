@@ -31,8 +31,9 @@ app.use(
       if (
         configuredClientUrls.includes(normalizedOrigin) ||
         configuredClientUrls.includes('*') ||
-        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalizedOrigin) ||
-        /\.vercel\.app$/.test(normalizedOrigin)
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalizedOrigin) ||
+        /\.vercel\.app$/i.test(normalizedOrigin) ||
+        /^https?:\/\/([a-zA-Z0-9-]+\.)*sece\.ac\.in(:\d+)?$/i.test(normalizedOrigin)
       ) {
         return callback(null, true);
       }
