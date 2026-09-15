@@ -1,31 +1,30 @@
-import nodemailer, { type Transporter } from 'nodemailer';
+import nodemailer from 'nodemailer';
 import logger from '../utils/logger';
-
-let transporter: Transporter | null = null;
 
 export const isSmtpConfigured = (): boolean =>
   Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 
-const getTransporter = (): Transporter | null => {
+/**
+ * Always create a fresh transporter — never cache it.
+ * A stale/bad cached transporter would silently stub all emails forever.
+ */
+const createTransporter = () => {
   if (!isSmtpConfigured()) return null;
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: Number(process.env.SMTP_PORT) === 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 5000,
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
-  }
-  return transporter;
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: Number(process.env.SMTP_PORT) === 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
 };
 
 export interface SendEmailOptions {
@@ -36,14 +35,16 @@ export interface SendEmailOptions {
 }
 
 /**
- * Send email if SMTP is configured; otherwise log and return stub result.
+ * Send an email via SMTP.
+ * Throws on failure so callers can decide whether to surface the error or swallow it.
+ * Falls back to stub-log only when SMTP is not configured at all.
  */
 export const sendEmail = async ({ to, subject, text, html }: SendEmailOptions) => {
   const from = process.env.SMTP_FROM || 'noreply@sece.ac.in';
-  const tx = getTransporter();
+  const tx = createTransporter();
 
   if (!tx) {
-    logger.info(`[email-stub] To: ${to} | Subject: ${subject} | ${text || ''}`);
+    logger.warn(`[email-stub] SMTP not configured. To: ${to} | Subject: ${subject}`);
     return { stub: true as const, to, subject };
   }
 
@@ -52,7 +53,7 @@ export const sendEmail = async ({ to, subject, text, html }: SendEmailOptions) =
     logger.info(`[email-sent] MessageId: ${info.messageId} | To: ${to} | Subject: ${subject}`);
     return info;
   } catch (err: any) {
-    logger.error(`[email-error] Failed to send email to ${to}: ${err?.message || err}`);
+    logger.error(`[email-error] Failed to send to ${to}: ${err?.message || err}`);
     throw err;
   }
 };

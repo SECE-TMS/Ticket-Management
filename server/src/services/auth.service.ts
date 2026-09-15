@@ -123,12 +123,47 @@ export const forgotPassword = async ({ email }: { email: string }) => {
   const clientUrl = rawClientUrl.split(',')[0].trim().replace(/\/+$/, '');
   const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
 
-  await sendEmail({
-    to: user.email,
-    subject: 'Password Reset - Ticket Management System',
-    text: `Reset your password using this link (valid 1 hour): ${resetUrl}`,
-    html: `<p>Reset your password using this link (valid 1 hour):</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
-  });
+  const resetHtml = `
+    <div style="font-family: Arial, sans-serif; color: #1e293b; max-width: 520px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      <div style="background-color: #1e3a8a; padding: 24px; text-align: center; color: white;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: bold;">TMS Portal</h2>
+        <p style="margin: 4px 0 0 0; font-size: 13px; color: #fde047;">Password Reset Request</p>
+      </div>
+      <div style="padding: 28px; background-color: #ffffff;">
+        <p style="font-size: 15px; color: #334155; margin-top: 0;">Hello,</p>
+        <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+          We received a request to reset your password for the Sri Eshwar Ticket Management System.
+          Click the button below to set a new password. This link is valid for <strong>1 hour</strong>.
+        </p>
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${resetUrl}" target="_blank"
+            style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 13px 32px; border-radius: 10px; box-shadow: 0 2px 4px rgba(37,99,235,0.3);">
+            Reset My Password &rarr;
+          </a>
+        </div>
+        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+          If you didn&rsquo;t request a password reset, you can safely ignore this email.<br/>
+          This link will expire in 1 hour.
+        </p>
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #cbd5e1; text-align: center;">
+          Sri Eshwar College of Engineering &middot; Ticket Management System
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Password Reset - TMS Portal (Sri Eshwar)',
+      text: `Reset your TMS Portal password using this link (valid 1 hour): ${resetUrl}`,
+      html: resetHtml,
+    });
+  } catch (err: any) {
+    // Log the error but don't expose it to the client — the reset token is already saved,
+    // so the user can retry. Don't return a 500 just because SMTP is temporarily down.
+    console.error('[forgotPassword] SMTP error:', err?.message || err);
+  }
 
   return { message: 'If that email exists, a reset link has been sent' };
 };

@@ -5,7 +5,6 @@ import type { LucideIcon } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { logout } from '../../store/slices/authSlice'
 import { cn } from '../../lib/utils'
-import isaiiCleanLogo from '../../assets/isaii_clean.png'
 import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
 export interface SidebarItem {
@@ -62,13 +61,6 @@ export function Sidebar({ items, title }: SidebarProps) {
                   src={sriEshwarCleanLogo}
                   alt="Sri Eshwar College Logo"
                   className="h-6 sm:h-7 w-auto max-w-[85px] sm:max-w-[100px] object-contain"
-                />
-              </div>
-              <div className="flex items-center rounded-xl bg-white px-1.5 sm:px-2.5 py-1 border border-slate-200 shadow-xs shrink-0">
-                <img
-                  src={isaiiCleanLogo}
-                  alt="ISAII Logo"
-                  className="h-6 sm:h-7 w-auto max-w-[50px] sm:max-w-[65px] object-contain scale-110"
                 />
               </div>
               <span className="font-bold text-xs sm:text-sm text-[var(--ink)] hidden md:inline truncate">TMS Portal</span>

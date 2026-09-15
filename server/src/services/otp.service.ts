@@ -159,10 +159,16 @@ export const sendEmailOtp = async (email: string): Promise<{ sessionId: string }
       html,
       text: `Your TMS Portal Email Verification Code is: ${numericOtp} (Valid for 10 minutes).`,
     });
-    logger.info(`[EMAIL-OTP-SENT] To: ${sanitizedEmail} | Code: ${numericOtp}`);
+    logger.info(`[EMAIL-OTP-SENT] To: ${sanitizedEmail}`);
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    logger.warn(`[EMAIL-OTP-FALLBACK] SMTP error (${errorMsg}). Logging OTP for testing: ${numericOtp}`);
+    // SMTP failed — OTP is still valid in-memory. Log it prominently so admin can relay it manually.
+    logger.error(
+      `[EMAIL-OTP-SMTP-FAILED] Could not deliver OTP to ${sanitizedEmail}: ${errorMsg}. ` +
+      `OTP for manual relay (DEV ONLY): ${numericOtp}`
+    );
+    // Don't throw — let the session exist so verify still works if the email eventually arrives
+    // or admin relays the code. The client will show "OTP sent" but the user should check spam.
   }
 
   return { sessionId };
