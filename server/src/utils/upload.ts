@@ -43,7 +43,7 @@ const saveFileLocally = (file: UploadableFile, type: AttachmentType): UploadedAt
     (type === 'image' ? '.jpg' : type === 'audio' ? '.mp3' : '.mp4');
   const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${ext}`;
   const filePath = path.join(uploadsDir, filename);
-  fs.writeFileSync(filePath, file.buffer);
+  fs.writeFileSync(filePath, new Uint8Array(file.buffer));
 
   return {
     url: `/uploads/${filename}`,
