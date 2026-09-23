@@ -1,6 +1,6 @@
 import mongoose, { type Query } from 'mongoose';
 // ExcelJS is lazy-loaded inside exportExcel() to avoid slow startup
-import Ticket, { OPEN_STATUSES, type ITicket, type TicketStatus } from '../models/Ticket';
+import Ticket, { OPEN_STATUSES, type ITicket, type ITicketDocument, type TicketStatus } from '../models/Ticket';
 import Department from '../models/Department';
 import User, { type IUserDocument } from '../models/User';
 import ActivityLog from '../models/ActivityLog';
@@ -110,6 +110,235 @@ const notifyRequesterOnAction = async (
     });
   } catch (err) {
     console.error('Error sending email to requester:', err);
+  }
+};
+
+const notifyStaffOnTicketCreated = async (
+  ticket: ITicketDocument,
+  department: any
+) => {
+  try {
+    const settings = await getSettings();
+    if (!settings.emailNotificationsEnabled) return;
+
+    const clientOrigin = process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173';
+    const deptName = department?.name || 'Department';
+    const deptId = department?._id || ticket.department;
+
+    // 1. Fetch active Admins
+    const admins = await User.find({ role: 'admin', isActive: true });
+    // 2. Fetch active Managers of this department
+    const managers = await User.find({ role: 'manager', department: deptId, isActive: true });
+
+    // Send email alert to Admins
+    for (const admin of admins) {
+      if (!admin.email) continue;
+      const adminUrl = `${clientOrigin}/admin/tickets/${ticket._id}`;
+      const subject = `[TMS Admin Alert] New Ticket #${ticket.ticketCode} - ${deptName} (${ticket.priority.toUpperCase()})`;
+      const html = `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);">
+          <div style="background-color: #1e3a8a; padding: 22px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: bold;">TMS Admin Notification</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #fde047; font-weight: bold; text-transform: uppercase;">New Ticket Logged</p>
+          </div>
+          <div style="padding: 24px; background-color: #ffffff;">
+            <p style="font-size: 14px; margin-top: 0; color: #334155;">Hello <strong>${admin.name}</strong>,</p>
+            <p style="font-size: 14px; line-height: 1.5; color: #475569;">
+              A new ticket <strong>#${ticket.ticketCode}</strong> has been logged in <strong>${deptName}</strong>.
+            </p>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 18px 0;">
+              <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold; width: 140px;">Ticket ID:</td>
+                  <td style="padding: 5px 0; font-family: monospace; font-size: 15px; font-weight: bold; color: #1e3a8a;">#${ticket.ticketCode}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Department:</td>
+                  <td style="padding: 5px 0; color: #1e293b; font-weight: 600;">${deptName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Complaint Type:</td>
+                  <td style="padding: 5px 0; color: #1e293b; font-weight: 600;">${ticket.complaintType}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Requester:</td>
+                  <td style="padding: 5px 0; color: #1e293b;">${ticket.requester.name} (${ticket.requester.mobile || ticket.requester.email || 'N/A'})</td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Priority:</td>
+                  <td style="padding: 5px 0; color: ${ticket.priority === 'urgent' ? '#dc2626' : ticket.priority === 'high' ? '#d97706' : '#2563eb'}; font-weight: bold; text-transform: uppercase;">
+                    ${ticket.priority}
+                  </td>
+                </tr>
+              </table>
+              <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Description:</p>
+                <p style="margin: 4px 0 0 0; font-size: 13px; color: #334155; font-style: italic;">"${ticket.description}"</p>
+              </div>
+            </div>
+            <div style="text-align: center; margin: 24px 0 12px 0;">
+              <a href="${adminUrl}" target="_blank" style="display: inline-block; background-color: #1e3a8a; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px; padding: 11px 24px; border-radius: 8px;">
+                Open in Admin Dashboard →
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      await sendEmail({
+        to: admin.email,
+        subject,
+        html,
+        text: `New Ticket #${ticket.ticketCode} logged in ${deptName} by ${ticket.requester.name}. View at: ${adminUrl}`,
+      });
+    }
+
+    // Send email alert to Department Managers
+    for (const manager of managers) {
+      if (!manager.email) continue;
+      const managerUrl = `${clientOrigin}/manager/tickets/${ticket._id}`;
+      const subject = `[TMS Manager Alert] New Ticket #${ticket.ticketCode} in ${deptName}`;
+      const html = `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);">
+          <div style="background-color: #2563eb; padding: 22px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: bold;">TMS Manager Alert</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #fde047; font-weight: bold; text-transform: uppercase;">New Ticket in Your Department</p>
+          </div>
+          <div style="padding: 24px; background-color: #ffffff;">
+            <p style="font-size: 14px; margin-top: 0; color: #334155;">Hello <strong>${manager.name}</strong>,</p>
+            <p style="font-size: 14px; line-height: 1.5; color: #475569;">
+              A new ticket <strong>#${ticket.ticketCode}</strong> has arrived for <strong>${deptName}</strong> requiring review and staff assignment.
+            </p>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 18px 0;">
+              <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold; width: 140px;">Ticket ID:</td>
+                  <td style="padding: 5px 0; font-family: monospace; font-size: 15px; font-weight: bold; color: #2563eb;">#${ticket.ticketCode}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Complaint Type:</td>
+                  <td style="padding: 5px 0; color: #1e293b; font-weight: 600;">${ticket.complaintType}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Requester:</td>
+                  <td style="padding: 5px 0; color: #1e293b;">${ticket.requester.name} (${ticket.requester.mobile || ticket.requester.email || 'N/A'})</td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Priority:</td>
+                  <td style="padding: 5px 0; color: ${ticket.priority === 'urgent' ? '#dc2626' : ticket.priority === 'high' ? '#d97706' : '#2563eb'}; font-weight: bold; text-transform: uppercase;">
+                    ${ticket.priority}
+                  </td>
+                </tr>
+                ${ticket.expectedResolutionAt ? `
+                <tr>
+                  <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Target SLA:</td>
+                  <td style="padding: 5px 0; color: #059669; font-weight: bold;">${new Date(ticket.expectedResolutionAt).toLocaleString()}</td>
+                </tr>
+                ` : ''}
+              </table>
+              <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Issue Description:</p>
+                <p style="margin: 4px 0 0 0; font-size: 13px; color: #334155; font-style: italic;">"${ticket.description}"</p>
+              </div>
+            </div>
+            <div style="text-align: center; margin: 24px 0 12px 0;">
+              <a href="${managerUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px; padding: 11px 24px; border-radius: 8px;">
+                Review & Assign Staff →
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      await sendEmail({
+        to: manager.email,
+        subject,
+        html,
+        text: `New Ticket #${ticket.ticketCode} in ${deptName} by ${ticket.requester.name}. Review and assign at: ${managerUrl}`,
+      });
+    }
+  } catch (err) {
+    console.error('Error sending staff notifications on ticket creation:', err);
+  }
+};
+
+const notifyEmployeeOnAssignment = async (
+  ticket: ITicketDocument,
+  employee: IUserDocument,
+  assignedBy?: IUserDocument | null
+) => {
+  try {
+    const settings = await getSettings();
+    if (!settings.emailNotificationsEnabled) return;
+    if (!employee || !employee.email) return;
+
+    const clientOrigin = process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173';
+    const employeeUrl = `${clientOrigin}/employee/tickets/${ticket._id}`;
+    const assignerName = assignedBy?.name || 'Department Manager';
+    const deptName = (ticket.department as unknown as { name?: string })?.name || 'Department';
+
+    const subject = `[TMS Task Assignment] Ticket #${ticket.ticketCode} Assigned to You`;
+    const html = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);">
+        <div style="background-color: #0f766e; padding: 22px; text-align: center; color: white;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: bold;">TMS Task Assignment</h2>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #fde047; font-weight: bold; text-transform: uppercase;">Ticket Assigned to You</p>
+        </div>
+        <div style="padding: 24px; background-color: #ffffff;">
+          <p style="font-size: 14px; margin-top: 0; color: #334155;">Hello <strong>${employee.name}</strong>,</p>
+          <p style="font-size: 14px; line-height: 1.5; color: #475569;">
+            You have been assigned ticket <strong>#${ticket.ticketCode}</strong> by <strong>${assignerName}</strong>.
+          </p>
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 18px 0;">
+            <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 5px 0; color: #64748b; font-weight: bold; width: 140px;">Ticket ID:</td>
+                <td style="padding: 5px 0; font-family: monospace; font-size: 15px; font-weight: bold; color: #0f766e;">#${ticket.ticketCode}</td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Department:</td>
+                <td style="padding: 5px 0; color: #1e293b; font-weight: 600;">${deptName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Complaint Type:</td>
+                <td style="padding: 5px 0; color: #1e293b; font-weight: 600;">${ticket.complaintType}</td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Priority:</td>
+                <td style="padding: 5px 0; color: ${ticket.priority === 'urgent' ? '#dc2626' : ticket.priority === 'high' ? '#d97706' : '#2563eb'}; font-weight: bold; text-transform: uppercase;">
+                  ${ticket.priority}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Requester:</td>
+                <td style="padding: 5px 0; color: #1e293b;">${ticket.requester.name} (${ticket.requester.mobile || ticket.requester.email || 'N/A'})</td>
+              </tr>
+              ${ticket.expectedResolutionAt ? `
+              <tr>
+                <td style="padding: 5px 0; color: #64748b; font-weight: bold;">Target SLA:</td>
+                <td style="padding: 5px 0; color: #059669; font-weight: bold;">${new Date(ticket.expectedResolutionAt).toLocaleString()}</td>
+              </tr>
+              ` : ''}
+            </table>
+            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Description:</p>
+              <p style="margin: 4px 0 0 0; font-size: 13px; color: #334155; font-style: italic;">"${ticket.description}"</p>
+            </div>
+          </div>
+          <div style="text-align: center; margin: 24px 0 12px 0;">
+            <a href="${employeeUrl}" target="_blank" style="display: inline-block; background-color: #0f766e; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px; padding: 11px 24px; border-radius: 8px;">
+              View & Update Assigned Ticket →
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+    await sendEmail({
+      to: employee.email,
+      subject,
+      html,
+      text: `Ticket #${ticket.ticketCode} assigned to you by ${assignerName}. View at: ${employeeUrl}`,
+    });
+  } catch (err) {
+    console.error('Error sending employee assignment email:', err);
   }
 };
 
@@ -258,6 +487,7 @@ export const createPublicTicket = async (
   }
 
   void notifyRequesterOnAction(ticket, 'Ticket Created Successfully', `Your ticket #${ticket.ticketCode} has been logged.`, 'created');
+  void notifyStaffOnTicketCreated(ticket, department);
 
   return populateTicket(Ticket.findById(ticket._id));
 };
@@ -366,6 +596,7 @@ export const assignTicket = async (
   });
 
   void notifyRequesterOnAction(ticket, 'Ticket Assigned to Staff', `Your ticket has been assigned to ${employee.name}.`, 'assigned');
+  void notifyEmployeeOnAssignment(ticket, employee, actor);
 
   return populateTicket(Ticket.findById(ticket._id));
 };
@@ -420,6 +651,7 @@ export const reassignTicket = async (
   });
 
   void notifyRequesterOnAction(ticket, 'Ticket Reassigned', `Your ticket has been reassigned to ${employee.name}.`, 'assigned');
+  void notifyEmployeeOnAssignment(ticket, employee, actor);
 
   return populateTicket(Ticket.findById(ticket._id));
 };

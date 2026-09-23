@@ -8,6 +8,7 @@ import { Button } from '../../components/common/Button'
 import { roleHome } from '../../components/common/ProtectedRoute'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { clearAuthError, login } from '../../store/slices/authSlice'
+import { PasswordInput } from '../../components/common/PasswordInput'
 import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
 const schema = z.object({
@@ -133,24 +134,14 @@ export function Login() {
             </div>
 
             {/* Password */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="login-password" className="text-sm font-semibold text-[var(--ink)]">
-                Password
-              </label>
-              <input
-                id="login-password"
-                type="password"
-                autoComplete="current-password"
-                {...register('password')}
-                className={`h-10 w-full rounded-lg border bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                  errors.password ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                }`}
-                placeholder="••••••••"
-              />
-              {errors.password && (
-                <span className="text-xs text-[var(--danger)]">{errors.password.message}</span>
-              )}
-            </div>
+            <PasswordInput
+              id="login-password"
+              label="Password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              error={errors.password?.message}
+              {...register('password')}
+            />
 
             {/* Server error */}
             {error && (

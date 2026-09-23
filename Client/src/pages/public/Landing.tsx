@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Headset, Search } from 'lucide-react'
+import { ArrowRight, Search } from 'lucide-react'
 import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
 export function Landing() {
@@ -49,10 +49,10 @@ export function Landing() {
         {/* Main Hero Copy & CTAs */}
         <div className="relative mx-auto flex flex-1 max-w-5xl flex-col justify-center px-4 py-16 sm:px-6 lg:px-8">
           {/* Tagline Badge */}
-          <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-yellow-400/30 bg-[var(--gold)]/15 px-4 py-1.5 text-xs font-bold text-[var(--gold)]">
+          {/* <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-yellow-400/30 bg-[var(--gold)]/15 px-4 py-1.5 text-xs font-bold text-[var(--gold)]">
             <Headset size={13} />
             Campus Maintenance &amp; Facilities
-          </div>
+          </div> */}
 
           {/* Headline */}
           <h1 className="font-display text-4xl font-bold leading-tight text-[var(--white)] sm:text-5xl lg:text-6xl">

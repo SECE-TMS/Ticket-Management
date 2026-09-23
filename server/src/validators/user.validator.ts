@@ -26,6 +26,7 @@ export const updateUserSchema = z.object({
   avatarUrl: z.string().url().or(z.literal('')).optional(),
   department: objectId.optional().nullable(),
   role: z.enum(['manager', 'employee']).optional(),
+  password: z.string().min(6).max(128).optional(),
 });
 
 export const changePasswordSchema = z.object({

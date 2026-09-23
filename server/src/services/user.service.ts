@@ -153,6 +153,10 @@ export const updateUser = async (
     delete data.department;
   }
 
+  if (!data.password) {
+    delete data.password;
+  }
+
   Object.assign(user, data);
   await user.save();
   const populated = await User.findById(user._id).populate('department', 'name');

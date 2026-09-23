@@ -3,14 +3,10 @@ import { Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import {
   ArrowLeft,
-  Building2,
   Copy,
   Download,
   MapPin,
   Printer,
-  QrCode as QrIcon,
-  Sparkles,
-  Palette,
   Check,
   Upload,
   Image as ImageIcon,
@@ -35,7 +31,7 @@ const POSTCARD_H = 1800
 const POSTCARD_PRINT_WIDTH_MM = 101.6
 const POSTCARD_PRINT_HEIGHT_MM = 152.4
 
-const DEFAULT_FOOTER = 'POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED'
+const DEFAULT_FOOTER = ':)'
 
 export interface ThemePreset {
   id: string
@@ -557,7 +553,7 @@ export function QrGeneratorPage() {
   const [locationName, setLocationName] = useState('Water Tank Area')
   const [complaintType, setComplaintType] = useState('')
   const [customNote, setCustomNote] = useState('Scan with your mobile camera to report issue & verify via OTP.')
-  const [footerText, setFooterText] = useState('POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED')
+  const [footerText, setFooterText] = useState(':)')
 
   // Logo States (College Logo is Compulsory Fixed Main Logo; Secondary Logo is Optional / Default Empty)
   const [secondaryLogoSrc, setSecondaryLogoSrc] = useState<string | null>(null)
@@ -730,7 +726,7 @@ export function QrGeneratorPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-display flex items-center gap-2.5 text-2xl font-bold text-[var(--ink)] sm:text-3xl">
-            <QrIcon className="text-[var(--primary-blue)]" size={30} />
+            {/* <QrIcon className="text-[var(--primary-blue)]" size={30} /> */}
             Campus Maintenance QR Poster Generator
           </h1>
           {/* <p className="mt-1 text-sm text-[var(--ink-muted)]">
@@ -771,7 +767,7 @@ export function QrGeneratorPage() {
           {/* Theme Selector */}
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-sm">
             <label className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
-              <Palette size={16} className="text-[var(--primary-blue)]" />
+              {/* <Palette size={16} className="text-[var(--primary-blue)]" /> */}
               Poster Color Gradient Theme
             </label>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
@@ -802,7 +798,7 @@ export function QrGeneratorPage() {
           {/* Design Header & Logo Customizer */}
           <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-sm">
             <h2 className="flex items-center gap-2 border-b border-[var(--border)] pb-2 text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
-              <Sparkles size={16} className="text-[var(--primary-blue)]" />
+              {/* <Sparkles size={16} className="text-[var(--primary-blue)]" /> */}
               Poster Header & Branding Customization
             </h2>
 
@@ -926,7 +922,7 @@ export function QrGeneratorPage() {
                 type="text"
                 value={footerText}
                 onChange={(e) => setFooterText(e.target.value)}
-                placeholder="  POWERED BY ISAII TECHNOLOGIES PRIVATE LIMITED"
+                placeholder="  :)"
                 className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
               />
             </div>
@@ -935,7 +931,7 @@ export function QrGeneratorPage() {
           {/* QR Code Target Location Controls */}
           <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-sm">
             <h2 className="flex items-center gap-2 border-b border-[var(--border)] pb-2 text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
-              <Building2 size={16} className="text-[var(--primary-blue)]" />
+              {/* <Building2 size={16} className="text-[var(--primary-blue)]" /> */}
               Configure Campus Location & Ticket Parameters
             </h2>
 

@@ -10,6 +10,8 @@ import { userService } from '../../services/userService'
 import { useAppSelector } from '../../store/hooks'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage } from '../../lib/utils'
+import { PasswordInput } from '../../components/common/PasswordInput'
+import { validatePassword } from '../../utils/passwordValidator'
 import type { User } from '../../types'
 import { getId } from '../../types'
 
@@ -94,7 +96,15 @@ export function ManagerEmployees() {
     }
   }
 
+  const isPasswordValid = editing
+    ? !form.password || validatePassword(form.password).isValid
+    : validatePassword(form.password).isValid
+
   const save = async () => {
+    if (!isPasswordValid) {
+      toast.error('Password must meet all complexity requirements')
+      return
+    }
     setSaving(true)
     try {
       if (editing) {
@@ -323,17 +333,20 @@ export function ManagerEmployees() {
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="emp-password" className="text-sm font-semibold text-[var(--ink)]">
-              {editing ? 'New Password (leave blank to keep current)' : 'Password'}
-            </label>
-            <input
+          <div>
+            <PasswordInput
               id="emp-password"
-              type="password"
+              label={editing ? 'New Password (leave blank to keep current)' : 'Password'}
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-              className={inputClass}
               placeholder={editing ? 'Enter new password if changing...' : 'Minimum 8 characters'}
+              showStrengthMeter={Boolean(form.password)}
+              showValidationRules={Boolean(form.password)}
+              error={
+                form.password && !validatePassword(form.password).isValid
+                  ? 'Password must meet all complexity requirements below'
+                  : undefined
+              }
             />
           </div>
 
@@ -351,7 +364,7 @@ export function ManagerEmployees() {
             <Button
               type="button"
               loading={saving}
-              disabled={!form.name || !form.email || (!editing && !form.password)}
+              disabled={!form.name || !form.email || !isPasswordValid || (!editing && !form.password)}
               onClick={() => void save()}
             >
               {editing ? 'Save Changes' : 'Create Employee'}

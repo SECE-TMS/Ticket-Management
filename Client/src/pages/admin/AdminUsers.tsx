@@ -9,6 +9,8 @@ import { departmentService } from '../../services/departmentService'
 import { userService } from '../../services/userService'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage, formatLabel } from '../../lib/utils'
+import { PasswordInput } from '../../components/common/PasswordInput'
+import { validatePassword } from '../../utils/passwordValidator'
 import type { Department, Role, User } from '../../types'
 import { getId, getName } from '../../types'
 
@@ -125,7 +127,15 @@ export function AdminUsers() {
     setOpen(true)
   }
 
+  const isPasswordValid = editing
+    ? !form.password || validatePassword(form.password).isValid
+    : validatePassword(form.password).isValid
+
   const save = async () => {
+    if (!isPasswordValid) {
+      toast.error('Password must meet all complexity requirements')
+      return
+    }
     setSaving(true)
     try {
       if (editing) {
@@ -367,15 +377,21 @@ export function AdminUsers() {
               placeholder="john@sece.ac.in"
             />
           </Field>
-          <Field label={editing ? 'New Password (optional)' : 'Password'}>
-            <input
-              type="password"
+          <div>
+            <PasswordInput
+              label={editing ? 'New Password (optional)' : 'Password'}
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-              className={inputClass}
               placeholder={editing ? 'Enter new password if changing...' : 'Minimum 8 characters'}
+              showStrengthMeter={Boolean(form.password)}
+              showValidationRules={Boolean(form.password)}
+              error={
+                form.password && !validatePassword(form.password).isValid
+                  ? 'Password must meet all complexity requirements below'
+                  : undefined
+              }
             />
-          </Field>
+          </div>
           <Field label="Role">
             <select
               value={form.role}
@@ -436,7 +452,7 @@ export function AdminUsers() {
               type="button"
               loading={saving}
               onClick={() => void save()}
-              disabled={!form.name || !form.email || (!editing && !form.password) || !form.department}
+              disabled={!form.name || !form.email || !form.department || !isPasswordValid || (!editing && !form.password)}
             >
               {editing ? 'Save Changes' : 'Create User'}
             </Button>

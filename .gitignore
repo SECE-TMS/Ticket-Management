@@ -9,9 +9,6 @@ server/dist/
 *.tsbuildinfo
 
 # Env & secrets
-.env
-server/.env
-Client/.env
 !.env.example
 !server/.env.example
 !Client/.env.example

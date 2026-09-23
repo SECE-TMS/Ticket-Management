@@ -1,18 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, Link as RouterLink } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle,
-  Building2,
-  Calendar,
-  CheckCircle2,
-  Clock,
   Download,
-  Filter,
   RefreshCw,
-  Star,
-  ThumbsUp,
-  Ticket,
-  TrendingUp,
 } from 'lucide-react'
 import {
   Area,
@@ -194,7 +184,7 @@ export function AdminDashboard() {
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-4 shadow-xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <Filter size={16} className="text-[var(--primary-blue)]" />
+            {/* <Filter size={16} className="text-[var(--primary-blue)]" /> */}
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
               Dashboard Filters &amp; Controls
             </span>
@@ -275,16 +265,14 @@ export function AdminDashboard() {
 
       {/* ── KPI Overview Cards Grid ──────────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <KpiCard label="Total Tickets" value={totals.tickets} icon={Ticket} accent="blue" />
-        <KpiCard label="Open Tickets" value={totals.open} icon={Clock} accent="blue" />
-        <KpiCard label="Resolved Tickets" value={totals.resolved} icon={CheckCircle2} accent="success" />
-        <KpiCard label="Overdue SLA" value={totals.overdue} icon={AlertTriangle} accent="danger" />
-        <KpiCard label="Resolution Rate" value={`${totals.resolutionRate}%`} icon={TrendingUp} accent="gold" />
+        <KpiCard label="Total Tickets" value={totals.tickets} />
+        <KpiCard label="Open Tickets" value={totals.open} />
+        <KpiCard label="Resolved Tickets" value={totals.resolved} />
+        <KpiCard label="Overdue SLA" value={totals.overdue} />
+        <KpiCard label="Resolution Rate" value={`${totals.resolutionRate}%`} />
         <KpiCard
           label="Avg CSAT Rating"
           value={totals.avgRating > 0 ? `${totals.avgRating} ★` : 'N/A'}
-          icon={Star}
-          accent="gold"
         />
       </div>
 
@@ -295,7 +283,7 @@ export function AdminDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
-                <TrendingUp size={18} className="text-[var(--primary-blue)]" />
+                {/* <TrendingUp size={18} className="text-[var(--primary-blue)]" /> */}
                 Monthly Ticket Creation vs. Resolution Trend
               </h2>
               <p className="text-xs text-[var(--ink-muted)]">
@@ -367,7 +355,7 @@ export function AdminDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
-                <Building2 size={18} className="text-[var(--primary-blue)]" />
+                {/* <Building2 size={18} className="text-[var(--primary-blue)]" /> */}
                 Department Ticket Load Breakdown
               </h2>
               <p className="text-xs text-[var(--ink-muted)]">
@@ -418,16 +406,16 @@ export function AdminDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
-                <Star size={18} className="text-amber-500 fill-amber-400" />
+                {/* <Star size={18} className="text-amber-500 fill-amber-400" /> */}
                 Month-Wise Customer Feedback Score &amp; CSAT Trend
               </h2>
               <p className="text-xs text-[var(--ink-muted)]">
                 Average feedback rating score (1.0 - 5.0) and CSAT satisfaction rate over months.
               </p>
             </div>
-            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-700 border border-amber-200">
+            {/* <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-700 border border-amber-200">
               Feedback Insights
-            </span>
+            </span> */}
           </div>
 
           <div className="h-72 w-full">
@@ -478,7 +466,7 @@ export function AdminDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
-                <ThumbsUp size={18} className="text-emerald-600" />
+                {/* <ThumbsUp size={18} className="text-emerald-600" /> */}
                 Department CSAT Rating Scores
               </h2>
               <p className="text-xs text-[var(--ink-muted)]">
@@ -584,7 +572,7 @@ export function AdminDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
-              <Building2 size={18} className="text-[var(--primary-blue)]" />
+              {/* <Building2 size={18} className="text-[var(--primary-blue)]" /> */}
               Department-Wise Performance &amp; Feedback Report
             </h2>
             <p className="text-xs text-[var(--ink-muted)]">
@@ -655,7 +643,7 @@ export function AdminDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
-              <Calendar size={18} className="text-amber-500 fill-amber-400" />
+              {/* <Calendar size={18} className="text-amber-500 fill-amber-400" /> */}
               Month-Wise Feedback Rating Matrix Report
             </h2>
             <p className="text-xs text-[var(--ink-muted)]">
@@ -714,9 +702,9 @@ export function AdminDashboard() {
       <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
         <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
           <h2 className="text-base font-bold text-[var(--ink)]">Recent Tickets Log</h2>
-          <RouterLink to="/admin/tickets" className="text-xs font-semibold text-[var(--primary-blue)] hover:underline">
+          <Link to="/admin/tickets" className="text-xs font-semibold text-[var(--primary-blue)] hover:underline">
             View all tickets →
-          </RouterLink>
+          </Link>
         </div>
         <table className="w-full text-left text-xs border-collapse">
           <thead>
