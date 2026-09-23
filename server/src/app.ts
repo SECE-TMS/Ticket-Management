@@ -20,20 +20,57 @@ app.use(
   })
 );
 
+const allowedExplicitOrigins = [
+  process.env.CLIENT_URL,
+  process.env.CLIENT_ORIGIN,
+  process.env.CORS_ORIGIN,
+  'https://tms.sece.ac.in',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+]
+  .filter(Boolean)
+  .flatMap((u) => String(u).split(',').map((s) => s.trim().replace(/\/$/, '')));
+
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
-      const configuredClientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-      if (
-        origin === configuredClientUrl ||
-        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
-      ) {
+
+      const normalized = origin.trim().replace(/\/$/, '');
+
+      // Check explicit allowed origins
+      if (allowedExplicitOrigins.includes(normalized)) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+
+      // Allow sece.ac.in and all subdomains (e.g. https://tms.sece.ac.in)
+      if (/^https?:\/\/([a-z0-9-]+\.)*sece\.ac\.in$/i.test(normalized)) {
+        return callback(null, true);
+      }
+
+      // Allow Vercel preview/production deployments
+      if (/^https:\/\/([a-z0-9-]+)\.vercel\.app$/i.test(normalized)) {
+        return callback(null, true);
+      }
+
+      // Allow localhost and local network IP addresses
+      if (/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(normalized)) {
+        return callback(null, true);
+      }
+
+      // Allow all in non-production
+      if (process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Set-Cookie'],
   })
 );
 
