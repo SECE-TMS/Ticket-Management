@@ -50,8 +50,8 @@ app.use(
         return callback(null, true);
       }
 
-      // Allow Vercel preview/production deployments
-      if (/^https:\/\/([a-z0-9-]+)\.vercel\.app$/i.test(normalized)) {
+      // Allow all Vercel preview/production deployments
+      if (/^https:\/\/([a-z0-9-_.]+)\.vercel\.app$/i.test(normalized) || normalized.endsWith('.vercel.app')) {
         return callback(null, true);
       }
 
