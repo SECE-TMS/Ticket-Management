@@ -20,7 +20,11 @@ export function getErrorMessage(err: unknown, fallback = 'Something went wrong')
   return fallback
 }
 
-export const BACKEND_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1').replace(/\/api\/v1\/?$/, '')
+const DEFAULT_API_URL = import.meta.env.PROD
+  ? 'https://ticket-management-1-yh5g.onrender.com/api/v1'
+  : 'http://localhost:5000/api/v1'
+
+export const BACKEND_URL = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/api\/v1\/?$/, '')
 
 export function getAttachmentUrl(url?: string | null): string {
   if (!url) return ''

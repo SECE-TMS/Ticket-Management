@@ -1,6 +1,10 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD
+    ? 'https://ticket-management-1-yh5g.onrender.com/api/v1'
+    : 'http://localhost:5000/api/v1')
 
 export const api = axios.create({
   baseURL: API_URL,
