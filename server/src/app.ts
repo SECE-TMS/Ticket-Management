@@ -95,6 +95,15 @@ app.use(
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+app.get('/', (_req, res) => {
+  res.json({
+    success: true,
+    message: 'Ticket Management System API is live',
+    version: '1.0.0',
+    health: '/api/v1/health',
+  });
+});
+
 app.use('/api/v1', routes);
 
 app.use(notFound);
