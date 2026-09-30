@@ -27,7 +27,7 @@ export const upload = multer({
 });
 
 export const anyAttachment = (req: AuthRequest, _res: Response, next: NextFunction): void => {
-  upload.any()(req, _res, (err: unknown) => {
+  upload.any()(req, _res, (err: any) => {
     if (err instanceof MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         next(ApiError.badRequest('File too large (max 100MB per file)', 'FILE_TOO_LARGE'));

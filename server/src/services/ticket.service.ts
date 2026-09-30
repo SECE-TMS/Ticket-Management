@@ -422,8 +422,8 @@ const buildListFilter = (actor: IUserDocument, query: Record<string, unknown>) =
 
 export const createPublicTicket = async (
   body: Record<string, unknown>,
-  file?: UploadableFile | Express.Multer.File,
-  files?: Array<UploadableFile | Express.Multer.File>
+  file?: UploadableFile,
+  files?: Array<UploadableFile>
 ) => {
   const department = await Department.findById(body.department as string);
   if (!department || !department.isActive) {
@@ -718,8 +718,8 @@ export const updateStatus = async (
 export const resolveTicket = async (
   id: string,
   { remarks }: { remarks: string },
-  file?: UploadableFile | Express.Multer.File,
-  files?: Array<UploadableFile | Express.Multer.File>,
+  file?: UploadableFile,
+  files?: Array<UploadableFile>,
   actor?: IUserDocument
 ) => {
   const ticket = await Ticket.findById(id);

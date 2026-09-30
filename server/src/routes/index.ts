@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, type Response } from 'express';
 import authRoutes from './auth.routes';
 import departmentRoutes from './department.routes';
 import userRoutes from './user.routes';
@@ -10,7 +10,7 @@ import settingRoutes from './setting.routes';
 
 const router = express.Router();
 
-router.get('/health', (_req, res) => {
+router.get('/health', (_req: Request, res: Response) => {
   res.json({ success: true, data: { status: 'ok' }, message: 'API healthy' });
 });
 
