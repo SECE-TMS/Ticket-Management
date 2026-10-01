@@ -144,17 +144,21 @@ export function AdminDashboard() {
   }
 
   // Prepare Chart Data
-  const statusPieData = Object.entries(data?.byStatus || {}).map(([status, count]) => ({
-    name: status.replace('_', ' ').toUpperCase(),
-    value: count,
-    color: STATUS_COLORS[status] || '#64748B',
-  }))
+  const statusPieData = Object.entries(data?.byStatus || {})
+    .filter(([, count]) => count > 0)
+    .map(([status, count]) => ({
+      name: status.replace('_', ' ').toUpperCase(),
+      value: count,
+      color: STATUS_COLORS[status] || '#64748B',
+    }))
 
-  const priorityPieData = Object.entries(data?.byPriority || {}).map(([prio, count]) => ({
-    name: prio.toUpperCase(),
-    value: count,
-    color: PRIORITY_COLORS[prio] || '#64748B',
-  }))
+  const priorityPieData = Object.entries(data?.byPriority || {})
+    .filter(([, count]) => count > 0)
+    .map(([prio, count]) => ({
+      name: prio.toUpperCase(),
+      value: count,
+      color: PRIORITY_COLORS[prio] || '#64748B',
+    }))
 
   return (
     <div className="space-y-6 pb-12">

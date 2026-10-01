@@ -3,8 +3,12 @@ import Department from '../models/Department';
 import ApiError from '../utils/apiError';
 
 export const listUsers = async (query: Record<string, unknown> = {}) => {
-  const filter: Record<string, unknown> = {};
-  if (query.role) filter.role = query.role;
+  const filter: Record<string, unknown> = {
+    role: { $ne: 'superadmin' },
+  };
+  if (query.role && query.role !== 'superadmin') {
+    filter.role = query.role;
+  }
   if (query.department) filter.department = query.department;
   if (query.isActive !== undefined) {
     filter.isActive = query.isActive === 'true' || query.isActive === true;
@@ -134,6 +138,10 @@ export const updateUser = async (
   const user = await User.findById(id);
   if (!user) throw ApiError.notFound('User not found');
 
+  if (user.role === 'superadmin') {
+    throw ApiError.forbidden('Superadmin accounts can only be managed via the Super Admin portal');
+  }
+
   if (actor.role === 'employee' && String(user._id) !== String(actor._id)) {
     throw ApiError.forbidden();
   }
@@ -167,6 +175,9 @@ export const updateUser = async (
 export const updateStatus = async (id: string, isActive: boolean) => {
   const user = await User.findById(id);
   if (!user) throw ApiError.notFound('User not found');
+  if (user.role === 'superadmin') {
+    throw ApiError.forbidden('Cannot modify superadmin user status');
+  }
   if (user.role === 'admin' && !isActive) {
     throw ApiError.badRequest('Cannot deactivate admin account');
   }
@@ -178,8 +189,8 @@ export const updateStatus = async (id: string, isActive: boolean) => {
 export const removeUser = async (id: string) => {
   const user = await User.findById(id);
   if (!user) throw ApiError.notFound('User not found');
-  if (user.role === 'admin') {
-    throw ApiError.badRequest('Cannot delete admin account');
+  if (user.role === 'superadmin' || user.role === 'admin') {
+    throw ApiError.badRequest('Cannot delete admin or superadmin account');
   }
   await user.deleteOne();
   return { id };

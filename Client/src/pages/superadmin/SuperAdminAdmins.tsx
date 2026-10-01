@@ -344,7 +344,7 @@ export function SuperAdminAdmins() {
                   </label>
                   <input
                     type={field === 'email' ? 'email' : 'text'}
-                    value={(createForm as Record<string, string>)[field]}
+                    value={(createForm as unknown as Record<string, string>)[field] || ''}
                     onChange={(e) => setCreateForm((f) => ({ ...f, [field]: e.target.value }))}
                     placeholder={`Enter ${field}`}
                     required={field !== 'phone'}

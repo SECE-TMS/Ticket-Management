@@ -5,7 +5,6 @@ import {
   Building2,
   CheckCircle2,
   Clock,
-  Crown,
   RefreshCw,
   ShieldCheck,
   Star,
@@ -14,13 +13,13 @@ import {
   Users,
 } from 'lucide-react'
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   Legend,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -28,7 +27,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { superadminService, type SuperAdminDashboardData, type DeptReport } from '../../services/superadminService'
+import { superadminService, type SuperAdminDashboardData } from '../../services/superadminService'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { Button } from '../../components/common/Button'
 import { useToast } from '../../context/ToastContext'
@@ -91,26 +90,45 @@ export function SuperAdminDashboard() {
 
   const { totals, monthlyTrend, departmentReport } = data
 
-  const monthlyChartData = monthlyTrend.map((item) => ({
-    name: `${MONTH_NAMES[item._id.month]} ${item._id.year}`,
-    Created: item.created,
-    Resolved: item.resolved,
-  }))
+  // Build a continuous 6-month monthly trend data array
+  const trendMap = new Map<string, { created: number; resolved: number }>()
+  monthlyTrend.forEach((item) => {
+    trendMap.set(`${item._id.year}-${item._id.month}`, {
+      created: item.created,
+      resolved: item.resolved,
+    })
+  })
 
-  // Department pie chart data
-  const deptPieData = departmentReport.map((d) => ({
-    name: d.name,
-    value: d.stats.total,
-  }))
+  const now = new Date()
+  const monthlyChartData = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const yr = d.getFullYear()
+    const mo = d.getMonth() + 1
+    const match = trendMap.get(`${yr}-${mo}`) || { created: 0, resolved: 0 }
+    monthlyChartData.push({
+      name: `${MONTH_NAMES[mo]} ${yr}`,
+      Created: match.created,
+      Resolved: match.resolved,
+    })
+  }
+
+  // Department pie chart data (filter non-zero for clean visual rendering)
+  const activeDeptPieData = departmentReport
+    .filter((d) => d.stats.total > 0)
+    .map((d, index) => ({
+      name: d.name,
+      value: d.stats.total,
+      color: DEPT_COLORS[index % DEPT_COLORS.length],
+    }))
+
+  const totalDeptTickets = activeDeptPieData.reduce((sum, d) => sum + d.value, 0)
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
-            <Crown size={24} className="text-amber-600" />
-          </div>
           <div>
             <h1 className="text-xl font-bold text-[var(--ink)]">Super Admin Dashboard</h1>
             <p className="text-sm text-[var(--ink-muted)]">Full system overview & control</p>
@@ -156,66 +174,136 @@ export function SuperAdminDashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Monthly Trend Line Chart */}
-        <div className="col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
-          <div className="mb-4 flex items-center gap-2">
-            <TrendingUp size={18} className="text-[var(--primary-blue)]" />
-            <h3 className="font-bold text-[var(--ink)]">Monthly Ticket Trend</h3>
-          </div>
-          {monthlyChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={monthlyChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="Created" stroke="#2563eb" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="Resolved" stroke="#059669" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-[220px] items-center justify-center text-sm text-[var(--ink-muted)]">
-              No trend data yet
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        {/* Monthly Trend Area Chart */}
+        <div className="lg:col-span-7 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs flex flex-col justify-between">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={18} className="text-[var(--primary-blue)]" />
+              <h3 className="font-bold text-[var(--ink)]">Monthly Ticket Trend</h3>
             </div>
-          )}
+            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-[var(--primary-blue)] border border-blue-200">
+              Last 6 Months
+            </span>
+          </div>
+
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={monthlyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="saCreatedGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
+                  </linearGradient>
+                  <linearGradient id="saResolvedGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#059669" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--white)',
+                    borderColor: 'var(--border)',
+                    borderRadius: '0.75rem',
+                    fontSize: '12px',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+                <Area
+                  type="monotone"
+                  dataKey="Created"
+                  stroke="#2563eb"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#saCreatedGradient)"
+                  dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 6 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="Resolved"
+                  stroke="#059669"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#saResolvedGradient)"
+                  dot={{ r: 4, fill: '#059669', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 6 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Department Pie Chart */}
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
-          <div className="mb-4 flex items-center gap-2">
-            <Building2 size={18} className="text-[var(--primary-blue)]" />
-            <h3 className="font-bold text-[var(--ink)]">Tickets by Dept.</h3>
+        {/* Department Donut Chart */}
+        <div className="lg:col-span-5 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs flex flex-col justify-between">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 size={18} className="text-[var(--primary-blue)]" />
+              <h3 className="font-bold text-[var(--ink)]">Tickets by Dept.</h3>
+            </div>
+            <span className="text-xs text-[var(--ink-muted)]">
+              {totalDeptTickets} Total {totalDeptTickets === 1 ? 'Ticket' : 'Tickets'}
+            </span>
           </div>
-          {deptPieData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={deptPieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={3}
-                >
-                  {deptPieData.map((_, i) => (
-                    <Cell key={i} fill={DEPT_COLORS[i % DEPT_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v) => [v, 'Tickets']} />
-                <Legend
-                  formatter={(value) =>
-                    value.length > 14 ? value.slice(0, 14) + '…' : value
-                  }
-                />
-              </PieChart>
-            </ResponsiveContainer>
+
+          {activeDeptPieData.length > 0 ? (
+            <div className="flex flex-col items-center">
+              <div className="h-44 w-full relative flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={activeDeptPieData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={46}
+                      outerRadius={68}
+                      paddingAngle={4}
+                    >
+                      {activeDeptPieData.map((item, i) => (
+                        <Cell key={i} fill={item.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(v: unknown) => [`${v} tickets`, 'Volume']}
+                      contentStyle={{
+                        backgroundColor: 'var(--white)',
+                        borderColor: 'var(--border)',
+                        borderRadius: '0.75rem',
+                        fontSize: '12px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center Summary Counter */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-lg font-extrabold text-[var(--ink)] leading-tight">{totalDeptTickets}</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--ink-muted)]">Tickets</span>
+                </div>
+              </div>
+
+              {/* Clean custom wrap legend */}
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs">
+                {activeDeptPieData.map((item, i) => {
+                  const pct = totalDeptTickets > 0 ? Math.round((item.value / totalDeptTickets) * 100) : 0
+                  return (
+                    <div key={i} className="flex items-center gap-1.5 font-medium text-[var(--ink)]">
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="truncate max-w-[120px]">{item.name}</span>
+                      <span className="text-[var(--ink-muted)] font-bold">({item.value} • {pct}%)</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           ) : (
-            <div className="flex h-[220px] items-center justify-center text-sm text-[var(--ink-muted)]">
-              No data
+            <div className="flex h-56 flex-col items-center justify-center text-sm text-[var(--ink-muted)]">
+              No department ticket data logged yet.
             </div>
           )}
         </div>
@@ -318,28 +406,40 @@ export function SuperAdminDashboard() {
         {/* Bar chart for quick visual comparison */}
         {departmentReport.length > 0 && (
           <div className="border-t border-[var(--border)] p-5">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
-              Department Comparison
-            </p>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart
-                data={departmentReport.map((d) => ({
-                  name: d.name.length > 12 ? d.name.slice(0, 12) + '…' : d.name,
-                  Open: d.stats.open,
-                  Closed: d.stats.closed,
-                  Overdue: d.stats.overdue,
-                }))}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Open" fill="#d97706" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Closed" fill="#059669" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Overdue" fill="#dc2626" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+                Department Comparison (Open vs Closed vs Overdue)
+              </p>
+            </div>
+            <div className="h-60 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={departmentReport.map((d) => ({
+                    name: d.name,
+                    Open: d.stats.open,
+                    Closed: d.stats.closed,
+                    Overdue: d.stats.overdue,
+                  }))}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--white)',
+                      borderColor: 'var(--border)',
+                      borderRadius: '0.75rem',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+                  <Bar dataKey="Open" fill="#d97706" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                  <Bar dataKey="Closed" fill="#059669" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                  <Bar dataKey="Overdue" fill="#dc2626" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
       </div>

@@ -88,7 +88,7 @@ export function AdminUsers() {
         }),
         departmentService.listAll(),
       ])
-      setUsers(userData.items)
+      setUsers(userData.items.filter((u) => u.role !== 'superadmin'))
       setPages(userData.pagination.pages)
       setTotal(userData.pagination.total)
       setDepartments(deptData)
@@ -119,7 +119,7 @@ export function AdminUsers() {
       name: u.name,
       email: u.email,
       password: '',
-      role: u.role === 'admin' ? 'manager' : u.role,
+      role: (u.role === 'admin' || u.role === 'superadmin') ? 'manager' : (u.role as 'manager' | 'employee'),
       department: getId(u.department),
       phone: u.phone || '',
       rollNumber: u.rollNumber || '',

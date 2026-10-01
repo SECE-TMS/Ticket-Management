@@ -88,7 +88,7 @@ export const close = async (req: AuthRequest, res: Response, next: NextFunction)
 
 export const approveClose = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await ticketService.approveAndCloseTicket(req.params.id, req.user!);
+    const data = await ticketService.approveAndCloseTicket(req.params.id, req.user!, req.body?.message);
     return sendSuccess(res, { data, message: 'Ticket approved and closed' });
   } catch (err) {
     next(err);
@@ -203,6 +203,33 @@ export const getTimeWiseFeedbackAnalytics = async (
       req.query as Record<string, unknown>
     );
     return sendSuccess(res, { data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const requesterApproveClose = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await ticketService.requesterApproveClose(req.body);
+    return sendSuccess(res, { data, message: 'Ticket approved and closed successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const requesterReopen = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await ticketService.requesterReopen(req.body);
+    return sendSuccess(res, { data, message: 'Ticket work rejected and reopened for rework' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const requesterComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await ticketService.requesterAddComment(req.body);
+    return sendSuccess(res, { data, message: 'Comment posted successfully' });
   } catch (err) {
     next(err);
   }

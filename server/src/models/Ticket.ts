@@ -26,7 +26,10 @@ export interface IAttachment {
 }
 
 export interface ITicketComment {
-  author: mongoose.Types.ObjectId;
+  _id?: mongoose.Types.ObjectId | string;
+  author?: mongoose.Types.ObjectId | null;
+  authorName?: string;
+  isRequester?: boolean;
   message: string;
   createdAt: Date;
 }
@@ -133,7 +136,9 @@ const ticketSchema = new Schema<ITicket>(
     },
     comments: [
       {
-        author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        author: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        authorName: { type: String, default: '' },
+        isRequester: { type: Boolean, default: false },
         message: { type: String, required: true, trim: true },
         createdAt: { type: Date, default: Date.now },
       },

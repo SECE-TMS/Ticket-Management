@@ -5,6 +5,7 @@ import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Vo
 import { ticketService } from '../../services/ticketService'
 import { userService } from '../../services/userService'
 import { Button } from '../../components/common/Button'
+import { Modal } from '../../components/common/Modal'
 import { PriorityBadge, StatusBadge } from '../../components/common/Badge'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { TicketTimeline } from '../../components/tickets/TicketTimeline'
@@ -52,6 +53,9 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const [assignOpen, setAssignOpen] = useState(false)
   const [resolveOpen, setResolveOpen] = useState(false)
   const [comment, setComment] = useState('')
+  const [reviewRemarks, setReviewRemarks] = useState('')
+  const [reopenOpen, setReopenOpen] = useState(false)
+  const [reopenReason, setReopenReason] = useState('')
   const [activeImageModal, setActiveImageModal] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -165,22 +169,95 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
             Actions
           </p>
 
-          {/* Pending Approval Banner */}
-          {ticket.status === 'pending_approval' && (
+          {/* Pending Approval Review & Decision Card for Admin / Manager */}
+          {ticket.status === 'pending_approval' && (role === 'admin' || role === 'manager') && (
+            <div className="w-full rounded-2xl border border-amber-300 bg-amber-50/80 p-4 sm:p-5 shadow-xs">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0">⏳</span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-amber-950 text-sm sm:text-base">
+                    Review Resolution &amp; Decision
+                  </h3>
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    The assigned technician completed this ticket. Review their resolution notes and media proof below. You can approve to close, or reject with comments to automatically reopen for rework.
+                  </p>
+
+                  {/* Comment input textarea */}
+                  <div className="mt-3.5">
+                    <label
+                      htmlFor="approval-remarks"
+                      className="block text-[11px] font-bold uppercase tracking-wider text-amber-900 mb-1"
+                    >
+                      Reviewer Comments / Instructions
+                    </label>
+                    <textarea
+                      id="approval-remarks"
+                      rows={3}
+                      value={reviewRemarks}
+                      onChange={(e) => setReviewRemarks(e.target.value)}
+                      placeholder="Enter comments for approval (optional) or explain why it is rejected and what needs to be fixed (required for reject)..."
+                      className="w-full rounded-xl border border-amber-300 bg-[var(--white)] p-3 text-xs sm:text-sm text-[var(--ink)] placeholder:text-amber-800/40 outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 shadow-xs"
+                    />
+                  </div>
+
+                  {/* Decision Action Buttons */}
+                  <div className="mt-4 flex flex-wrap items-center gap-2.5">
+                    <Button
+                      id="action-approve-close"
+                      type="button"
+                      loading={actionLoading}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs cursor-pointer"
+                      onClick={() =>
+                        void run(async () => {
+                          await ticketService.approveClose(ticket._id, reviewRemarks.trim() || undefined)
+                          setReviewRemarks('')
+                        }, 'Ticket approved and closed!')
+                      }
+                    >
+                      ✓ Approve &amp; Close
+                    </Button>
+
+                    <Button
+                      id="action-reject-reopen"
+                      type="button"
+                      variant="outline"
+                      loading={actionLoading}
+                      className="border-red-300 bg-white text-red-700 hover:bg-red-50 hover:border-red-400 font-bold shadow-xs cursor-pointer"
+                      onClick={() => {
+                        if (!reviewRemarks.trim()) {
+                          toast.error('Please enter a rejection reason or rework instructions before rejecting.')
+                          return
+                        }
+                        void run(async () => {
+                          await ticketService.reopen(ticket._id, reviewRemarks.trim())
+                          setReviewRemarks('')
+                        }, 'Ticket rejected — automatically reopened for technician rework.')
+                      }}
+                    >
+                      ✕ Reject &amp; Reopen for Rework
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Pending Approval Notice for Employee */}
+          {ticket.status === 'pending_approval' && role === 'employee' && (
             <div className="w-full rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm">
-              <p className="font-semibold text-orange-800">⏳ Awaiting Approval</p>
+              <p className="font-semibold text-orange-800">⏳ Submitted for Approval</p>
               <p className="text-xs text-orange-600 mt-0.5">
-                The assigned employee has completed work on this ticket. Please review and approve to close it, or reopen if further action is needed.
+                You have submitted your resolution work. The ticket is currently under review by your department manager.
               </p>
             </div>
           )}
 
-          {canAssign && (
+          {ticket.status !== 'pending_approval' && canAssign && (
             <Button type="button" id="action-assign" onClick={() => setAssignOpen(true)}>
               Assign Ticket
             </Button>
           )}
-          {canAccept && (
+          {ticket.status !== 'pending_approval' && canAccept && (
             <Button
               id="action-accept"
               type="button"
@@ -194,7 +271,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               Accept Ticket
             </Button>
           )}
-          {canStart && (
+          {ticket.status !== 'pending_approval' && canStart && (
             <Button
               id="action-start"
               type="button"
@@ -208,7 +285,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               Start Work
             </Button>
           )}
-          {canResolve && (
+          {ticket.status !== 'pending_approval' && canResolve && (
             <Button
               id="action-resolve"
               type="button"
@@ -218,37 +295,18 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               {role === 'employee' ? 'Complete & Request Approval' : 'Mark Resolved'}
             </Button>
           )}
-          {/* Approve & Close — for pending_approval tickets */}
-          {canApproveClose && (
-            <Button
-              id="action-approve-close"
-              type="button"
-              loading={actionLoading}
-              onClick={() =>
-                void run(async () => {
-                  await ticketService.approveClose(ticket._id)
-                }, 'Ticket approved and closed!')
-              }
-            >
-              ✓ Approve & Close
-            </Button>
-          )}
-          {canReopen && (
+          {ticket.status !== 'pending_approval' && canReopen && (
             <Button
               id="action-reopen"
               type="button"
               variant="ghost"
               loading={actionLoading}
-              onClick={() =>
-                void run(async () => {
-                  await ticketService.reopen(ticket._id, 'Reopened by manager')
-                }, 'Ticket reopened')
-              }
+              onClick={() => setReopenOpen(true)}
             >
               Reopen
             </Button>
           )}
-          {canClose && (
+          {ticket.status !== 'pending_approval' && canClose && (
             <Button
               id="action-close"
               type="button"
@@ -493,27 +551,54 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
 
             {!!ticket.comments?.length && (
               <ul className="mt-4 space-y-3">
-                {ticket.comments.map((c, idx) => (
-                  <li
-                    key={c._id || idx}
-                    className="rounded-xl bg-[var(--surface)] p-3 text-sm border border-[var(--border)]"
-                  >
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-blue-light)] text-[var(--primary-blue)] text-xs font-bold uppercase">
-                        {getInitials(getName(c.author, 'S'))}
+                {ticket.comments.map((c, idx) => {
+                  const isReq = c.isRequester || !c.author
+                  const authorName = isReq ? (c.authorName || ticket.requester.name) : getName(c.author, 'Staff')
+                  return (
+                    <li
+                      key={c._id || idx}
+                      className={`rounded-xl p-3.5 text-sm border ${
+                        isReq
+                          ? 'bg-amber-50/50 border-amber-200'
+                          : 'bg-[var(--surface)] border-[var(--border)]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold uppercase ${
+                              isReq
+                                ? 'bg-amber-200 text-amber-900'
+                                : 'bg-[var(--primary-blue-light)] text-[var(--primary-blue)]'
+                            }`}
+                          >
+                            {getInitials(authorName)}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-semibold text-xs text-[var(--ink)]">
+                                {authorName}
+                              </p>
+                              <span
+                                className={`rounded-full px-2 py-0.2 text-[10px] font-bold ${
+                                  isReq
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : 'bg-blue-50 text-[var(--primary-blue)] border border-blue-200'
+                                }`}
+                              >
+                                {isReq ? 'Requester' : 'Staff'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-[var(--ink-muted)]">
+                              {format(new Date(c.createdAt), 'dd MMM, HH:mm')}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-xs text-[var(--ink)]">
-                          {getName(c.author, 'Staff')}
-                        </p>
-                        <p className="text-[11px] text-[var(--ink-muted)]">
-                          {format(new Date(c.createdAt), 'dd MMM, HH:mm')}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-[var(--ink)]">{c.message}</p>
-                  </li>
-                ))}
+                      <p className="text-[var(--ink)] pl-9">{c.message}</p>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </div>
@@ -555,6 +640,48 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           }, 'Ticket resolved')
         }}
       />
+
+      <Modal
+        open={reopenOpen}
+        onClose={() => setReopenOpen(false)}
+        title="Reopen Ticket"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void run(async () => {
+              await ticketService.reopen(ticket._id, reopenReason.trim() || 'Reopened by manager')
+              setReopenOpen(false)
+              setReopenReason('')
+            }, 'Ticket reopened')
+          }}
+          className="space-y-4"
+        >
+          <p className="text-xs text-[var(--ink-muted)]">
+            Explain why this ticket is being reopened. The technician will be notified.
+          </p>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)] mb-1">
+              Reopen Reason / Instructions
+            </label>
+            <textarea
+              rows={3}
+              value={reopenReason}
+              onChange={(e) => setReopenReason(e.target.value)}
+              placeholder="Enter reason for reopening..."
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--white)] p-3 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setReopenOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={actionLoading}>
+              Confirm Reopen
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Lightbox Image Zoom Modal */}
       {activeImageModal && (

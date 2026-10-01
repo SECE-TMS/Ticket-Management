@@ -27,6 +27,8 @@ import { ManagerEmployees } from '../pages/manager/ManagerEmployees'
 import { EmployeeDashboard } from '../pages/employee/EmployeeDashboard'
 import { SuperAdminDashboard } from '../pages/superadmin/SuperAdminDashboard'
 import { SuperAdminAdmins } from '../pages/superadmin/SuperAdminAdmins'
+import { SuperAdminDepartments } from '../pages/superadmin/SuperAdminDepartments'
+import { SuperAdminAnalytics } from '../pages/superadmin/SuperAdminAnalytics'
 
 import { QrGeneratorPage } from '../pages/shared/QrGeneratorPage'
 
@@ -80,8 +82,8 @@ export function AppRoutes() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<SuperAdminDashboard />} />
               <Route path="admins" element={<SuperAdminAdmins />} />
-              <Route path="departments" element={<SuperAdminDashboard />} />
-              <Route path="analytics" element={<SuperAdminDashboard />} />
+              <Route path="departments" element={<SuperAdminDepartments />} />
+              <Route path="analytics" element={<SuperAdminAnalytics />} />
             </Route>
           </Route>
         </Route>

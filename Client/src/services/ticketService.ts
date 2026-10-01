@@ -88,6 +88,21 @@ export const ticketService = {
     return data.data as Ticket
   },
 
+  async trackApproveClose(payload: { ticketCode: string; mobile: string; message?: string }) {
+    const { data } = await api.post('/tickets/track/approve-close', payload)
+    return data.data as { ticket: Ticket; activities: Activity[] }
+  },
+
+  async trackReopen(payload: { ticketCode: string; mobile: string; message: string }) {
+    const { data } = await api.post('/tickets/track/reopen', payload)
+    return data.data as { ticket: Ticket; activities: Activity[] }
+  },
+
+  async trackComment(payload: { ticketCode: string; mobile: string; message: string }) {
+    const { data } = await api.post('/tickets/track/comment', payload)
+    return data.data as { ticket: Ticket; activities: Activity[] }
+  },
+
   async getAdminFeedback(params: {
     page?: number
     limit?: number
@@ -132,8 +147,8 @@ export const ticketService = {
     link.remove()
   },
 
-  async approveClose(id: string) {
-    const { data } = await api.patch(`/tickets/${id}/approve-close`)
+  async approveClose(id: string, message?: string) {
+    const { data } = await api.patch(`/tickets/${id}/approve-close`, { message })
     return data.data as Ticket
   },
 }

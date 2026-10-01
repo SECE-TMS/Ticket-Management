@@ -24,6 +24,9 @@ router.post(
   ticketController.create
 );
 router.get('/track', validate(trackTicketSchema, 'query'), ticketController.track);
+router.post('/track/approve-close', ticketController.requesterApproveClose);
+router.post('/track/reopen', ticketController.requesterReopen);
+router.post('/track/comment', ticketController.requesterComment);
 router.post('/feedback', ticketController.submitFeedback);
 
 router.get(

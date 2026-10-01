@@ -182,7 +182,9 @@ export interface Ticket {
   feedback?: TicketFeedback | null
   comments?: Array<{
     _id?: string
-    author: UserRef | string
+    author?: UserRef | string | null
+    authorName?: string
+    isRequester?: boolean
     message: string
     createdAt: string
   }>

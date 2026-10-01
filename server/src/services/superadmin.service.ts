@@ -74,10 +74,10 @@ export const updateAdmin = async (
   if (user.role !== 'admin') throw ApiError.badRequest('User is not an admin');
 
   // Don't allow changing role or password through this endpoint
-  const allowed = ['name', 'phone', 'isActive'];
+  const allowed: Array<'name' | 'phone' | 'isActive'> = ['name', 'phone', 'isActive'];
   for (const key of allowed) {
     if (data[key] !== undefined) {
-      (user as Record<string, unknown>)[key] = data[key];
+      (user[key] as unknown) = data[key];
     }
   }
 
@@ -216,11 +216,13 @@ export const getSuperAdminDashboard = async () => {
     }),
   ]);
 
-  // Monthly ticket trend (last 6 months)
+  // Monthly ticket trend (last 6 months continuous timeline)
   const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+  sixMonthsAgo.setDate(1);
+  sixMonthsAgo.setHours(0, 0, 0, 0);
 
-  const monthlyTrend = await Ticket.aggregate([
+  const monthlyTrendAgg = await Ticket.aggregate([
     { $match: { createdAt: { $gte: sixMonthsAgo } } },
     {
       $group: {
@@ -231,6 +233,28 @@ export const getSuperAdminDashboard = async () => {
     },
     { $sort: { '_id.year': 1, '_id.month': 1 } },
   ]);
+
+  const trendMap = new Map<string, { created: number; resolved: number }>();
+  monthlyTrendAgg.forEach((item) => {
+    trendMap.set(`${item._id.year}-${item._id.month}`, {
+      created: item.created,
+      resolved: item.resolved,
+    });
+  });
+
+  const monthlyTrend = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const yr = d.getFullYear();
+    const mo = d.getMonth() + 1;
+    const match = trendMap.get(`${yr}-${mo}`) || { created: 0, resolved: 0 };
+    monthlyTrend.push({
+      _id: { year: yr, month: mo },
+      created: match.created,
+      resolved: match.resolved,
+    });
+  }
 
   const departmentReport = await getDepartmentReport();
 

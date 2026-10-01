@@ -65,6 +65,15 @@ const seed = async (): Promise<void> => {
     Counter.deleteMany({}),
   ]);
 
+  const superadmin = await User.create({
+    name: 'Super Admin',
+    email: 'superadmin@sece.ac.in',
+    password: 'SuperAdmin@123',
+    role: 'superadmin',
+    phone: '9999999990',
+  });
+  logger.info(`Super Admin created: ${superadmin.email}`);
+
   const admin = await User.create({
     name: 'System Admin',
     email: 'admin@sece.ac.in',
@@ -86,11 +95,12 @@ const seed = async (): Promise<void> => {
   }
 
   logger.info('Seed completed successfully');
-  logger.info('========== Initial Admin Credentials ==========');
-  logger.info('Role       | Email                   | Password');
-  logger.info('-----------|-------------------------|-------------');
-  logger.info('Admin      | admin@sece.ac.in        | Admin@123');
-  logger.info('================================================');
+  logger.info('========== Initial Admin & Superadmin Credentials ==========');
+  logger.info('Role         | Email                   | Password');
+  logger.info('-------------|-------------------------|-------------');
+  logger.info('Super Admin  | superadmin@sece.ac.in   | SuperAdmin@123');
+  logger.info('Admin        | admin@sece.ac.in        | Admin@123');
+  logger.info('=============================================================');
   logger.info(`Seeded ${DEPARTMENTS.length} active departments ready for manager assignment.`);
 
   process.exit(0);
