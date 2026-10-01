@@ -1,7 +1,7 @@
 import mongoose, { Schema, type HydratedDocument, type Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-export const ROLES = ['admin', 'manager', 'employee'] as const;
+export const ROLES = ['superadmin', 'admin', 'manager', 'employee'] as const;
 export type UserRole = (typeof ROLES)[number];
 
 export interface IUserSafeObject {
@@ -36,6 +36,7 @@ export interface IUser {
   passwordResetExpires: Date | null;
   loginAttempts: number;
   lockUntil: Date | null;
+  mustChangePassword: boolean;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidate: string): Promise<boolean>;
@@ -73,6 +74,7 @@ const userSchema = new Schema<IUser>(
     passwordResetExpires: { type: Date, select: false, default: null },
     loginAttempts: { type: Number, default: 0, select: false },
     lockUntil: { type: Date, default: null, select: false },
+    mustChangePassword: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

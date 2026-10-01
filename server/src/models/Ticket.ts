@@ -5,6 +5,7 @@ export const STATUSES = [
   'assigned',
   'accepted',
   'in_progress',
+  'pending_approval',
   'resolved',
   'closed',
   'reopened',
@@ -71,6 +72,8 @@ export interface ITicket {
   reopenCount: number;
   comments: ITicketComment[];
   feedback?: ITicketFeedback | null;
+  approvalRequestedAt: Date | null;
+  approvalRequestedBy: mongoose.Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -120,6 +123,8 @@ const ticketSchema = new Schema<ITicket>(
     closedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     closedAt: { type: Date, default: null },
     reopenCount: { type: Number, default: 0 },
+    approvalRequestedAt: { type: Date, default: null },
+    approvalRequestedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     feedback: {
       rating: { type: Number, min: 1, max: 5 },
       comment: { type: String, trim: true, default: '' },

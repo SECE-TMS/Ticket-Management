@@ -7,6 +7,7 @@ import dashboardRoutes from './dashboard.routes';
 import notificationRoutes from './notification.routes';
 import otpRoutes from './otp.routes';
 import settingRoutes from './setting.routes';
+import superadminRoutes from './superadmin.routes';
 
 const router = express.Router();
 
@@ -22,7 +23,9 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/otp', otpRoutes);
 router.use('/settings', settingRoutes);
+router.use('/superadmin', superadminRoutes);
 
 export default router;
+
 
 

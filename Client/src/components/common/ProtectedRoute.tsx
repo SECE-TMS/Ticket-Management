@@ -24,11 +24,13 @@ export function RoleRoute({ allow }: { allow: Role[] }) {
 
   if (!allow.includes(user.role)) {
     const dest =
-      user.role === 'admin'
-        ? '/admin/dashboard'
-        : user.role === 'manager'
-          ? '/manager/dashboard'
-          : '/employee/dashboard'
+      user.role === 'superadmin'
+        ? '/superadmin/dashboard'
+        : user.role === 'admin'
+          ? '/admin/dashboard'
+          : user.role === 'manager'
+            ? '/manager/dashboard'
+            : '/employee/dashboard'
     return <Navigate to={dest} replace />
   }
 
@@ -36,6 +38,7 @@ export function RoleRoute({ allow }: { allow: Role[] }) {
 }
 
 export function roleHome(role: Role) {
+  if (role === 'superadmin') return '/superadmin/dashboard'
   if (role === 'admin') return '/admin/dashboard'
   if (role === 'manager') return '/manager/dashboard'
   return '/employee/dashboard'

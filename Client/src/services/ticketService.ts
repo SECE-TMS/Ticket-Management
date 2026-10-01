@@ -131,4 +131,9 @@ export const ticketService = {
     link.click()
     link.remove()
   },
+
+  async approveClose(id: string) {
+    const { data } = await api.patch(`/tickets/${id}/approve-close`)
+    return data.data as Ticket
+  },
 }

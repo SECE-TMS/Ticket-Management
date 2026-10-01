@@ -124,6 +124,13 @@ router.patch(
 );
 
 router.patch(
+  '/:id/approve-close',
+  authenticate,
+  requireRole('admin', 'manager'),
+  ticketController.approveClose
+);
+
+router.patch(
   '/:id/reopen',
   authenticate,
   requireRole('admin', 'manager'),

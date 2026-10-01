@@ -86,6 +86,15 @@ export const close = async (req: AuthRequest, res: Response, next: NextFunction)
   }
 };
 
+export const approveClose = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await ticketService.approveAndCloseTicket(req.params.id, req.user!);
+    return sendSuccess(res, { data, message: 'Ticket approved and closed' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const reopen = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = await ticketService.reopenTicket(req.params.id, req.user!, req.body?.message);

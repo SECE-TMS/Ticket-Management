@@ -3,6 +3,7 @@ import { PublicLayout } from '../layouts/PublicLayout'
 import { AdminLayout } from '../layouts/AdminLayout'
 import { ManagerLayout } from '../layouts/ManagerLayout'
 import { EmployeeLayout } from '../layouts/EmployeeLayout'
+import { SuperAdminLayout } from '../layouts/SuperAdminLayout'
 import { ProtectedRoute, RoleRoute } from '../components/common/ProtectedRoute'
 import { Landing } from '../pages/public/Landing'
 import { RaiseTicket } from '../pages/public/RaiseTicket'
@@ -24,6 +25,8 @@ import {
 import { ManagerDashboard } from '../pages/manager/ManagerDashboard'
 import { ManagerEmployees } from '../pages/manager/ManagerEmployees'
 import { EmployeeDashboard } from '../pages/employee/EmployeeDashboard'
+import { SuperAdminDashboard } from '../pages/superadmin/SuperAdminDashboard'
+import { SuperAdminAdmins } from '../pages/superadmin/SuperAdminAdmins'
 
 import { QrGeneratorPage } from '../pages/shared/QrGeneratorPage'
 
@@ -69,6 +72,16 @@ export function AppRoutes() {
               <Route path="dashboard" element={<EmployeeDashboard />} />
               <Route path="tickets" element={<EmployeeTickets />} />
               <Route path="tickets/:id" element={<EmployeeTicketDetail />} />
+            </Route>
+          </Route>
+
+          <Route element={<RoleRoute allow={['superadmin']} />}>
+            <Route path="/superadmin" element={<SuperAdminLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<SuperAdminDashboard />} />
+              <Route path="admins" element={<SuperAdminAdmins />} />
+              <Route path="departments" element={<SuperAdminDashboard />} />
+              <Route path="analytics" element={<SuperAdminDashboard />} />
             </Route>
           </Route>
         </Route>

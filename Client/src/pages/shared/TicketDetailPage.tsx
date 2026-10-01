@@ -99,16 +99,19 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
     (role === 'admin' || role === 'manager') &&
     ['new', 'reopened', 'assigned'].includes(ticket.status)
   const canClose =
-    (role === 'admin' || role === 'manager') && ticket.status !== 'closed'
+    (role === 'admin' || role === 'manager') && ticket.status !== 'closed' && ticket.status !== 'pending_approval'
   const canReopen =
     (role === 'admin' || role === 'manager') &&
-    ['resolved', 'closed'].includes(ticket.status)
+    ['resolved', 'closed', 'pending_approval'].includes(ticket.status)
   const canAccept =
     role === 'employee' && (ticket.status === 'assigned' || ticket.status === 'reopened')
   const canStart = role === 'employee' && ticket.status === 'accepted'
   const canResolve =
     ['admin', 'manager', 'employee'].includes(role || '') &&
     ['new', 'assigned', 'accepted', 'in_progress', 'reopened'].includes(ticket.status)
+  // pending_approval → only manager/admin can approve and close
+  const canApproveClose =
+    (role === 'admin' || role === 'manager') && ticket.status === 'pending_approval'
 
   const run = async (fn: () => Promise<void>, success: string) => {
     setActionLoading(true)
@@ -156,11 +159,22 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
       </div>
 
       {/* Action buttons */}
-      {(canAssign || canClose || canReopen || canAccept || canStart || canResolve) && (
+      {(canAssign || canClose || canReopen || canAccept || canStart || canResolve || canApproveClose) && (
         <div className="mb-5 flex flex-wrap gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
           <p className="w-full text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
             Actions
           </p>
+
+          {/* Pending Approval Banner */}
+          {ticket.status === 'pending_approval' && (
+            <div className="w-full rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm">
+              <p className="font-semibold text-orange-800">⏳ Awaiting Approval</p>
+              <p className="text-xs text-orange-600 mt-0.5">
+                The assigned employee has completed work on this ticket. Please review and approve to close it, or reopen if further action is needed.
+              </p>
+            </div>
+          )}
+
           {canAssign && (
             <Button type="button" id="action-assign" onClick={() => setAssignOpen(true)}>
               Assign Ticket
@@ -201,7 +215,22 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               variant="secondary"
               onClick={() => setResolveOpen(true)}
             >
-              Mark Resolved
+              {role === 'employee' ? 'Complete & Request Approval' : 'Mark Resolved'}
+            </Button>
+          )}
+          {/* Approve & Close — for pending_approval tickets */}
+          {canApproveClose && (
+            <Button
+              id="action-approve-close"
+              type="button"
+              loading={actionLoading}
+              onClick={() =>
+                void run(async () => {
+                  await ticketService.approveClose(ticket._id)
+                }, 'Ticket approved and closed!')
+              }
+            >
+              ✓ Approve & Close
             </Button>
           )}
           {canReopen && (

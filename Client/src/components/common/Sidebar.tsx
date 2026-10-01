@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LogOut, Menu, X } from 'lucide-react'
+import { KeyRound, LogOut, Menu, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { logout } from '../../store/slices/authSlice'
 import { cn } from '../../lib/utils'
+import { ChangePasswordModal } from './ChangePasswordModal'
 import isaiiCleanLogo from '../../assets/isaii_clean.png'
 import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
@@ -31,6 +32,7 @@ function getInitials(name?: string) {
 
 export function Sidebar({ items, title }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const user = useAppSelector((s) => s.auth.user)
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
@@ -212,8 +214,17 @@ export function Sidebar({ items, title }: SidebarProps) {
             </div>
             <button
               type="button"
+              onClick={() => setChangePasswordOpen(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-[var(--white)] transition-colors cursor-pointer"
+              aria-label="Change Password"
+              title="Change Password"
+            >
+              <KeyRound size={14} />
+            </button>
+            <button
+              type="button"
               onClick={handleLogout}
-              className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-[var(--white)] transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-[var(--white)] transition-colors cursor-pointer"
               aria-label="Logout"
               title="Logout"
             >
@@ -222,6 +233,9 @@ export function Sidebar({ items, title }: SidebarProps) {
           </div>
         </div>
       </aside>
+      {changePasswordOpen && (
+        <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />
+      )}
     </>
   )
 }

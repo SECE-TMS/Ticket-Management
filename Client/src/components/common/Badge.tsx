@@ -7,6 +7,7 @@ const statusStyles: Record<TicketStatus, string> = {
   assigned: 'bg-[var(--primary-purple-light)] text-[var(--primary-purple-dark)]',
   accepted: 'bg-[var(--surface-2)] text-[var(--primary-purple)]',
   in_progress: 'bg-[var(--gold-light)] text-[var(--gold-dark)]',
+  pending_approval: 'bg-orange-100 text-orange-700',
   resolved: 'bg-[var(--success-light)] text-[var(--success)]',
   closed: 'bg-[var(--surface-2)] text-[var(--ink-muted)]',
   reopened: 'bg-[var(--danger-light)] text-[var(--danger)]',

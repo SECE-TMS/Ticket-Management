@@ -1,10 +1,11 @@
-export type Role = 'admin' | 'manager' | 'employee'
+export type Role = 'superadmin' | 'admin' | 'manager' | 'employee'
 
 export type TicketStatus =
   | 'new'
   | 'assigned'
   | 'accepted'
   | 'in_progress'
+  | 'pending_approval'
   | 'resolved'
   | 'closed'
   | 'reopened'

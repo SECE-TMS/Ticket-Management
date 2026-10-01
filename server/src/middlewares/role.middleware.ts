@@ -10,12 +10,14 @@ export const requireRole =
       next(ApiError.unauthorized());
       return;
     }
-    if (!roles.includes(req.user.role)) {
-      next(ApiError.forbidden('Insufficient permissions'));
+    // superadmin can do anything any other role can do
+    if (req.user.role === 'superadmin' || roles.includes(req.user.role)) {
+      next();
       return;
     }
-    next();
+    next(ApiError.forbidden('Insufficient permissions'));
   };
+
 
 /**
  * Ensure manager can only access their own department resources.

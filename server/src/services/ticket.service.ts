@@ -745,13 +745,25 @@ export const resolveTicket = async (
   const resolutionAttachment = resolutionAttachments.length ? resolutionAttachments[0] : null;
 
   const fromStatus = ticket.status;
-  ticket.status = 'resolved';
+
+  // If employee resolves → pending_approval (needs manager/admin confirmation)
+  // If admin or manager resolves → directly resolved
+  const isEmployee = actor && actor.role === 'employee';
+  const newStatus = isEmployee ? 'pending_approval' : 'resolved';
+
+  ticket.status = newStatus as TicketStatus;
   ticket.resolution = {
     remarks: remarks || 'Resolved by department manager/staff',
     attachment: resolutionAttachment,
     attachments: resolutionAttachments,
-    resolvedAt: new Date(),
+    resolvedAt: newStatus === 'resolved' ? new Date() : null,
   };
+
+  if (isEmployee && actor) {
+    ticket.approvalRequestedAt = new Date();
+    ticket.approvalRequestedBy = actor._id;
+  }
+
   await ticket.save();
 
   await logActivity({
@@ -759,22 +771,81 @@ export const resolveTicket = async (
     actor,
     action: 'status_changed',
     fromStatus,
-    toStatus: 'resolved',
-    message: remarks || 'Ticket marked resolved',
+    toStatus: newStatus as TicketStatus,
+    message: isEmployee
+      ? `${remarks || 'Work completed'} — Awaiting approval to close`
+      : remarks || 'Ticket marked resolved',
   });
 
-  const dept = await Department.findById(ticket.department);
-  const recipients = [dept?.manager, ticket.assignedBy].filter(Boolean);
-  await notifyMany(recipients, {
-    ticket,
-    type: 'ticket_resolved',
-    message: `Ticket ${ticket.ticketCode} resolved`,
-  });
-
-  void notifyRequesterOnAction(ticket, 'Ticket Marked Resolved', remarks || 'Your ticket has been marked resolved.', 'resolved');
+  if (isEmployee) {
+    // Notify manager and assignedBy to approve
+    const dept = await Department.findById(ticket.department);
+    const recipients = [dept?.manager, ticket.assignedBy].filter(Boolean);
+    await notifyMany(recipients, {
+      ticket,
+      type: 'ticket_resolved',
+      message: `Ticket ${ticket.ticketCode} is awaiting your approval to close`,
+    });
+    void notifyRequesterOnAction(ticket, 'Work Completed — Awaiting Approval', 'The assigned staff has completed work on your ticket. It is now awaiting manager approval.', 'resolved');
+  } else {
+    const dept = await Department.findById(ticket.department);
+    const recipients = [dept?.manager, ticket.assignedBy].filter(Boolean);
+    await notifyMany(recipients, {
+      ticket,
+      type: 'ticket_resolved',
+      message: `Ticket ${ticket.ticketCode} resolved`,
+    });
+    void notifyRequesterOnAction(ticket, 'Ticket Marked Resolved', remarks || 'Your ticket has been marked resolved.', 'resolved');
+  }
 
   return populateTicket(Ticket.findById(ticket._id));
 };
+
+export const approveAndCloseTicket = async (id: string, actor: IUserDocument) => {
+  const ticket = await Ticket.findById(id);
+  if (!ticket) throw ApiError.notFound('Ticket not found');
+  assertTicketAccess(ticket, actor);
+
+  if (actor.role === 'employee') {
+    throw ApiError.forbidden('Employees cannot approve ticket closure');
+  }
+
+  if (ticket.status !== 'pending_approval') {
+    throw ApiError.badRequest('Ticket is not awaiting approval');
+  }
+
+  const fromStatus = ticket.status;
+  ticket.status = 'closed';
+  ticket.closedBy = actor._id;
+  ticket.closedAt = new Date();
+  if (ticket.resolution) {
+    ticket.resolution.resolvedAt = new Date();
+  }
+  await ticket.save();
+
+  await logActivity({
+    ticket,
+    actor,
+    action: 'closed',
+    fromStatus,
+    toStatus: 'closed',
+    message: 'Ticket approved and closed by manager',
+  });
+
+  if (ticket.assignedTo) {
+    await notify({
+      recipient: ticket.assignedTo,
+      ticket,
+      type: 'ticket_closed',
+      message: `Ticket ${ticket.ticketCode} approved and closed`,
+    });
+  }
+
+  void notifyRequesterOnAction(ticket, 'Ticket Completed & Closed', 'Your ticket has been reviewed and officially closed.', 'closed');
+
+  return populateTicket(Ticket.findById(ticket._id));
+};
+
 
 export const closeTicket = async (id: string, actor: IUserDocument) => {
   const ticket = await Ticket.findById(id);
