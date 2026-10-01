@@ -64,13 +64,17 @@ export function Login() {
         {/* Logo */}
         <div className="relative flex items-center">
           {/* Snug Sri Eshwar College Logo Badge */}
-          <div className="inline-flex w-fit items-center justify-center rounded-2xl bg-white px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-md border border-white/40">
+          <Link
+            to="/"
+            className="inline-flex w-fit items-center justify-center rounded-2xl bg-white px-4 py-2.5 shadow-md border border-white/40 hover:scale-102 transition-transform"
+            title="Return to Sri Eshwar Portal Home"
+          >
             <img
               src={sriEshwarCleanLogo}
               alt="Sri Eshwar College Logo"
-              className="h-10 sm:h-12 w-auto object-contain block"
+              className="h-11 w-auto object-contain block"
             />
-          </div>
+          </Link>
         </div>
 
         {/* Main copy */}
@@ -94,15 +98,19 @@ export function Login() {
       {/* Right form panel */}
       <div className="flex flex-1 flex-col items-center justify-center px-5 py-12 sm:px-10">
         <div className="w-full max-w-sm">
-          {/* Mobile logo */}
-          <div className="mb-8 flex items-center lg:hidden">
-            <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-4 border border-slate-200 shadow-xs">
+          {/* Sri Eshwar Logo Header Badge */}
+          <div className="mb-6 flex items-center">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-2.5 border border-slate-200 shadow-sm hover:border-[var(--primary-blue)] transition-all group"
+              title="Return to Sri Eshwar Portal Home"
+            >
               <img
                 src={sriEshwarCleanLogo}
                 alt="Sri Eshwar College Logo"
-                className="h-8 w-auto max-w-[170px] object-contain"
+                className="h-10 sm:h-11 w-auto max-w-[210px] object-contain block group-hover:scale-102 transition-transform"
               />
-            </div>
+            </Link>
           </div>
 
           <h1 className="font-display text-2xl font-bold text-[var(--ink)]">

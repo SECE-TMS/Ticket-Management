@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Download, Ticket as TicketIcon, X } from 'lucide-react'
+import { CheckCircle2, Download, Lock, Star, Ticket as TicketIcon, X } from 'lucide-react'
 import { Button } from '../common/Button'
 import sriEshwarLogo from '../../assets/sri_eshwar_clean.png'
 import type { Ticket } from '../../types'
@@ -16,6 +16,7 @@ interface TicketReceiptModalProps {
   complaintType?: string
   description?: string
   createdAt?: string
+  requireFeedback?: boolean
 }
 
 export function TicketReceiptModal({
@@ -25,18 +26,24 @@ export function TicketReceiptModal({
   ticketCode = ticket?.ticketCode || 'TMS-2026',
   mobile = ticket?.requester?.mobile || '',
   requesterName = ticket?.requester?.name || 'Valued User',
-  departmentName = typeof ticket?.department === 'object' ? ticket.department.name : 'Department',
+  departmentName = typeof ticket?.department === 'object' ? ticket.department?.name : 'Department',
   complaintType = ticket?.complaintType || 'Service Request',
   description = ticket?.description || '',
   createdAt = ticket?.createdAt || new Date().toISOString(),
+  requireFeedback = true,
 }: TicketReceiptModalProps) {
   const printRef = useRef<HTMLDivElement>(null)
 
   if (!isOpen) return null
 
+  const hasFeedback = Boolean(ticket?.feedback?.rating && ticket.feedback.rating >= 1)
+  const isDownloadLocked = requireFeedback && !hasFeedback
+
   const handleDownloadImage = async () => {
+    if (isDownloadLocked) return
+
     const W = 800
-    const H = 1000
+    const H = 1120
     const canvas = document.createElement('canvas')
     canvas.width = W
     canvas.height = H
@@ -63,14 +70,20 @@ export function TicketReceiptModal({
     ctx.roundRect(24, 24, W - 48, H - 48, 24)
     ctx.stroke()
 
+    // Top Brand Accent Bar
+    ctx.fillStyle = '#235EAA'
+    ctx.beginPath()
+    ctx.roundRect(24, 24, W - 48, 14, [24, 24, 0, 0])
+    ctx.fill()
+
     // Centered Logo
     if (logoImg.complete && logoImg.naturalWidth) {
       const logoW = 340
       const logoH = (logoImg.naturalHeight / logoImg.naturalWidth) * logoW
-      ctx.drawImage(logoImg, (W - logoW) / 2, 50, logoW, logoH)
+      ctx.drawImage(logoImg, (W - logoW) / 2, 52, logoW, logoH)
     }
 
-    let currentY = 170
+    let currentY = 175
 
     // Top Divider Line
     ctx.strokeStyle = '#E2E8F0'
@@ -79,47 +92,47 @@ export function TicketReceiptModal({
     ctx.moveTo(50, currentY)
     ctx.lineTo(W - 50, currentY)
     ctx.stroke()
-    currentY += 45
+    currentY += 40
 
     // Main Title
     ctx.fillStyle = '#0F172A'
-    ctx.font = '900 32px Segoe UI, sans-serif'
+    ctx.font = '900 30px Segoe UI, sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText('Maintenance Ticket Receipt', W / 2, currentY)
-    currentY += 35
+    ctx.fillText('Official Maintenance Resolution Receipt', W / 2, currentY)
+    currentY += 32
 
     // Logged Date Subtitle
     ctx.fillStyle = '#64748B'
-    ctx.font = '600 20px Segoe UI, sans-serif'
+    ctx.font = '600 18px Segoe UI, sans-serif'
     ctx.fillText(`Logged on ${format(new Date(createdAt), 'dd MMM yyyy, HH:mm')}`, W / 2, currentY)
-    currentY += 40
+    currentY += 38
 
     // Ticket Reference Code Box
     const boxW = 700
-    const boxH = 120
+    const boxH = 110
     const boxX = (W - boxW) / 2
     ctx.fillStyle = '#F0F7FF'
     ctx.beginPath()
     ctx.roundRect(boxX, currentY, boxW, boxH, 16)
     ctx.fill()
     ctx.strokeStyle = '#235EAA'
-    ctx.lineWidth = 3
+    ctx.lineWidth = 2.5
     ctx.setLineDash([8, 6])
     ctx.stroke()
     ctx.setLineDash([])
 
     ctx.fillStyle = '#235EAA'
-    ctx.font = '800 18px Segoe UI, sans-serif'
-    ctx.fillText('REFERENCE TICKET CODE', W / 2, currentY + 36)
+    ctx.font = '800 16px Segoe UI, sans-serif'
+    ctx.fillText('REFERENCE TICKET CODE', W / 2, currentY + 34)
 
     ctx.fillStyle = '#163A6B'
-    ctx.font = '900 42px monospace'
-    ctx.fillText(ticketCode, W / 2, currentY + 86)
-    currentY += boxH + 40
+    ctx.font = '900 40px monospace'
+    ctx.fillText(ticketCode, W / 2, currentY + 80)
+    currentY += boxH + 30
 
     // 2x2 Info Details Grid
     const itemW = 330
-    const itemH = 90
+    const itemH = 85
     const col1X = boxX
     const col2X = boxX + itemW + 40
 
@@ -134,25 +147,51 @@ export function TicketReceiptModal({
 
       ctx.textAlign = 'left'
       ctx.fillStyle = '#64748B'
-      ctx.font = '800 16px Segoe UI, sans-serif'
-      ctx.fillText(label.toUpperCase(), x + 16, y + 32)
+      ctx.font = '800 15px Segoe UI, sans-serif'
+      ctx.fillText(label.toUpperCase(), x + 16, y + 30)
 
       ctx.fillStyle = '#0F172A'
-      ctx.font = '900 22px Segoe UI, sans-serif'
-      ctx.fillText(val || '—', x + 16, y + 68)
+      ctx.font = '900 20px Segoe UI, sans-serif'
+      ctx.fillText(val || '—', x + 16, y + 62)
     }
 
     drawInfoBox(col1X, currentY, 'Requester Name', requesterName)
     drawInfoBox(col2X, currentY, 'Mobile Number', mobile)
-    currentY += itemH + 20
+    currentY += itemH + 16
 
     drawInfoBox(col1X, currentY, 'Target Department', departmentName)
     drawInfoBox(col2X, currentY, 'Complaint Type', complaintType)
-    currentY += itemH + 30
+    currentY += itemH + 24
+
+    // Verified Feedback Card on Receipt (Canvas)
+    if (ticket?.feedback?.rating) {
+      const fbH = 110
+      ctx.fillStyle = '#FEFCE8' // gold light tint
+      ctx.beginPath()
+      ctx.roundRect(boxX, currentY, boxW, fbH, 14)
+      ctx.fill()
+      ctx.strokeStyle = '#FACC15'
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      ctx.fillStyle = '#CA8A04'
+      ctx.font = '900 17px Segoe UI, sans-serif'
+      ctx.textAlign = 'left'
+      ctx.fillText(`★ USER FEEDBACK: ${ticket.feedback.rating}/5 STARS VERIFIED`, boxX + 20, currentY + 36)
+
+      ctx.fillStyle = '#1E293B'
+      ctx.font = 'italic 600 18px Segoe UI, sans-serif'
+      const fbComment = ticket.feedback.comment
+        ? `"${ticket.feedback.comment.length > 65 ? ticket.feedback.comment.substring(0, 62) + '...' : ticket.feedback.comment}"`
+        : 'User confirmed resolution satisfaction.'
+      ctx.fillText(fbComment, boxX + 20, currentY + 76)
+
+      currentY += fbH + 24
+    }
 
     // Issue Description Box
     if (description) {
-      const descH = 110
+      const descH = 95
       ctx.fillStyle = '#F1F5F9'
       ctx.beginPath()
       ctx.roundRect(boxX, currentY, boxW, descH, 12)
@@ -165,17 +204,24 @@ export function TicketReceiptModal({
 
       ctx.textAlign = 'left'
       ctx.fillStyle = '#64748B'
-      ctx.font = '800 16px Segoe UI, sans-serif'
-      ctx.fillText('ISSUE DESCRIPTION:', boxX + 24, currentY + 35)
+      ctx.font = '800 15px Segoe UI, sans-serif'
+      ctx.fillText('ISSUE DESCRIPTION:', boxX + 24, currentY + 32)
 
       ctx.fillStyle = '#334155'
-      ctx.font = 'italic 600 20px Segoe UI, sans-serif'
+      ctx.font = 'italic 600 18px Segoe UI, sans-serif'
       ctx.fillText(
         `"${description.length > 55 ? description.substring(0, 52) + '...' : description}"`,
         boxX + 24,
-        currentY + 75
+        currentY + 68
       )
+      currentY += descH + 20
     }
+
+    // Official Stamp Footer
+    ctx.fillStyle = '#64748B'
+    ctx.font = '600 14px Segoe UI, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('Sri Eshwar College of Engineering • Campus Facility Support & Helpdesk', W / 2, H - 45)
 
     // Trigger instant PNG image download
     const link = document.createElement('a')
@@ -188,7 +234,7 @@ export function TicketReceiptModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs animate-fade-in"
       onClick={onClose}
     >
       <div
@@ -209,6 +255,21 @@ export function TicketReceiptModal({
             <X size={18} />
           </button>
         </div>
+
+        {/* Feedback Required Lock Alert */}
+        {isDownloadLocked && (
+          <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 animate-fade-in">
+            <div className="flex items-start gap-2.5">
+              <Lock size={18} className="text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-amber-950">Feedback Required to Download</p>
+                <p className="mt-1 text-amber-800 leading-relaxed">
+                  Please submit your feedback rating on the ticket tracking page to unlock and download the official completion receipt.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Printable / Viewable Receipt Container */}
         <div ref={printRef} className="receipt-card shadow-sm border-2 border-[#163a6b] rounded-2xl p-5 bg-white space-y-4">
@@ -257,6 +318,28 @@ export function TicketReceiptModal({
               </div>
             </div>
 
+            {/* Feedback Badge if already submitted */}
+            {hasFeedback && ticket?.feedback && (
+              <div className="mt-3 rounded-xl border border-yellow-300 bg-yellow-50/80 p-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Star size={14} className="fill-[var(--gold)] text-[var(--gold)]" />
+                    <span className="font-bold text-amber-950">
+                      User Rating: {ticket.feedback.rating}/5 Stars
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    <CheckCircle2 size={11} /> Verified
+                  </span>
+                </div>
+                {ticket.feedback.comment && (
+                  <p className="mt-1 text-[11px] italic text-slate-700">
+                    "{ticket.feedback.comment}"
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Description */}
             {description && (
               <div className="desc-box mt-3 rounded-lg bg-slate-50 p-2.5 border-l-3 border-[var(--primary-blue)] text-xs text-slate-700">
@@ -269,15 +352,27 @@ export function TicketReceiptModal({
 
         {/* Modal Bottom Actions */}
         <div className="flex items-center gap-3 pt-2">
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            onClick={handleDownloadImage}
-            className="flex-1 font-bold shadow-md cursor-pointer"
-          >
-            <Download size={16} /> Download Receipt Image
-          </Button>
+          {isDownloadLocked ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              disabled
+              className="flex-1 font-bold opacity-60 cursor-not-allowed"
+            >
+              <Lock size={15} /> Complete Feedback to Download
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              onClick={handleDownloadImage}
+              className="flex-1 font-bold shadow-md cursor-pointer bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Download size={16} /> Download Receipt Image
+            </Button>
+          )}
           <Button type="button" variant="outline" size="md" onClick={onClose} className="px-5 cursor-pointer">
             Close
           </Button>

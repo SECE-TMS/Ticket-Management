@@ -10,12 +10,13 @@ import {
   Camera,
   CheckCircle2,
   Clock,
+  Download,
   ExternalLink,
   FileText,
   Headset,
+  Lock,
   MessageSquare,
   Phone,
-  Printer,
   Search,
   Send,
   Share2,
@@ -295,11 +296,31 @@ export function TrackTicket() {
 
                   <button
                     type="button"
-                    onClick={() => setShowReceiptModal(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition-colors cursor-pointer"
-                    title="Download/Print Receipt"
+                    onClick={() => {
+                      const hasFb = Boolean(ticket.feedback?.rating && ticket.feedback.rating >= 1)
+                      if (!hasFb) {
+                        toast.error('Feedback required: Please submit your resolution rating below to unlock ticket receipt download.')
+                        document.getElementById('feedback-section')?.scrollIntoView({ behavior: 'smooth' })
+                        return
+                      }
+                      setShowReceiptModal(true)
+                    }}
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                      Boolean(ticket.feedback?.rating && ticket.feedback.rating >= 1)
+                        ? 'border-emerald-400/50 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30 ring-2 ring-emerald-400/20 shadow-xs'
+                        : 'border-white/30 bg-white/10 text-white/80 hover:bg-white/20'
+                    }`}
+                    title={Boolean(ticket.feedback?.rating && ticket.feedback.rating >= 1) ? 'Download Official Receipt' : 'Complete feedback below to download receipt'}
                   >
-                    <Printer size={14} /> Download Receipt
+                    {Boolean(ticket.feedback?.rating && ticket.feedback.rating >= 1) ? (
+                      <>
+                        <Download size={14} className="text-emerald-300" /> Download Receipt
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={13} className="text-amber-300" /> Download Receipt
+                      </>
+                    )}
                   </button>
 
                   <StatusBadge status={ticket.status} />
@@ -610,7 +631,13 @@ export function TrackTicket() {
 
               {/* ── FEEDBACK & RATING SECTION FOR CLOSED TICKETS ──────────────── */}
               {ticket.status === 'closed' && (
-                <FeedbackCard ticket={ticket} onFeedbackSubmitted={(updatedTicket) => setTicket(updatedTicket)} />
+                <div id="feedback-section" className="scroll-mt-6">
+                  <FeedbackCard
+                    ticket={ticket}
+                    onFeedbackSubmitted={(updatedTicket) => setTicket(updatedTicket)}
+                    onOpenReceipt={() => setShowReceiptModal(true)}
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -749,9 +776,11 @@ const RATING_LABELS: Record<number, string> = {
 function FeedbackCard({
   ticket,
   onFeedbackSubmitted,
+  onOpenReceipt,
 }: {
   ticket: Ticket
   onFeedbackSubmitted: (updated: Ticket) => void
+  onOpenReceipt?: () => void
 }) {
   const toast = useToast()
   const [rating, setRating] = useState<number>(ticket.feedback?.rating || 5)
@@ -775,7 +804,7 @@ function FeedbackCard({
         rating,
         comment,
       })
-      toast.success('Thank you for your feedback!')
+      toast.success('Thank you for your feedback! Official receipt download is now unlocked.')
       onFeedbackSubmitted(updated)
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to submit feedback'))
@@ -787,8 +816,8 @@ function FeedbackCard({
   if (hasFeedback && ticket.feedback) {
     const existingFeedback = ticket.feedback
     return (
-      <div className="rounded-2xl border border-[var(--gold)]/40 bg-[var(--gold-light)]/40 p-6 shadow-xs">
-        <div className="flex items-center justify-between gap-2 mb-3">
+      <div className="rounded-2xl border border-[var(--gold)]/40 bg-[var(--gold-light)]/40 p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-2">
             <ThumbsUp size={18} className="text-[var(--gold-dark)]" />
             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--gold-dark)]">
@@ -801,7 +830,7 @@ function FeedbackCard({
         </div>
 
         {/* Stars */}
-        <div className="flex items-center gap-1.5 mb-3">
+        <div className="flex items-center gap-1.5">
           {[1, 2, 3, 4, 5].map((star) => (
             <Star
               key={star}
@@ -819,9 +848,28 @@ function FeedbackCard({
 
         {/* Remarks */}
         {existingFeedback.comment && (
-          <p className="text-sm italic text-[var(--ink)] bg-white/70 p-3 rounded-xl border border-[var(--border)]">
+          <p className="text-sm italic text-[var(--ink)] bg-white/80 p-3 rounded-xl border border-[var(--border)]">
             "{existingFeedback.comment}"
           </p>
+        )}
+
+        {/* Download Receipt Callout inside Feedback Card */}
+        {onOpenReceipt && (
+          <div className="pt-3 border-t border-amber-200/80 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800">
+              <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+              <span>Feedback Submitted — Official Ticket Receipt Unlocked</span>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={onOpenReceipt}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md cursor-pointer text-xs"
+            >
+              <Download size={14} /> Download Receipt Image
+            </Button>
+          </div>
         )}
       </div>
     )

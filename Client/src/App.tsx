@@ -20,7 +20,7 @@ function AuthBootstrap({ children }: { children: React.ReactNode }) {
   }, [accessToken, dispatch])
 
   if (accessToken && status === 'loading' && bootstrapped.current) {
-    return <PageLoader />
+    return <PageLoader fullScreen />
   }
 
   return children
