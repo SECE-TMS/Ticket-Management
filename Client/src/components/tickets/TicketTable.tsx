@@ -36,7 +36,8 @@ export function TicketTable({ tickets, detailBase }: TicketTableProps) {
           <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
             <th className="px-4 py-3 first:rounded-tl-xl">Requester &amp; Ticket ID</th>
             <th className="px-4 py-3">Department</th>
-            <th className="px-4 py-3">Complaint</th>
+            <th className="px-4 py-3">Sub category</th>
+            <th className="px-4 py-3">Ticket Title</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3">Priority</th>
             <th className="px-4 py-3">Assignee</th>
@@ -70,6 +71,13 @@ export function TicketTable({ tickets, detailBase }: TicketTableProps) {
               <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
               <td className="px-4 py-3.5 font-medium text-[var(--ink)]">
                 {t.complaintType}
+              </td>
+              <td className="px-4 py-3.5 text-[var(--ink)] max-w-[200px]">
+                {t.title ? (
+                  <span className="font-semibold">{t.title}</span>
+                ) : (
+                  <span className="text-[var(--ink-muted)] italic">—</span>
+                )}
               </td>
               <td className="px-4 py-3.5">
                 <StatusBadge status={t.status} />

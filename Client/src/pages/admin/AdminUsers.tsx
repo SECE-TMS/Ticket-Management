@@ -20,6 +20,8 @@ interface UserForm {
   password: string
   role: 'manager' | 'employee'
   department: string
+  managers: string[]
+  employees: string[]
   phone: string
   rollNumber: string
 }
@@ -30,6 +32,8 @@ const emptyForm: UserForm = {
   password: '',
   role: 'employee',
   department: '',
+  managers: [],
+  employees: [],
   phone: '',
   rollNumber: '',
 }
@@ -57,6 +61,7 @@ export function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [users, setUsers] = useState<User[]>([])
+  const [allPoolUsers, setAllPoolUsers] = useState<User[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
@@ -78,7 +83,7 @@ export function AdminUsers() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [userData, deptData] = await Promise.all([
+      const [userData, deptData, poolData] = await Promise.all([
         userService.list({
           page,
           limit,
@@ -87,8 +92,10 @@ export function AdminUsers() {
           search: debouncedSearch || undefined,
         }),
         departmentService.listAll(),
+        userService.list({ limit: 200 }),
       ])
       setUsers(userData.items.filter((u) => u.role !== 'superadmin'))
+      setAllPoolUsers(poolData.items.filter((u) => u.role !== 'superadmin' && u.isActive))
       setPages(userData.pagination.pages)
       setTotal(userData.pagination.total)
       setDepartments(deptData)
@@ -97,7 +104,7 @@ export function AdminUsers() {
     } finally {
       setLoading(false)
     }
-  }, [page, roleFilter, deptFilter, debouncedSearch, toast])
+  }, [page, limit, roleFilter, deptFilter, debouncedSearch, toast])
 
   useEffect(() => {
     void load()
@@ -107,6 +114,9 @@ export function AdminUsers() {
     setPage(1)
   }, [roleFilter, deptFilter, debouncedSearch])
 
+  const availableManagers = allPoolUsers.filter((u) => u.role === 'manager')
+  const availableEmployees = allPoolUsers.filter((u) => u.role === 'employee' && (!editing || getId(u) !== getId(editing)))
+
   const openCreate = () => {
     setEditing(null)
     setForm(emptyForm)
@@ -115,12 +125,16 @@ export function AdminUsers() {
 
   const openEdit = (u: User) => {
     setEditing(u)
+    const existingMgrs = (u.managers || []).map((m) => (typeof m === 'object' ? getId(m) : m))
+    const existingEmps = (u.employees || []).map((e) => (typeof e === 'object' ? getId(e) : e))
     setForm({
       name: u.name,
       email: u.email,
       password: '',
       role: (u.role === 'admin' || u.role === 'superadmin') ? 'manager' : (u.role as 'manager' | 'employee'),
       department: getId(u.department),
+      managers: existingMgrs,
+      employees: existingEmps,
       phone: u.phone || '',
       rollNumber: u.rollNumber || '',
     })
@@ -144,6 +158,8 @@ export function AdminUsers() {
           email: form.email,
           role: form.role,
           department: form.department,
+          managers: form.role === 'employee' ? form.managers : [],
+          employees: form.role === 'manager' ? form.employees : [],
           phone: form.phone || '',
           rollNumber: form.rollNumber || '',
         }
@@ -155,6 +171,8 @@ export function AdminUsers() {
       } else {
         await userService.create({
           ...form,
+          managers: form.role === 'employee' ? form.managers : [],
+          employees: form.role === 'manager' ? form.employees : [],
           phone: form.phone || undefined,
           rollNumber: form.rollNumber || undefined,
         })
@@ -188,7 +206,7 @@ export function AdminUsers() {
     <div>
       <PageHeader
         title="Users"
-        description="Create managers and employees, filter by role or department."
+        description="Manage managers and employees, with support for multiple managers per employee."
         actions={
           <Button
             type="button"
@@ -255,6 +273,7 @@ export function AdminUsers() {
                   <th className="px-4 py-3 first:rounded-tl-xl">User</th>
                   <th className="px-4 py-3">Role</th>
                   <th className="px-4 py-3">Department</th>
+                  <th className="px-4 py-3">Reporting / Team</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 last:rounded-tr-xl">Actions</th>
                 </tr>
@@ -288,6 +307,52 @@ export function AdminUsers() {
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(u.department, '—')}</td>
+                    <td className="px-4 py-3.5">
+                      {u.role === 'employee' ? (
+                        u.managers && u.managers.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[220px]">
+                            {u.managers.map((m) => {
+                              const mName = typeof m === 'object' ? m.name : 'Manager'
+                              return (
+                                <span
+                                  key={typeof m === 'object' ? getId(m) : m}
+                                  className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 border border-blue-200"
+                                >
+                                  {mName}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[var(--ink-muted)] italic">Dept General</span>
+                        )
+                      ) : u.role === 'manager' ? (
+                        u.employees && u.employees.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[220px]">
+                            {u.employees.slice(0, 2).map((e) => {
+                              const eName = typeof e === 'object' ? e.name : 'Staff'
+                              return (
+                                <span
+                                  key={typeof e === 'object' ? getId(e) : e}
+                                  className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200"
+                                >
+                                  {eName}
+                                </span>
+                              )
+                            })}
+                            {u.employees.length > 2 && (
+                              <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
+                                +{u.employees.length - 2} more
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[var(--ink-muted)] italic">No staff assigned</span>
+                        )
+                      ) : (
+                        <span className="text-xs text-[var(--ink-muted)]">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3.5">
                       <Badge
                         className={
@@ -325,7 +390,7 @@ export function AdminUsers() {
                 ))}
                 {!users.length && (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-sm text-[var(--ink-muted)]">
+                    <td colSpan={6} className="py-8 text-center text-sm text-[var(--ink-muted)]">
                       No users match your filters.
                     </td>
                   </tr>
@@ -420,6 +485,127 @@ export function AdminUsers() {
                 ))}
             </select>
           </Field>
+
+          {/* Multiple Managers Selection for Employee */}
+          {form.role === 'employee' && (
+            <div className="flex flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+                  Assigned Managers (Multiple Allowed)
+                </label>
+                <span className="text-xs font-bold text-[var(--primary-blue)]">
+                  {form.managers.length} selected
+                </span>
+              </div>
+              {/* <p className="text-xs text-[var(--ink-muted)]">
+                Select one or more managers (e.g., Manager A, Manager B) this employee reports to:
+              </p> */}
+              {availableManagers.length === 0 ? (
+                <p className="text-xs italic text-[var(--ink-muted)] py-1.5">
+                  No managers available. Create a manager first.
+                </p>
+              ) : (
+                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                  {availableManagers.map((mgr) => {
+                    const mgrId = getId(mgr)
+                    const isChecked = form.managers.includes(mgrId)
+                    return (
+                      <label
+                        key={mgrId}
+                        className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                          isChecked
+                            ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-semibold shadow-xs'
+                            : 'border-[var(--border)] bg-white hover:bg-slate-50 text-[var(--ink)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setForm((f) => ({ ...f, managers: [...f.managers, mgrId] }))
+                              } else {
+                                setForm((f) => ({ ...f, managers: f.managers.filter((id) => id !== mgrId) }))
+                              }
+                            }}
+                            className="rounded text-[var(--primary-blue)] focus:ring-[var(--primary-blue)] cursor-pointer"
+                          />
+                          <span>{mgr.name}</span>
+                          <span className="text-[11px] text-[var(--ink-muted)] font-normal">({mgr.email})</span>
+                        </div>
+                        <span className="text-[10px] text-[var(--ink-muted)] font-normal rounded bg-white/80 px-1.5 py-0.5 border border-slate-200">
+                          {getName(mgr.department)}
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Multiple Employees Selection for Manager */}
+          {form.role === 'manager' && (
+            <div className="flex flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+                  Assigned Staff / Employees (Multiple Allowed)
+                </label>
+                <span className="text-xs font-bold text-[var(--primary-blue)]">
+                  {form.employees.length} selected
+                </span>
+              </div>
+              {/* <p className="text-xs text-[var(--ink-muted)]">
+                Select one or more employees under this manager:
+              </p> */}
+              {availableEmployees.length === 0 ? (
+                <p className="text-xs italic text-[var(--ink-muted)] py-1.5">
+                  No employees available yet.
+                </p>
+              ) : (
+                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                  {availableEmployees.map((emp) => {
+                    const empId = getId(emp)
+                    const isChecked = form.employees.includes(empId)
+                    return (
+                      <label
+                        key={empId}
+                        className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                          isChecked
+                            ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-semibold shadow-xs'
+                            : 'border-[var(--border)] bg-white hover:bg-slate-50 text-[var(--ink)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setForm((f) => ({ ...f, employees: [...f.employees, empId] }))
+                              } else {
+                                setForm((f) => ({ ...f, employees: f.employees.filter((id) => id !== empId) }))
+                              }
+                            }}
+                            className="rounded text-[var(--primary-blue)] focus:ring-[var(--primary-blue)] cursor-pointer"
+                          />
+                          <span>{emp.name}</span>
+                          <span className="text-[11px] text-[var(--ink-muted)] font-normal">
+                            ({emp.rollNumber || emp.email})
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-[var(--ink-muted)] font-normal rounded bg-white/80 px-1.5 py-0.5 border border-slate-200">
+                          {getName(emp.department)}
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <Field label="Phone (optional)">
             <input
               value={form.phone}
@@ -462,3 +648,4 @@ export function AdminUsers() {
     </div>
   )
 }
+

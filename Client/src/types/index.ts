@@ -60,6 +60,8 @@ export interface User {
   email: string
   role: Role
   department: Department | string | null
+  managers?: Array<UserRef | User | string>
+  employees?: Array<UserRef | User | string>
   phone?: string
   rollNumber?: string
   avatarUrl?: string
@@ -78,6 +80,11 @@ export interface SystemSettings {
   requireRequesterEmail: boolean
   mobileMode: 'hidden' | 'optional' | 'required' | 'otp_required'
   emailMode: 'hidden' | 'optional' | 'required' | 'otp_required'
+  approvalRequired: boolean
+  approvalMode: 'always' | 'high_priority_only' | 'disabled'
+  allowRequesterApproval: boolean
+  autoCloseOnApproval: boolean
+  notifyManagerOnPendingApproval: boolean
   notifyEvents: {
     created: boolean
     assigned: boolean
@@ -86,6 +93,8 @@ export interface SystemSettings {
     closed: boolean
     reopened: boolean
     commented: boolean
+    approvalRequested?: boolean
+    approved?: boolean
   }
 }
 
@@ -154,6 +163,7 @@ export interface TimeWiseFeedbackAnalytics {
 export interface Ticket {
   _id: string
   ticketCode: string
+  title?: string
   requester: {
     name: string
     mobile: string

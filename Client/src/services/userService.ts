@@ -29,6 +29,8 @@ export const userService = {
     department: string
     phone?: string
     rollNumber?: string
+    managers?: string[]
+    employees?: string[]
   }) {
     const { data } = await api.post('/users', payload)
     return data.data as User
@@ -40,6 +42,7 @@ export const userService = {
     password: string
     phone?: string
     rollNumber?: string
+    managers?: string[]
   }) {
     const { data } = await api.post('/users/employee', payload)
     return data.data as User
@@ -53,6 +56,8 @@ export const userService = {
       rollNumber: string
       department: string | null
       role: 'manager' | 'employee'
+      managers: string[]
+      employees: string[]
     }>
   ) {
     const { data } = await api.put(`/users/${id}`, payload)

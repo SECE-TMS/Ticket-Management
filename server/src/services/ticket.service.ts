@@ -236,7 +236,7 @@ const notifyStaffOnTicketCreated = async (
                 ` : ''}
               </table>
               <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
-                <p style="margin: 0; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Issue Description:</p>
+                <p style="margin: 0; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Description:</p>
                 <p style="margin: 4px 0 0 0; font-size: 13px; color: #334155; font-style: italic;">"${ticket.description}"</p>
               </div>
             </div>
@@ -409,6 +409,7 @@ const buildListFilter = (actor: IUserDocument, query: Record<string, unknown>) =
   if (query.search) {
     filter.$or = [
       { ticketCode: { $regex: query.search, $options: 'i' } },
+      { title: { $regex: query.search, $options: 'i' } },
       { 'requester.name': { $regex: query.search, $options: 'i' } },
       { 'requester.mobile': { $regex: query.search, $options: 'i' } },
       { 'requester.rollNumber': { $regex: query.search, $options: 'i' } },
@@ -452,6 +453,7 @@ export const createPublicTicket = async (
 
   const ticket = await Ticket.create({
     ticketCode,
+    title: (body.title as string) || (body.complaintType as string),
     requester: {
       name: body.name as string,
       mobile: body.mobile as string,
@@ -746,10 +748,21 @@ export const resolveTicket = async (
 
   const fromStatus = ticket.status;
 
-  // If employee resolves → pending_approval (needs manager/admin confirmation)
-  // If admin or manager resolves → directly resolved
+  const settings = await getSettings();
   const isEmployee = actor && actor.role === 'employee';
-  const newStatus = isEmployee ? 'pending_approval' : 'resolved';
+
+  let needsApproval = false;
+  if (isEmployee) {
+    if (settings.approvalRequired === false || settings.approvalMode === 'disabled') {
+      needsApproval = false;
+    } else if (settings.approvalMode === 'high_priority_only') {
+      needsApproval = ['high', 'urgent'].includes(ticket.priority);
+    } else {
+      needsApproval = true;
+    }
+  }
+
+  const newStatus = needsApproval ? 'pending_approval' : 'resolved';
 
   ticket.status = newStatus as TicketStatus;
   ticket.resolution = {
@@ -759,7 +772,7 @@ export const resolveTicket = async (
     resolvedAt: newStatus === 'resolved' ? new Date() : null,
   };
 
-  if (isEmployee && actor) {
+  if (needsApproval && actor) {
     ticket.approvalRequestedAt = new Date();
     ticket.approvalRequestedBy = actor._id;
   }
@@ -772,21 +785,27 @@ export const resolveTicket = async (
     action: 'status_changed',
     fromStatus,
     toStatus: newStatus as TicketStatus,
-    message: isEmployee
+    message: needsApproval
       ? `${remarks || 'Work completed'} — Awaiting approval to close`
       : remarks || 'Ticket marked resolved',
   });
 
-  if (isEmployee) {
-    // Notify manager and assignedBy to approve
-    const dept = await Department.findById(ticket.department);
-    const recipients = [dept?.manager, ticket.assignedBy].filter(Boolean);
-    await notifyMany(recipients, {
-      ticket,
-      type: 'ticket_resolved',
-      message: `Ticket ${ticket.ticketCode} is awaiting your approval to close`,
-    });
-    void notifyRequesterOnAction(ticket, 'Work Completed — Awaiting Approval', 'The assigned staff has completed work on your ticket. It is now awaiting manager approval.', 'resolved');
+  if (needsApproval) {
+    if (settings.notifyManagerOnPendingApproval !== false) {
+      const dept = await Department.findById(ticket.department);
+      const managers = await User.find({
+        role: 'manager',
+        department: ticket.department,
+        isActive: true,
+      });
+      const recipients = [...managers.map((m) => m._id), dept?.manager, ticket.assignedBy].filter(Boolean);
+      await notifyMany(recipients, {
+        ticket,
+        type: 'ticket_resolved',
+        message: `Ticket ${ticket.ticketCode} completed by staff — awaiting your review & approval`,
+      });
+    }
+    void notifyRequesterOnAction(ticket, 'Work Completed — Awaiting Review', 'The assigned staff has completed work on your ticket. It is now under review for final approval.', 'approvalRequested');
   } else {
     const dept = await Department.findById(ticket.department);
     const recipients = [dept?.manager, ticket.assignedBy].filter(Boolean);
@@ -814,10 +833,16 @@ export const approveAndCloseTicket = async (id: string, actor: IUserDocument, me
     throw ApiError.badRequest('Ticket is not awaiting approval');
   }
 
+  const settings = await getSettings();
+  const shouldAutoClose = settings.autoCloseOnApproval !== false;
+  const targetStatus: TicketStatus = shouldAutoClose ? 'closed' : 'resolved';
+
   const fromStatus = ticket.status;
-  ticket.status = 'closed';
-  ticket.closedBy = actor._id;
-  ticket.closedAt = new Date();
+  ticket.status = targetStatus;
+  if (shouldAutoClose) {
+    ticket.closedBy = actor._id;
+    ticket.closedAt = new Date();
+  }
   if (ticket.resolution) {
     ticket.resolution.resolvedAt = new Date();
   }
@@ -826,10 +851,10 @@ export const approveAndCloseTicket = async (id: string, actor: IUserDocument, me
   await logActivity({
     ticket,
     actor,
-    action: 'closed',
+    action: shouldAutoClose ? 'closed' : 'status_changed',
     fromStatus,
-    toStatus: 'closed',
-    message: message?.trim() ? `Approved & Closed: ${message.trim()}` : 'Ticket approved and closed by reviewer',
+    toStatus: targetStatus,
+    message: message?.trim() ? `Approved: ${message.trim()}` : `Ticket approved by reviewer (${targetStatus})`,
   });
 
   if (ticket.assignedTo) {
@@ -839,11 +864,16 @@ export const approveAndCloseTicket = async (id: string, actor: IUserDocument, me
       type: 'ticket_closed',
       message: message?.trim()
         ? `Ticket ${ticket.ticketCode} approved: ${message.trim()}`
-        : `Ticket ${ticket.ticketCode} approved and closed`,
+        : `Ticket ${ticket.ticketCode} approved by manager`,
     });
   }
 
-  void notifyRequesterOnAction(ticket, 'Ticket Completed & Closed', message || 'Your ticket has been reviewed and officially closed.', 'closed');
+  void notifyRequesterOnAction(
+    ticket,
+    shouldAutoClose ? 'Ticket Completed & Closed' : 'Ticket Approved & Resolved',
+    message || 'Your ticket resolution has been reviewed and officially approved.',
+    'approved'
+  );
 
   return populateTicket(Ticket.findById(ticket._id));
 };
@@ -983,7 +1013,8 @@ export const exportCsv = async (actor: IUserDocument, query: Record<string, unkn
     'requesterName',
     'mobile',
     'department',
-    'complaintType',
+    'subCategory',
+    'ticketTitle',
     'priority',
     'status',
     'assignedTo',
@@ -1009,6 +1040,7 @@ export const exportCsv = async (actor: IUserDocument, query: Record<string, unkn
       t.requester?.mobile,
       dept?.name,
       t.complaintType,
+      t.title || '',
       t.priority,
       t.status,
       assignee?.name || '',
@@ -1038,7 +1070,7 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
   });
 
   // Title Header Block
-  worksheet.mergeCells('A1:O1');
+  worksheet.mergeCells('A1:P1');
   const titleCell = worksheet.getCell('A1');
   titleCell.value = 'TICKET MANAGEMENT SYSTEM - PERFORMANCE & RESOLUTION REPORT';
   titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFF' } };
@@ -1047,7 +1079,7 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
   worksheet.getRow(1).height = 36;
 
   // Metadata Row
-  worksheet.mergeCells('A2:O2');
+  worksheet.mergeCells('A2:P2');
   const metaCell = worksheet.getCell('A2');
   metaCell.value = `Generated on: ${new Date().toLocaleString()} | Total Records: ${tickets.length} | Exported by: ${actor.name}`;
   metaCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: '475569' } };
@@ -1065,11 +1097,12 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
     'Mobile',
     'Roll Number',
     'Department',
-    'Complaint Type',
+    'Sub Category',
+    'Ticket Title',
     'Priority',
     'Status',
     'Assigned To',
-    'Issue Description',
+    'Description',
     'Resolution Remarks',
     'User Attachment Image URL',
     'Resolution Proof Image URL',
@@ -1131,6 +1164,7 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
       t.requester?.rollNumber || '—',
       dept?.name || '—',
       t.complaintType || '—',
+      t.title || '—',
       (t.priority || 'medium').toUpperCase(),
       (t.status || 'new').toUpperCase().replace('_', ' '),
       assignee?.name || 'Unassigned',

@@ -8,6 +8,7 @@ export const createTicketSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   department: objectId,
   complaintType: z.string().min(1).max(100),
+  title: z.string().min(15).max(30).optional().or(z.literal('')),
   description: z.string().min(5).max(5000),
   priority: z.enum(PRIORITIES).optional().default('medium'),
   userType: z.enum(['student', 'staff', 'guest']).optional().default('guest'),

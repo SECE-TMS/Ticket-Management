@@ -10,6 +10,8 @@ export interface IUserSafeObject {
   email: string;
   role: UserRole;
   department: mongoose.Types.ObjectId | null;
+  managers?: any[];
+  employees?: any[];
   phone: string;
   rollNumber: string;
   avatarUrl: string;
@@ -25,6 +27,8 @@ export interface IUser {
   password: string;
   role: UserRole;
   department: mongoose.Types.ObjectId | null;
+  managers?: mongoose.Types.ObjectId[];
+  employees?: mongoose.Types.ObjectId[];
   phone: string;
   rollNumber: string;
   avatarUrl: string;
@@ -63,6 +67,8 @@ const userSchema = new Schema<IUser>(
       ref: 'Department',
       default: null,
     },
+    managers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    employees: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     phone: { type: String, trim: true, default: '' },
     rollNumber: { type: String, trim: true, default: '' },
     avatarUrl: { type: String, default: '' },
@@ -105,6 +111,8 @@ userSchema.methods.toSafeObject = function toSafeObject(this: IUserDocument): IU
     email: this.email,
     role: this.role,
     department: this.department,
+    managers: this.managers || [],
+    employees: this.employees || [],
     phone: this.phone,
     rollNumber: this.rollNumber || '',
     avatarUrl: this.avatarUrl,

@@ -14,6 +14,7 @@ interface TicketReceiptModalProps {
   requesterName?: string
   departmentName?: string
   complaintType?: string
+  title?: string
   description?: string
   createdAt?: string
   requireFeedback?: boolean
@@ -28,6 +29,7 @@ export function TicketReceiptModal({
   requesterName = ticket?.requester?.name || 'Valued User',
   departmentName = typeof ticket?.department === 'object' ? ticket.department?.name : 'Department',
   complaintType = ticket?.complaintType || 'Service Request',
+  title = ticket?.title || '',
   description = ticket?.description || '',
   createdAt = ticket?.createdAt || new Date().toISOString(),
   requireFeedback = true,
@@ -205,7 +207,7 @@ export function TicketReceiptModal({
       ctx.textAlign = 'left'
       ctx.fillStyle = '#64748B'
       ctx.font = '800 15px Segoe UI, sans-serif'
-      ctx.fillText('ISSUE DESCRIPTION:', boxX + 24, currentY + 32)
+      ctx.fillText('DESCRIPTION:', boxX + 24, currentY + 32)
 
       ctx.fillStyle = '#334155'
       ctx.font = 'italic 600 18px Segoe UI, sans-serif'
@@ -316,6 +318,12 @@ export function TicketReceiptModal({
                 <span className="info-label text-[9px] font-bold text-slate-400 uppercase">Complaint Type</span>
                 <p className="info-val font-bold text-slate-900 mt-0.5 truncate">{complaintType}</p>
               </div>
+              {title && (
+                <div className="info-item col-span-2 rounded-lg bg-slate-50 p-2.5 border border-slate-200">
+                  <span className="info-label text-[9px] font-bold text-slate-400 uppercase">Ticket Title</span>
+                  <p className="info-val font-bold text-slate-900 mt-0.5 truncate">{title}</p>
+                </div>
+              )}
             </div>
 
             {/* Feedback Badge if already submitted */}
@@ -343,7 +351,7 @@ export function TicketReceiptModal({
             {/* Description */}
             {description && (
               <div className="desc-box mt-3 rounded-lg bg-slate-50 p-2.5 border-l-3 border-[var(--primary-blue)] text-xs text-slate-700">
-                <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Issue Description:</span>
+                <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Description:</span>
                 <p className="italic font-medium line-clamp-2">"{description}"</p>
               </div>
             )}

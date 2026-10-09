@@ -281,7 +281,7 @@ export function TrackTicket() {
                     {ticket.ticketCode}
                   </h2>
                   <p className="mt-1 text-sm text-white/80 font-medium">
-                    {ticket.complaintType} • {getName(ticket.department)}
+                    {ticket.title ? `${ticket.title} • ` : ''}{ticket.complaintType} • {getName(ticket.department)}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -410,7 +410,7 @@ export function TrackTicket() {
               {ticket.description && (
                 <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
                   <p className="text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)] mb-2 flex items-center gap-1.5">
-                    <FileText size={15} className="text-[var(--primary-blue)]" /> Issue Description
+                    <FileText size={15} className="text-[var(--primary-blue)]" />Description
                   </p>
                   <p className="text-sm leading-relaxed text-[var(--ink)]">
                     {ticket.description}
