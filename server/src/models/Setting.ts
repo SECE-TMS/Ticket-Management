@@ -9,6 +9,11 @@ export interface ISetting {
   requireRequesterEmail: boolean;
   mobileMode: 'hidden' | 'optional' | 'required' | 'otp_required';
   emailMode: 'hidden' | 'optional' | 'required' | 'otp_required';
+  approvalRequired: boolean;
+  approvalMode: 'always' | 'high_priority_only' | 'disabled';
+  allowRequesterApproval: boolean;
+  autoCloseOnApproval: boolean;
+  notifyManagerOnPendingApproval: boolean;
   notifyEvents: {
     created: boolean;
     assigned: boolean;
@@ -17,6 +22,8 @@ export interface ISetting {
     closed: boolean;
     reopened: boolean;
     commented: boolean;
+    approvalRequested?: boolean;
+    approved?: boolean;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -42,6 +49,15 @@ const settingSchema = new Schema<ISetting>(
       enum: ['hidden', 'optional', 'required', 'otp_required'],
       default: 'optional',
     },
+    approvalRequired: { type: Boolean, default: true },
+    approvalMode: {
+      type: String,
+      enum: ['always', 'high_priority_only', 'disabled'],
+      default: 'always',
+    },
+    allowRequesterApproval: { type: Boolean, default: true },
+    autoCloseOnApproval: { type: Boolean, default: true },
+    notifyManagerOnPendingApproval: { type: Boolean, default: true },
     notifyEvents: {
       created: { type: Boolean, default: true },
       assigned: { type: Boolean, default: true },
@@ -50,6 +66,8 @@ const settingSchema = new Schema<ISetting>(
       closed: { type: Boolean, default: true },
       reopened: { type: Boolean, default: true },
       commented: { type: Boolean, default: true },
+      approvalRequested: { type: Boolean, default: true },
+      approved: { type: Boolean, default: true },
     },
   },
   { timestamps: true }

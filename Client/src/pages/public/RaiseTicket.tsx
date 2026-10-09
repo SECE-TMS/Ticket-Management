@@ -48,6 +48,10 @@ const schema = z
     department: z.string().min(1, 'Select a department'),
     mobile: z.string().optional(),
     complaintType: z.string().min(1, 'Select a complaint type'),
+    title: z
+      .string()
+      .min(15, 'Ticket Title must be at least 15 characters')
+      .max(30, 'Ticket Title must not exceed 30 characters'),
     description: z.string().min(5, 'Describe the issue (min 5 characters)'),
   })
   .refine(
@@ -138,12 +142,14 @@ export function RaiseTicket() {
       department: '',
       mobile: '',
       complaintType: '',
+      title: '',
       description: '',
     },
   })
 
   const selectedUserType = watch('userType')
   const selectedDeptId = watch('department')
+  const complaintTypeValue = watch('complaintType')
   const mobileValue = watch('mobile')
   const emailValue = watch('email')
   const descriptionValue = watch('description') || ''
@@ -264,10 +270,11 @@ export function RaiseTicket() {
   }, [searchParams, setValue, toast])
 
   useEffect(() => {
-    // Reset complaint type when user manually switches department
+    // Reset complaint type and title when user manually switches department
     // only if department doesn't match current complaintType
     if (selectedDept && !selectedDept.complaintTypes?.includes(watch('complaintType'))) {
       setValue('complaintType', '')
+      setValue('title', '')
     }
   }, [selectedDeptId, selectedDept, setValue, watch])
 
@@ -407,6 +414,7 @@ export function RaiseTicket() {
         formData.append('mobile', values.mobile.trim())
       }
       formData.append('complaintType', values.complaintType)
+      formData.append('title', values.title.trim())
       formData.append('description', values.description)
       if (attachments.length > 0) {
         attachments.forEach((file) => {
@@ -508,6 +516,7 @@ export function RaiseTicket() {
                 setOtpSent(false)
                 setSessionId(null)
                 setOtpValue('')
+                setValue('title', '')
               }}
             >
               Raise Another Ticket
@@ -539,6 +548,7 @@ export function RaiseTicket() {
           requesterName={watch('name') || createdTicket?.requester?.name}
           departmentName={selectedDept?.name}
           complaintType={watch('complaintType')}
+          title={watch('title') || createdTicket?.title}
           description={descriptionValue}
         />
       </div>
@@ -971,7 +981,7 @@ export function RaiseTicket() {
               <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-2">
                 <Building2 size={18} className="text-[var(--primary-blue)]" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)]">
-                  3. Department &amp; Issue Category
+                  3. Department &amp; Category
                 </h2>
               </div>
 
@@ -1000,10 +1010,10 @@ export function RaiseTicket() {
                 )}
               </div>
 
-              {/* Complaint Type Pills */}
+              {/* Complaint Type Selector */}
               {selectedDept && (
                 <div className="flex flex-col gap-1.5 animate-fade-in">
-                  <label className="text-xs font-bold text-[var(--ink)]">
+                  <label htmlFor="rt-complaint-type" className="text-xs font-bold text-[var(--ink)]">
                     Complaint Type <span className="text-[var(--danger)]">*</span>
                   </label>
                   <select
@@ -1026,6 +1036,47 @@ export function RaiseTicket() {
                   )}
                 </div>
               )}
+
+              {/* Ticket Title Input (15-30 characters) - displayed after selecting Department & Complaint Type */}
+              {selectedDept && complaintTypeValue && (
+                <div className="mt-4 flex flex-col gap-1.5 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="rt-title" className="text-xs font-bold text-[var(--ink)]">
+                      Ticket Title <span className="text-[var(--danger)]">*</span>
+                    </label>
+                    {/* <span
+                      className={`text-[11px] font-semibold transition-colors ${
+                        titleValue.length === 0
+                          ? 'text-[var(--ink-muted)]'
+                          : titleValue.length < 15 || titleValue.length > 30
+                          ? 'text-[var(--danger)] font-bold'
+                          : 'text-[var(--success)] font-bold'
+                      }`}
+                    >
+                      {titleValue.length}/30 characters (15–30 chars required)
+                    </span> */}
+                  </div>
+                  <div className="relative">
+                    <input
+                      {...register('title')}
+                      id="rt-title"
+                      type="text"
+                      maxLength={30}
+                      className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                        errors.title ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                      }`}
+                      placeholder="e.g., Projector power issue"
+                    />
+                  </div>
+                  {errors.title ? (
+                    <span className="text-xs text-[var(--danger)]">{errors.title.message}</span>
+                  ) : (
+                    <span className="text-[11px] text-[var(--ink-muted)]">
+                     
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Step 4: Description & Proof Attachment */}
@@ -1041,7 +1092,7 @@ export function RaiseTicket() {
               <div className="flex flex-col gap-1.5 mb-4">
                 <div className="flex items-center justify-between">
                   <label htmlFor="rt-description" className="text-xs font-bold text-[var(--ink)]">
-                    Issue Description <span className="text-[var(--danger)]">*</span>
+                    Description <span className="text-[var(--danger)]">*</span>
                   </label>
                   <span className="text-[11px] text-[var(--ink-muted)]">
                     {descriptionValue.length} characters
@@ -1079,7 +1130,7 @@ export function RaiseTicket() {
                 className="w-full text-base font-bold shadow-md hover:scale-[1.01]"
                 loading={submitting}
               >
-                Submit Issue Ticket
+                Submit Ticket
               </Button>
             </div>
           </form>

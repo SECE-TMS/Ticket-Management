@@ -149,10 +149,10 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               Ticket
             </p>
             <h1 className="mt-1 font-display text-2xl font-bold tracking-tight">
-              {ticket.ticketCode}
+              {ticket.title || ticket.ticketCode}
             </h1>
             <p className="mt-1 text-sm text-white/75">
-              {ticket.complaintType}
+              {ticket.title ? `${ticket.ticketCode} • ${ticket.complaintType}` : ticket.complaintType}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

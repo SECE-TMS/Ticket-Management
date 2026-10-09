@@ -11,6 +11,11 @@ export const getSettings = async (): Promise<ISetting> => {
       requireRequesterEmail: false,
       mobileMode: 'otp_required',
       emailMode: 'optional',
+      approvalRequired: true,
+      approvalMode: 'always',
+      allowRequesterApproval: true,
+      autoCloseOnApproval: true,
+      notifyManagerOnPendingApproval: true,
       notifyEvents: {
         created: true,
         assigned: true,
@@ -19,12 +24,29 @@ export const getSettings = async (): Promise<ISetting> => {
         closed: true,
         reopened: true,
         commented: true,
+        approvalRequested: true,
+        approved: true,
       },
     });
   } else {
     // Fill defaults for existing documents if not set
     if (settings.feedbackEnabled === undefined) {
       settings.feedbackEnabled = true;
+    }
+    if (settings.approvalRequired === undefined) {
+      settings.approvalRequired = true;
+    }
+    if (!settings.approvalMode) {
+      settings.approvalMode = 'always';
+    }
+    if (settings.allowRequesterApproval === undefined) {
+      settings.allowRequesterApproval = true;
+    }
+    if (settings.autoCloseOnApproval === undefined) {
+      settings.autoCloseOnApproval = true;
+    }
+    if (settings.notifyManagerOnPendingApproval === undefined) {
+      settings.notifyManagerOnPendingApproval = true;
     }
     if (!settings.mobileMode) {
       settings.mobileMode = settings.smsOtpEnabled ? 'otp_required' : 'required';

@@ -58,6 +58,7 @@ export interface ITicketFeedback {
 
 export interface ITicket {
   ticketCode: string;
+  title?: string;
   requester: IRequester;
   department: mongoose.Types.ObjectId;
   complaintType: string;
@@ -95,6 +96,7 @@ const attachmentSchema = new Schema<IAttachment>(
 const ticketSchema = new Schema<ITicket>(
   {
     ticketCode: { type: String, required: true, unique: true, index: true },
+    title: { type: String, trim: true, default: '' },
     requester: {
       name: { type: String, required: true, trim: true },
       mobile: { type: String, required: true, trim: true },

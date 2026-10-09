@@ -28,6 +28,8 @@ export const listUsers = async (query: Record<string, unknown> = {}) => {
   const [items, total] = await Promise.all([
     User.find(filter)
       .populate('department', 'name')
+      .populate('managers', 'name email phone role')
+      .populate('employees', 'name email phone role')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -53,6 +55,8 @@ export const listByDepartment = async (deptId: string, actor: IUserDocument) => 
 
   const users = await User.find({ department: deptId, role: { $ne: 'admin' } })
     .populate('department', 'name')
+    .populate('managers', 'name email phone role')
+    .populate('employees', 'name email phone role')
     .sort({ role: 1, name: 1 });
 
   return users.map((u) => u.toSafeObject());
@@ -78,9 +82,25 @@ export const createUser = async (data: Record<string, unknown>, actor: IUserDocu
   if (data.role === 'manager') {
     dept.manager = user._id;
     await dept.save();
+    if (Array.isArray(data.employees) && data.employees.length > 0) {
+      await User.updateMany(
+        { _id: { $in: data.employees } },
+        { $addToSet: { managers: user._id } }
+      );
+    }
+  } else if (data.role === 'employee') {
+    if (Array.isArray(data.managers) && data.managers.length > 0) {
+      await User.updateMany(
+        { _id: { $in: data.managers } },
+        { $addToSet: { employees: user._id } }
+      );
+    }
   }
 
-  const populated = await User.findById(user._id).populate('department', 'name');
+  const populated = await User.findById(user._id)
+    .populate('department', 'name')
+    .populate('managers', 'name email phone role')
+    .populate('employees', 'name email phone role');
   if (!populated) throw ApiError.notFound('User not found');
   return populated.toSafeObject();
 };
@@ -96,6 +116,10 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
   const existing = await User.findOne({ email: String(data.email).toLowerCase() });
   if (existing) throw ApiError.conflict('Email already registered');
 
+  const userManagers = Array.isArray(data.managers) && data.managers.length > 0
+    ? data.managers
+    : [actor._id];
+
   const user = await User.create({
     name: data.name,
     email: String(data.email).toLowerCase(),
@@ -104,16 +128,28 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
     rollNumber: (data.rollNumber as string) || '',
     role: 'employee',
     department: actor.department,
+    managers: userManagers,
     createdBy: actor._id,
   });
 
-  const populated = await User.findById(user._id).populate('department', 'name');
+  await User.updateMany(
+    { _id: { $in: userManagers } },
+    { $addToSet: { employees: user._id } }
+  );
+
+  const populated = await User.findById(user._id)
+    .populate('department', 'name')
+    .populate('managers', 'name email phone role')
+    .populate('employees', 'name email phone role');
   if (!populated) throw ApiError.notFound('User not found');
   return populated.toSafeObject();
 };
 
 export const getById = async (id: string, actor: IUserDocument) => {
-  const user = await User.findById(id).populate('department', 'name');
+  const user = await User.findById(id)
+    .populate('department', 'name')
+    .populate('managers', 'name email phone role')
+    .populate('employees', 'name email phone role');
   if (!user) throw ApiError.notFound('User not found');
 
   if (actor.role === 'manager') {
@@ -165,9 +201,41 @@ export const updateUser = async (
     delete data.password;
   }
 
+  // Handle relationship synchronization
+  if (data.role === 'employee' || user.role === 'employee') {
+    if (Array.isArray(data.managers)) {
+      // Remove user from managers not in the new list
+      await User.updateMany(
+        { role: 'manager', _id: { $nin: data.managers } },
+        { $pull: { employees: user._id } }
+      );
+      // Add user to all selected managers
+      await User.updateMany(
+        { role: 'manager', _id: { $in: data.managers } },
+        { $addToSet: { employees: user._id } }
+      );
+    }
+  } else if (data.role === 'manager' || user.role === 'manager') {
+    if (Array.isArray(data.employees)) {
+      // Remove manager from employees not in the new list
+      await User.updateMany(
+        { role: 'employee', _id: { $nin: data.employees } },
+        { $pull: { managers: user._id } }
+      );
+      // Add manager to all selected employees
+      await User.updateMany(
+        { role: 'employee', _id: { $in: data.employees } },
+        { $addToSet: { managers: user._id } }
+      );
+    }
+  }
+
   Object.assign(user, data);
   await user.save();
-  const populated = await User.findById(user._id).populate('department', 'name');
+  const populated = await User.findById(user._id)
+    .populate('department', 'name')
+    .populate('managers', 'name email phone role')
+    .populate('employees', 'name email phone role');
   if (!populated) throw ApiError.notFound('User not found');
   return populated.toSafeObject();
 };
