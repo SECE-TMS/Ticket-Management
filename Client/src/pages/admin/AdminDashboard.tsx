@@ -4,6 +4,7 @@ import {
   Download,
   Plus,
   RefreshCw,
+  Star,
 } from 'lucide-react'
 import {
   Area,
@@ -12,7 +13,9 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Legend,
+  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -24,7 +27,6 @@ import { dashboardService } from '../../services/dashboardService'
 import { departmentService } from '../../services/departmentService'
 import { KpiCard, PageHeader } from '../../components/common/KpiCard'
 import { PageLoader } from '../../components/common/LoadingSpinner'
-import { PriorityBadge, StatusBadge } from '../../components/common/Badge'
 import { Button } from '../../components/common/Button'
 import { CreateTaskModal } from '../../components/tasks/CreateTaskModal'
 import { useToast } from '../../context/ToastContext'
@@ -382,12 +384,15 @@ export function AdminDashboard() {
           <div className="h-72 w-full">
             {data?.deptPerformance && data.deptPerformance.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.deptPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                <BarChart data={data.deptPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis
-                    dataKey="code"
-                    tick={{ fontSize: 11, fill: '#64748B' }}
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: '#64748B' }}
                     interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                    tickFormatter={(val) => (val.length > 14 ? `${val.slice(0, 12)}…` : val)}
                   />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748B' }} />
                   <Tooltip
@@ -421,52 +426,103 @@ export function AdminDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
-                {/* <Star size={18} className="text-amber-500 fill-amber-400" /> */}
                 Month-Wise Customer Feedback Score &amp; CSAT Trend
               </h2>
               <p className="text-xs text-[var(--ink-muted)]">
-                Average feedback rating score (1.0 - 5.0) and CSAT satisfaction rate over months.
+                Average feedback rating score (1.0 - 5.0 ★) and CSAT satisfaction rate (%) over months.
               </p>
             </div>
-            {/* <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-700 border border-amber-200">
-              Feedback Insights
-            </span> */}
           </div>
 
           <div className="h-72 w-full">
             {data?.feedbackMonthlyTrend && data.feedbackMonthlyTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.feedbackMonthlyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <ComposedChart
+                  data={data.feedbackMonthlyTrend}
+                  margin={{ top: 15, right: 15, left: -10, bottom: 5 }}
+                >
                   <defs>
                     <linearGradient id="colorRating" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.0} />
+                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748B' }} />
-                  <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: '#64748B' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }} />
+                  
+                  {/* Left Axis: Star Rating (0 - 5) */}
+                  <YAxis
+                    yAxisId="left"
+                    domain={[0, 5]}
+                    ticks={[0, 1, 2, 3, 4, 5]}
+                    tickFormatter={(val) => `${val} ★`}
+                    tick={{ fontSize: 11, fill: '#D97706', fontWeight: 600 }}
+                  />
+
+                  {/* Right Axis: CSAT Satisfaction (0 - 100%) */}
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    domain={[0, 100]}
+                    ticks={[0, 25, 50, 75, 100]}
+                    tickFormatter={(val) => `${val}%`}
+                    tick={{ fontSize: 11, fill: '#059669', fontWeight: 600 }}
+                  />
+
                   <Tooltip
-                    contentStyle={{
-                      background: '#FFFFFF',
-                      border: '1px solid #E2E8F0',
-                      borderRadius: '0.75rem',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        const d = payload[0].payload
+                        return (
+                          <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-3 shadow-lg text-xs space-y-1.5 min-w-[180px]">
+                            <p className="font-bold text-[var(--ink)] border-b border-slate-100 pb-1">
+                              {label}
+                            </p>
+                            <div className="flex items-center justify-between text-amber-700 font-semibold">
+                              <span>Avg Rating:</span>
+                              <span className="font-bold">{d.avgRating} / 5.0 ★</span>
+                            </div>
+                            <div className="flex items-center justify-between text-emerald-700 font-semibold">
+                              <span>CSAT Satisfaction:</span>
+                              <span className="font-bold">{d.satisfactionRate}%</span>
+                            </div>
+                            <div className="flex items-center justify-between text-indigo-700 font-semibold">
+                              <span>Feedbacks Received:</span>
+                              <span className="font-bold">{d.totalFeedback} responses</span>
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
                     }}
                   />
-                  <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '8px' }} />
+                  <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '10px' }} />
+                  
                   <Area
+                    yAxisId="left"
                     type="monotone"
                     dataKey="avgRating"
-                    name="Avg Rating Score (out of 5)"
+                    name="Avg Star Score (out of 5.0 ★)"
                     stroke="#F59E0B"
                     strokeWidth={3}
                     fillOpacity={1}
                     fill="url(#colorRating)"
+                    dot={{ r: 5, fill: '#F59E0B', stroke: '#FFFFFF', strokeWidth: 2 }}
+                    activeDot={{ r: 7 }}
                   />
-                  <Bar dataKey="totalFeedback" name="Feedbacks Submitted" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                </AreaChart>
+                  
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="satisfactionRate"
+                    name="CSAT Satisfaction Rate (%)"
+                    stroke="#10B981"
+                    strokeWidth={2.5}
+                    strokeDasharray="4 4"
+                    dot={{ r: 4, fill: '#10B981', stroke: '#FFFFFF', strokeWidth: 2 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </ComposedChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex h-full flex-col items-center justify-center text-center text-xs text-[var(--ink-muted)]">
@@ -481,11 +537,10 @@ export function AdminDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
-                {/* <ThumbsUp size={18} className="text-emerald-600" /> */}
                 Department CSAT Rating Scores
               </h2>
               <p className="text-xs text-[var(--ink-muted)]">
-                Average star rating (1-5) per department.
+                Average star rating (1.0 - 5.0 ★) per department.
               </p>
             </div>
           </div>
@@ -493,10 +548,22 @@ export function AdminDashboard() {
           <div className="h-72 w-full">
             {data?.deptPerformance && data.deptPerformance.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.deptPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                  <XAxis dataKey="code" tick={{ fontSize: 11, fill: '#64748B' }} />
-                  <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: '#64748B' }} />
+                <BarChart data={data.deptPerformance} margin={{ top: 15, right: 10, left: -20, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: '#64748B' }}
+                    interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                    tickFormatter={(val) => (val.length > 14 ? `${val.slice(0, 12)}…` : val)}
+                  />
+                  <YAxis
+                    domain={[0, 5]}
+                    ticks={[0, 1, 2, 3, 4, 5]}
+                    tickFormatter={(val) => `${val} ★`}
+                    tick={{ fontSize: 11, fill: '#64748B' }}
+                  />
                   <Tooltip
                     contentStyle={{
                       background: '#FFFFFF',
@@ -505,9 +572,30 @@ export function AdminDashboard() {
                       fontSize: '0.75rem',
                       fontWeight: 600,
                     }}
+                    formatter={(value: any) => [`${value} / 5.0 ★`, 'Avg Rating']}
+                    labelFormatter={(label) => `Department: ${label}`}
                   />
                   <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '8px' }} />
-                  <Bar dataKey="avgRating" name="Avg Star Score" fill="#10B981" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="avgRating"
+                    name="Avg Star Score"
+                    radius={[5, 5, 0, 0]}
+                  >
+                    {data.deptPerformance.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          entry.avgRating >= 4.0
+                            ? '#10B981'
+                            : entry.avgRating >= 3.0
+                              ? '#F59E0B'
+                              : entry.avgRating > 0
+                                ? '#EF4444'
+                                : '#CBD5E1'
+                        }
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -713,70 +801,96 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── Recent Tickets Table ────────────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--white)] shadow-xs">
+      {/* ── Recent Customer Feedbacks & Reviews ─────────────────────────────── */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] shadow-xs overflow-hidden">
         <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
-          <h2 className="text-base font-bold text-[var(--ink)]">Recent Tickets Log</h2>
-          <Link to="/admin/tickets" className="text-xs font-semibold text-[var(--primary-blue)] hover:underline">
-            View all tickets →
+          <div>
+            <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
+              <Star size={18} className="fill-amber-400 text-amber-500" />
+              Recent Customer Feedbacks &amp; Reviews Log
+            </h2>
+            <p className="text-xs text-[var(--ink-muted)]">
+              Real-time feed of star ratings, comments, and satisfaction feedback received from campus users.
+            </p>
+          </div>
+          <Link to="/admin/feedback" className="text-xs font-semibold text-[var(--primary-blue)] hover:underline flex items-center gap-1">
+            View feedback matrix →
           </Link>
         </div>
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="bg-[var(--primary-blue)] text-white/90 font-bold uppercase tracking-wider">
-              <th className="px-5 py-3">Ticket ID &amp; Requester</th>
-              <th className="px-5 py-3">Department</th>
-              <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3">Priority</th>
-              <th className="px-5 py-3">Assigned To</th>
-              <th className="px-5 py-3">Complaint Description</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border)]">
-            {data?.recent && data.recent.length > 0 ? (
-              data.recent.map((t) => (
-                <tr
-                  key={t._id}
-                  onClick={() => navigate(`/admin/tickets/${t._id}`)}
-                  className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
-                >
-                  <td className="px-5 py-3.5">
-                    <div className="font-bold text-[var(--ink)]">
-                      {t.requester?.name || 'Valued User'}
-                    </div>
-                    <Link
-                      to={`/admin/tickets/${t._id}`}
-                      className="font-mono text-xs font-bold text-[var(--primary-blue)] hover:underline block mt-0.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {t.ticketCode}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3.5 text-[var(--ink-muted)] font-medium">{getName(t.department)}</td>
-                  <td className="px-5 py-3.5">
-                    <StatusBadge status={t.status} />
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <PriorityBadge priority={t.priority} />
-                  </td>
-                  <td className="px-5 py-3.5 text-[var(--ink-muted)] font-medium">
-                    {getName(t.assignedTo, 'Unassigned')}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="font-semibold text-[var(--ink)]">{t.complaintType}</div>
-                    <div className="text-[11px] text-[var(--ink-muted)] truncate max-w-xs">{t.description}</div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-[var(--primary-blue)] text-white/90 font-bold uppercase tracking-wider">
+                <th className="px-5 py-3">Ticket ID &amp; Requester</th>
+                <th className="px-5 py-3">Department</th>
+                <th className="px-5 py-3">Handled By</th>
+                <th className="px-5 py-3 text-center">Score</th>
+                <th className="px-5 py-3">Customer Review / Comment</th>
+                <th className="px-5 py-3 text-right">Submitted At</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {data?.recentFeedbacks && data.recentFeedbacks.length > 0 ? (
+                data.recentFeedbacks.map((t) => (
+                  <tr
+                    key={t._id}
+                    onClick={() => navigate(`/admin/tickets/${t._id}`)}
+                    className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
+                  >
+                    <td className="px-5 py-3.5">
+                      <div className="font-bold text-[var(--ink)]">
+                        {t.requester?.name || 'Valued User'}
+                      </div>
+                      <Link
+                        to={`/admin/tickets/${t._id}`}
+                        className="font-mono text-xs font-bold text-[var(--primary-blue)] hover:underline block mt-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {t.ticketCode}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3.5 text-[var(--ink-muted)] font-medium">
+                      {getName(t.department)}
+                    </td>
+                    <td className="px-5 py-3.5 text-[var(--ink-muted)] font-medium">
+                      {getName(t.assignedTo, 'Unassigned')}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 border border-amber-200">
+                        {t.feedback?.rating} <Star size={11} className="fill-amber-400 text-amber-500" />
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 max-w-sm">
+                      {t.feedback?.comment ? (
+                        <p className="text-xs text-slate-700 italic truncate">
+                          "{t.feedback.comment}"
+                        </p>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 italic">No comment provided</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-right text-slate-500 text-[11px] whitespace-nowrap">
+                      {t.feedback?.submittedAt
+                        ? new Date(t.feedback.submittedAt).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })
+                        : '—'}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-5 py-6 text-center text-xs text-[var(--ink-muted)]">
+                    No recent feedback reviews recorded yet.
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="px-5 py-6 text-center text-xs text-[var(--ink-muted)]">
-                  No recent tickets found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <CreateTaskModal

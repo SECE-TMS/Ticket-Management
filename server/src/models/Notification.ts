@@ -9,6 +9,8 @@ export const TYPES = [
   'ticket_closed',
   'ticket_reopened',
   'comment_added',
+  'feedback_received',
+  'task_created',
   'task_assigned',
   'task_updated',
   'task_completed',

@@ -216,10 +216,12 @@ export interface Activity {
 export interface NotificationItem {
   _id: string
   recipient: string
-  ticket?: string | Ticket
+  ticket?: Ticket | { _id: string; ticketCode: string; status: string; title?: string } | null
+  task?: Task | { _id: string; taskCode: string; title: string; status: string; priority: string } | null
   type: string
   message: string
   isRead: boolean
+  channel?: 'in_app' | 'email'
   createdAt: string
 }
 
@@ -283,6 +285,7 @@ export interface AdminDashboard {
   deptPerformance: DepartmentPerformance[]
   feedbackMonthlyTrend: FeedbackMonthlyTrend[]
   recent: Ticket[]
+  recentFeedbacks?: Ticket[]
 }
 
 export interface ManagerDashboard {
@@ -291,10 +294,19 @@ export interface ManagerDashboard {
     overdue: number
     unassigned: number
     employees: number
+    avgRating?: number
+    totalFeedback?: number
+    satisfactionRate?: number
   }
   byStatus: Record<string, number>
   workload: Array<{ employeeId: string; name: string; openCount: number }>
   recent: Ticket[]
+  feedbacks?: {
+    avgRating: number
+    totalFeedback: number
+    satisfactionRate: number
+    recent: Ticket[]
+  }
 }
 
 export interface EmployeeDashboard {
@@ -302,9 +314,18 @@ export interface EmployeeDashboard {
     open: number
     overdue: number
     resolved: number
+    avgRating?: number
+    totalFeedback?: number
+    satisfactionRate?: number
   }
   byStatus: Record<string, number>
   recent: Ticket[]
+  feedbacks?: {
+    avgRating: number
+    totalFeedback: number
+    satisfactionRate: number
+    recent: Ticket[]
+  }
 }
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'

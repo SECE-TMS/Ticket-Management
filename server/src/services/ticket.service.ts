@@ -4,6 +4,7 @@ import Ticket, { OPEN_STATUSES, type ITicket, type ITicketDocument, type TicketS
 import Department from '../models/Department';
 import User, { type IUserDocument } from '../models/User';
 import ActivityLog from '../models/ActivityLog';
+import Notification from '../models/Notification';
 import ApiError from '../utils/apiError';
 import generateTicketCode from '../utils/generateTicketCode';
 import { uploadBuffer, type UploadableFile } from '../utils/upload';
@@ -1406,8 +1407,19 @@ export const submitFeedback = async (
       toStatus: ticket.status,
       message: `Customer submitted ${rating}-star rating: ${comment?.trim() || 'No comment'}`,
     });
+
+    // Notify assigned staff
+    if (ticket.assignedTo) {
+      await Notification.create({
+        recipient: ticket.assignedTo,
+        ticket: ticket._id,
+        type: 'feedback_received',
+        message: `⭐ Received ${rating}★ feedback for ticket ${ticket.ticketCode}${comment ? `: "${comment.slice(0, 60)}..."` : ''}`,
+        channel: 'in_app',
+      });
+    }
   } catch (logErr) {
-    console.error('Failed to log feedback activity:', logErr);
+    console.error('Failed to log feedback activity/notification:', logErr);
   }
 
   return populateTicket(Ticket.findById(ticket._id));
@@ -1445,8 +1457,18 @@ export const submitFeedbackByStaff = async (
       toStatus: ticket.status,
       message: `${actor ? actor.name : 'Staff'} recorded ${rating}-star feedback: ${comment?.trim() || 'No comment'}`,
     });
+
+    if (ticket.assignedTo && (!actor || String(ticket.assignedTo) !== String(actor._id))) {
+      await Notification.create({
+        recipient: ticket.assignedTo,
+        ticket: ticket._id,
+        type: 'feedback_received',
+        message: `⭐ Recorded ${rating}★ feedback for ticket ${ticket.ticketCode}${comment ? `: "${comment.slice(0, 60)}..."` : ''}`,
+        channel: 'in_app',
+      });
+    }
   } catch (logErr) {
-    console.error('Failed to log staff feedback activity:', logErr);
+    console.error('Failed to log staff feedback activity/notification:', logErr);
   }
 
   return populateTicket(Ticket.findById(ticket._id));
