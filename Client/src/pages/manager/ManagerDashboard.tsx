@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertTriangle, Ticket, UserRound, Users } from 'lucide-react'
+import { AlertTriangle, Plus, Ticket, UserRound, Users } from 'lucide-react'
 import { dashboardService } from '../../services/dashboardService'
 import { KpiCard, PageHeader } from '../../components/common/KpiCard'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/Badge'
 import { Button } from '../../components/common/Button'
+import { CreateTaskModal } from '../../components/tasks/CreateTaskModal'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage } from '../../lib/utils'
-import type { ManagerDashboard } from '../../types'
+import type { ManagerDashboard as IManagerDashboard } from '../../types'
 import { getName } from '../../types'
 
 export function ManagerDashboard() {
   const toast = useToast()
   const navigate = useNavigate()
-  const [data, setData] = useState<ManagerDashboard | null>(null)
+  const [data, setData] = useState<IManagerDashboard | null>(null)
   const [loading, setLoading] = useState(true)
+  const [createTaskOpen, setCreateTaskOpen] = useState(false)
 
   useEffect(() => {
     void (async () => {
@@ -40,12 +42,19 @@ export function ManagerDashboard() {
         title="Manager Dashboard"
         description="Department workload, unassigned requests, and team capacity."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setCreateTaskOpen(true)}
+              className="gap-1.5 font-bold shadow-xs cursor-pointer"
+            >
+              <Plus size={14} /> Assign Specific Task
+            </Button>
             <Link to="/manager/tickets">
               <Button size="sm" variant="primary">View Tickets</Button>
             </Link>
-            <Link to="/manager/employees">
-              <Button size="sm" variant="outline">Employees</Button>
+            <Link to="/manager/tasks">
+              <Button size="sm" variant="outline">View Tasks</Button>
             </Link>
           </div>
         }
@@ -132,7 +141,7 @@ export function ManagerDashboard() {
           <thead>
             <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
               <th className="px-5 py-3">Requester &amp; Ticket ID</th>
-              <th className="px-5 py-3">Complaint</th>
+              <th className="px-5 py-3">Tickets</th>
               <th className="px-5 py-3">Status</th>
               <th className="px-5 py-3">Assignee</th>
             </tr>
@@ -170,6 +179,12 @@ export function ManagerDashboard() {
           </tbody>
         </table>
       </div>
+
+      <CreateTaskModal
+        open={createTaskOpen}
+        onClose={() => setCreateTaskOpen(false)}
+        onSuccess={() => toast.success('Task created, assigned, and notification dispatched!')}
+      />
     </div>
   )
 }

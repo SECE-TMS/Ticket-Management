@@ -4,13 +4,12 @@ import { AlertTriangle, CheckCircle2, Ticket } from 'lucide-react'
 import { dashboardService } from '../../services/dashboardService'
 import { KpiCard, PageHeader } from '../../components/common/KpiCard'
 import { PageLoader } from '../../components/common/LoadingSpinner'
-import { StatusBadge } from '../../components/common/Badge'
+import { PriorityBadge, StatusBadge } from '../../components/common/Badge'
 import { Button } from '../../components/common/Button'
 import { useToast } from '../../context/ToastContext'
 import { useAppSelector } from '../../store/hooks'
 import { getErrorMessage } from '../../lib/utils'
 import type { EmployeeDashboard } from '../../types'
-import { getName } from '../../types'
 
 export function EmployeeDashboard() {
   const toast = useToast()
@@ -92,36 +91,58 @@ export function EmployeeDashboard() {
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
-                <th className="px-5 py-3">Code</th>
-                <th className="px-5 py-3">Department</th>
-                <th className="px-5 py-3">Status</th>
+                <th className="px-4 py-3 first:rounded-tl-lg">Requester &amp; Ticket ID</th>
+                <th className="px-4 py-3">Category</th>
+                <th className="px-4 py-3">Ticket Title</th>
+                <th className="px-4 py-3">Priority</th>
+                <th className="px-4 py-3 last:rounded-tr-lg">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-            {data.recent.map((t) => (
-              <tr
-                key={t._id}
-                onClick={() => navigate(`/employee/tickets/${t._id}`)}
-                className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
-              >
-                <td className="px-5 py-3.5">
-                  <Link
-                    to={`/employee/tickets/${t._id}`}
-                    className="font-bold text-[var(--primary-blue)] hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+              {data.recent.map((t) => (
+                <tr
+                  key={t._id}
+                  onClick={() => navigate(`/employee/tickets/${t._id}`)}
+                  className="cursor-pointer transition-colors hover:bg-[var(--primary-blue-light)]"
+                >
+                  <td className="px-4 py-3.5">
+                    <p className="font-bold text-[var(--ink)]">
+                      {t.requester?.name || 'Valued User'}
+                      {t.requester?.rollNumber && (
+                        <span className="ml-1.5 inline-block rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
+                          {t.requester.rollNumber}
+                        </span>
+                      )}
+                    </p>
+                    <Link
+                      to={`/employee/tickets/${t._id}`}
+                      className="font-mono text-xs font-bold text-[var(--primary-blue)] hover:underline block mt-0.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {t.ticketCode}
                     </Link>
                   </td>
-                  <td className="px-5 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5 font-medium text-[var(--ink)]">
+                    {t.complaintType}
+                  </td>
+                  <td className="px-4 py-3.5 text-[var(--ink)] max-w-[180px] truncate">
+                    {t.title ? (
+                      <span className="font-semibold">{t.title}</span>
+                    ) : (
+                      <span className="text-[var(--ink-muted)] italic">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <PriorityBadge priority={t.priority} />
+                  </td>
+                  <td className="px-4 py-3.5">
                     <StatusBadge status={t.status} />
                   </td>
                 </tr>
               ))}
               {!data.recent.length && (
                 <tr>
-                  <td colSpan={3} className="py-8 text-center text-sm text-[var(--ink-muted)]">
+                  <td colSpan={5} className="py-8 text-center text-sm text-[var(--ink-muted)]">
                     No recent assignments.
                   </td>
                 </tr>

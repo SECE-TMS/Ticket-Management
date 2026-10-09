@@ -315,7 +315,7 @@ export function TicketReceiptModal({
                 <p className="info-val font-bold text-slate-900 mt-0.5 truncate">{departmentName}</p>
               </div>
               <div className="info-item rounded-lg bg-slate-50 p-2.5 border border-slate-200">
-                <span className="info-label text-[9px] font-bold text-slate-400 uppercase">Complaint Type</span>
+                <span className="info-label text-[9px] font-bold text-slate-400 uppercase">Ticket Type</span>
                 <p className="info-val font-bold text-slate-900 mt-0.5 truncate">{complaintType}</p>
               </div>
               {title && (

@@ -93,6 +93,16 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
     void load()
   }, [load])
 
+  useEffect(() => {
+    if (ticket?.feedback) {
+      setFeedbackRating(ticket.feedback.rating || 0)
+      setFeedbackComment(ticket.feedback.comment || '')
+    } else {
+      setFeedbackRating(0)
+      setFeedbackComment('')
+    }
+  }, [ticket?.feedback])
+
   if (loading) return <PageLoader />
   if (!ticket) {
     return (
@@ -135,16 +145,6 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const canApproveClose =
     (role === 'admin' || role === 'manager') && ticket.status === 'pending_approval'
   const canManageFeedback = role === 'admin' || role === 'superadmin' || role === 'manager'
-
-  useEffect(() => {
-    if (ticket?.feedback) {
-      setFeedbackRating(ticket.feedback.rating || 0)
-      setFeedbackComment(ticket.feedback.comment || '')
-    } else {
-      setFeedbackRating(0)
-      setFeedbackComment('')
-    }
-  }, [ticket?.feedback])
 
   const handleSaveStaffFeedback = async () => {
     if (!ticket) return
@@ -450,8 +450,12 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                   value={`${ticket.requester.userType.toUpperCase()}${ticket.requester.rollNumber ? ` (${ticket.requester.rollNumber})` : ''}`}
                 />
               )}
-              <Info label="Department" value={getName(ticket.department)} />
-              <Info label="Assignee" value={getName(ticket.assignedTo, 'Unassigned')} />
+              {role !== 'employee' && (
+                <Info label="Department" value={getName(ticket.department)} />
+              )}
+              {role !== 'employee' && (
+                <Info label="Assignee" value={getName(ticket.assignedTo, 'Unassigned')} />
+              )}
               <Info
                 label="Created"
                 value={format(new Date(ticket.createdAt), 'dd MMM yyyy, HH:mm')}

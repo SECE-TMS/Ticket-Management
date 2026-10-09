@@ -8,6 +8,7 @@ import notificationRoutes from './notification.routes';
 import otpRoutes from './otp.routes';
 import settingRoutes from './setting.routes';
 import superadminRoutes from './superadmin.routes';
+import taskRoutes from './task.routes';
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.use('/auth', authRoutes);
 router.use('/departments', departmentRoutes);
 router.use('/users', userRoutes);
 router.use('/tickets', ticketRoutes);
+router.use('/tasks', taskRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/otp', otpRoutes);

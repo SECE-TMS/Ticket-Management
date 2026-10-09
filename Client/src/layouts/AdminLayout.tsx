@@ -1,10 +1,11 @@
 import { Outlet } from 'react-router-dom'
-import { Building2, LayoutDashboard, MessageSquare, QrCode, Settings, Ticket, Users } from 'lucide-react'
+import { Building2, CheckSquare, LayoutDashboard, MessageSquare, QrCode, Settings, Ticket, Users } from 'lucide-react'
 import { Sidebar, type SidebarItem } from '../components/common/Sidebar'
 
 const adminItems: SidebarItem[] = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/tickets', label: 'Tickets', icon: Ticket },
+  { to: '/admin/tasks', label: 'Tasks', icon: CheckSquare },
   { to: '/admin/departments', label: 'Departments', icon: Building2 },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/feedback', label: 'Feedback', icon: MessageSquare },

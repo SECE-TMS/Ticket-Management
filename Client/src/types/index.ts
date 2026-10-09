@@ -307,6 +307,62 @@ export interface EmployeeDashboard {
   recent: Ticket[]
 }
 
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled'
+
+export interface TaskChecklistItem {
+  _id?: string
+  title: string
+  completed: boolean
+  completedAt?: string | null
+  completedBy?: UserRef | User | string | null
+}
+
+export interface TaskActivity {
+  _id?: string
+  actor?: UserRef | null
+  action: string
+  message?: string
+  createdAt: string
+}
+
+export interface Task {
+  _id: string
+  taskCode: string
+  title: string
+  description: string
+  department: Department | string
+  assignedTo: UserRef | User
+  assignedBy: UserRef | User
+  priority: TaskPriority
+  status: TaskStatus
+  dueDate?: string | null
+  relatedTicket?: Ticket | string | null
+  checklist: TaskChecklistItem[]
+  attachments?: Attachment[]
+  completionRemarks?: string
+  completionProof?: Attachment | null
+  completedAt?: string | null
+  completedBy?: UserRef | string | null
+  cancelledReason?: string
+  notificationPreferences?: {
+    inApp: boolean
+    email: boolean
+    sms: boolean
+  }
+  activities: TaskActivity[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TaskStats {
+  total: number
+  pending: number
+  in_progress: number
+  completed: number
+  cancelled: number
+}
+
 export function getId(entity: { _id?: string; id?: string } | string | null | undefined): string {
   if (!entity) return ''
   if (typeof entity === 'string') return entity
@@ -321,3 +377,4 @@ export function getName(
   if (typeof entity === 'string') return fallback
   return entity.name || fallback
 }
+

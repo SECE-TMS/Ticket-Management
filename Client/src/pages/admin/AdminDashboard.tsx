@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Download,
+  Plus,
   RefreshCw,
 } from 'lucide-react'
 import {
@@ -25,6 +26,7 @@ import { KpiCard, PageHeader } from '../../components/common/KpiCard'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { PriorityBadge, StatusBadge } from '../../components/common/Badge'
 import { Button } from '../../components/common/Button'
+import { CreateTaskModal } from '../../components/tasks/CreateTaskModal'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage } from '../../lib/utils'
 import type { AdminDashboard as IAdminDashboard, Department } from '../../types'
@@ -53,6 +55,7 @@ export function AdminDashboard() {
   const [data, setData] = useState<IAdminDashboard | null>(null)
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
+  const [createTaskOpen, setCreateTaskOpen] = useState(false)
 
   // Filters
   const [timeRange, setTimeRange] = useState('all')
@@ -168,6 +171,14 @@ export function AdminDashboard() {
         description="Facility-wide ticket health, department performance, and month-wise feedback insights."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setCreateTaskOpen(true)}
+              className="font-bold cursor-pointer gap-1.5 shadow-xs"
+              id="admin-dash-assign-task-btn"
+            >
+              <Plus size={15} /> Assign Specific Task
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExportCSV} className="font-bold cursor-pointer">
               <Download size={15} /> Export Report (CSV)
             </Button>
@@ -767,6 +778,12 @@ export function AdminDashboard() {
           </tbody>
         </table>
       </div>
+
+      <CreateTaskModal
+        open={createTaskOpen}
+        onClose={() => setCreateTaskOpen(false)}
+        onSuccess={() => toast.success('Task created, assigned, and notification dispatched!')}
+      />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { Inbox } from 'lucide-react'
+import { useAppSelector } from '../../store/hooks'
 import type { Ticket } from '../../types'
 import { getName } from '../../types'
 import { PriorityBadge, StatusBadge } from '../common/Badge'
@@ -12,6 +13,10 @@ interface TicketTableProps {
 
 export function TicketTable({ tickets, detailBase }: TicketTableProps) {
   const navigate = useNavigate()
+  const user = useAppSelector((s) => s.auth.user)
+  const role = user?.role
+  const showDepartment = role === 'admin' || role === 'superadmin'
+  const showAssignee = role !== 'employee'
 
   if (!tickets.length) {
     return (
@@ -35,12 +40,12 @@ export function TicketTable({ tickets, detailBase }: TicketTableProps) {
         <thead>
           <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
             <th className="px-4 py-3 first:rounded-tl-xl">Requester &amp; Ticket ID</th>
-            <th className="px-4 py-3">Department</th>
-            <th className="px-4 py-3">Sub category</th>
+            {showDepartment && <th className="px-4 py-3">Department</th>}
+            <th className="px-4 py-3">Category</th>
             <th className="px-4 py-3">Ticket Title</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3">Priority</th>
-            <th className="px-4 py-3">Assignee</th>
+            {showAssignee && <th className="px-4 py-3">Assignee</th>}
             <th className="px-4 py-3 last:rounded-tr-xl">Created</th>
           </tr>
         </thead>
@@ -68,7 +73,9 @@ export function TicketTable({ tickets, detailBase }: TicketTableProps) {
                   {t.ticketCode}
                 </Link>
               </td>
-              <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
+              {showDepartment && (
+                <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(t.department)}</td>
+              )}
               <td className="px-4 py-3.5 font-medium text-[var(--ink)]">
                 {t.complaintType}
               </td>
@@ -85,9 +92,11 @@ export function TicketTable({ tickets, detailBase }: TicketTableProps) {
               <td className="px-4 py-3.5">
                 <PriorityBadge priority={t.priority} />
               </td>
-              <td className="px-4 py-3.5 text-[var(--ink-muted)]">
-                {getName(t.assignedTo, 'Unassigned')}
-              </td>
+              {showAssignee && (
+                <td className="px-4 py-3.5 text-[var(--ink-muted)]">
+                  {getName(t.assignedTo, 'Unassigned')}
+                </td>
+              )}
               <td className="px-4 py-3.5 whitespace-nowrap text-xs text-[var(--ink-muted)]">
                 {format(new Date(t.createdAt), 'dd MMM yyyy')}
               </td>
