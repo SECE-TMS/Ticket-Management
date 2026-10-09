@@ -8,6 +8,7 @@ export const ACTIONS = [
   'reopened',
   'closed',
   'feedback_submitted',
+  'updated',
 ] as const;
 
 export type ActivityAction = (typeof ACTIONS)[number];

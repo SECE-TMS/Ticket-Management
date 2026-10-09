@@ -99,7 +99,7 @@ export function TicketFilters({
           onChange={(e) => onStatusChange(e.target.value as TicketStatus | '')}
           className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none cursor-pointer transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
         >
-          <option value="">All Statuses</option>
+          <option value="">All Status</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
               {formatLabel(s)}

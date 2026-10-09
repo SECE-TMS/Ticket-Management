@@ -1,6 +1,6 @@
 import mongoose, { type Query } from 'mongoose';
 // ExcelJS is lazy-loaded inside exportExcel() to avoid slow startup
-import Ticket, { OPEN_STATUSES, type ITicket, type ITicketDocument, type TicketStatus } from '../models/Ticket';
+import Ticket, { OPEN_STATUSES, type ITicket, type ITicketDocument, type TicketStatus, type TicketPriority } from '../models/Ticket';
 import Department from '../models/Department';
 import User, { type IUserDocument } from '../models/User';
 import ActivityLog from '../models/ActivityLog';
@@ -546,6 +546,113 @@ export const getTicketById = async (id: string, actor: IUserDocument) => {
     .lean();
 
   return { ticket, activities };
+};
+
+export interface UpdateTicketDetailsDto {
+  department?: string;
+  complaintType?: string;
+  title?: string;
+  description?: string;
+  priority?: TicketPriority;
+  requester?: {
+    name?: string;
+    mobile?: string;
+    email?: string;
+    userType?: 'student' | 'staff' | 'guest';
+    rollNumber?: string;
+  };
+}
+
+export const updateTicketDetails = async (
+  id: string,
+  payload: UpdateTicketDetailsDto,
+  actor: IUserDocument
+) => {
+  const ticket = await Ticket.findById(id);
+  if (!ticket) throw ApiError.notFound('Ticket not found');
+
+  const changes: string[] = [];
+
+  if (payload.department && String(payload.department) !== String(ticket.department)) {
+    const newDept = await Department.findById(payload.department);
+    if (!newDept) throw ApiError.badRequest('Selected department does not exist');
+    ticket.department = newDept._id;
+    if (ticket.assignedTo) {
+      const assignedEmp = await User.findById(ticket.assignedTo);
+      if (assignedEmp && String(assignedEmp.department) !== String(newDept._id)) {
+        ticket.assignedTo = null;
+        ticket.assignedBy = null;
+        if (ticket.status === 'assigned' || ticket.status === 'accepted' || ticket.status === 'in_progress') {
+          ticket.status = 'new';
+        }
+        changes.push(`Department changed to ${newDept.name} (assigned technician removed)`);
+      } else {
+        changes.push(`Department changed to ${newDept.name}`);
+      }
+    } else {
+      changes.push(`Department changed to ${newDept.name}`);
+    }
+  }
+
+  if (payload.complaintType !== undefined && payload.complaintType !== ticket.complaintType) {
+    changes.push(`Complaint Type changed to "${payload.complaintType}"`);
+    ticket.complaintType = payload.complaintType;
+  }
+
+  if (payload.title !== undefined && payload.title !== ticket.title) {
+    changes.push('Title updated');
+    ticket.title = payload.title;
+  }
+
+  if (payload.description !== undefined && payload.description !== ticket.description) {
+    changes.push('Description updated');
+    ticket.description = payload.description;
+  }
+
+  if (payload.priority !== undefined && payload.priority !== ticket.priority) {
+    changes.push(`Priority changed to ${payload.priority}`);
+    ticket.priority = payload.priority;
+  }
+
+  if (payload.requester) {
+    let reqChanged = false;
+    if (payload.requester.name !== undefined && payload.requester.name !== ticket.requester.name) {
+      ticket.requester.name = payload.requester.name;
+      reqChanged = true;
+    }
+    if (payload.requester.mobile !== undefined && payload.requester.mobile !== ticket.requester.mobile) {
+      ticket.requester.mobile = payload.requester.mobile;
+      reqChanged = true;
+    }
+    if (payload.requester.email !== undefined && payload.requester.email !== ticket.requester.email) {
+      ticket.requester.email = payload.requester.email;
+      reqChanged = true;
+    }
+    if (payload.requester.userType !== undefined && payload.requester.userType !== ticket.requester.userType) {
+      ticket.requester.userType = payload.requester.userType;
+      reqChanged = true;
+    }
+    if (payload.requester.rollNumber !== undefined && payload.requester.rollNumber !== ticket.requester.rollNumber) {
+      ticket.requester.rollNumber = payload.requester.rollNumber;
+      reqChanged = true;
+    }
+    if (reqChanged) {
+      changes.push('Requester details updated');
+    }
+  }
+
+  await ticket.save();
+
+  if (changes.length > 0) {
+    await logActivity({
+      ticket,
+      actor,
+      action: 'updated',
+      message: `Admin updated ticket details: ${changes.join(', ')}`,
+    });
+  }
+
+  return populateTicket(Ticket.findById(ticket._id));
 };
 
 export const assignTicket = async (
@@ -1301,6 +1408,45 @@ export const submitFeedback = async (
     });
   } catch (logErr) {
     console.error('Failed to log feedback activity:', logErr);
+  }
+
+  return populateTicket(Ticket.findById(ticket._id));
+};
+
+export const submitFeedbackByStaff = async (
+  ticketId: string,
+  payload: { rating: number; comment?: string; tags?: string[] },
+  actor?: IUserDocument
+) => {
+  const { rating, comment, tags } = payload;
+  if (!rating || rating < 1 || rating > 5) {
+    throw ApiError.badRequest('Rating must be between 1 and 5 stars.');
+  }
+
+  const ticket = await Ticket.findById(ticketId);
+  if (!ticket) throw ApiError.notFound('Ticket not found');
+  if (actor) assertTicketAccess(ticket, actor);
+
+  ticket.feedback = {
+    rating,
+    comment: comment?.trim() || '',
+    tags: tags || [],
+    submittedAt: new Date(),
+  };
+
+  await ticket.save();
+
+  try {
+    await ActivityLog.create({
+      ticket: ticket._id,
+      actor: actor?._id || null,
+      action: 'feedback_submitted',
+      fromStatus: ticket.status,
+      toStatus: ticket.status,
+      message: `${actor ? actor.name : 'Staff'} recorded ${rating}-star feedback: ${comment?.trim() || 'No comment'}`,
+    });
+  } catch (logErr) {
+    console.error('Failed to log staff feedback activity:', logErr);
   }
 
   return populateTicket(Ticket.findById(ticket._id));

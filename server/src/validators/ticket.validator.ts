@@ -16,8 +16,25 @@ export const createTicketSchema = z.object({
 });
 
 export const trackTicketSchema = z.object({
-  ticketCode: z.string().min(5),
+  ticketCode: z.string().min(1),
   mobile: z.string().min(7).max(20),
+});
+
+export const updateTicketSchema = z.object({
+  department: objectId.optional(),
+  complaintType: z.string().min(1).max(100).optional(),
+  title: z.string().max(100).optional().or(z.literal('')),
+  description: z.string().min(5).max(5000).optional(),
+  priority: z.enum(PRIORITIES).optional(),
+  requester: z
+    .object({
+      name: z.string().min(2).max(100).optional(),
+      mobile: z.string().min(7).max(20).optional(),
+      email: z.string().email().optional().or(z.literal('')),
+      userType: z.enum(['student', 'staff', 'guest']).optional(),
+      rollNumber: z.string().max(50).optional().or(z.literal('')),
+    })
+    .optional(),
 });
 
 export const assignTicketSchema = z.object({

@@ -19,6 +19,21 @@ export interface TicketListParams {
   to?: string
 }
 
+export interface UpdateTicketPayload {
+  department?: string
+  complaintType?: string
+  title?: string
+  description?: string
+  priority?: TicketPriority
+  requester?: {
+    name?: string
+    mobile?: string
+    email?: string
+    userType?: 'student' | 'staff' | 'guest'
+    rollNumber?: string
+  }
+}
+
 export const ticketService = {
   async create(formData: FormData) {
     const { data } = await api.post('/tickets', formData)
@@ -40,6 +55,11 @@ export const ticketService = {
   async getById(id: string) {
     const { data } = await api.get(`/tickets/${id}`)
     return data.data as { ticket: Ticket; activities: Activity[] }
+  },
+
+  async update(id: string, payload: UpdateTicketPayload) {
+    const { data } = await api.patch(`/tickets/${id}`, payload)
+    return data.data as Ticket
   },
 
   async assign(id: string, payload: { assignedTo: string; priority?: TicketPriority }) {
@@ -85,6 +105,14 @@ export const ticketService = {
     tags?: string[]
   }) {
     const { data } = await api.post('/tickets/feedback', payload)
+    return data.data as Ticket
+  },
+
+  async submitStaffFeedback(
+    id: string,
+    payload: { rating: number; comment?: string; tags?: string[] }
+  ) {
+    const { data } = await api.post(`/tickets/${id}/feedback`, payload)
     return data.data as Ticket
   },
 

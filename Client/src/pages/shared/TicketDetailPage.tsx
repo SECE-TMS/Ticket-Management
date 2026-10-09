@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Volume2, X } from 'lucide-react'
+import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Pencil, Star, ThumbsUp, UserCheck, UserPlus, Volume2, X } from 'lucide-react'
 import { ticketService } from '../../services/ticketService'
 import { userService } from '../../services/userService'
 import { Button } from '../../components/common/Button'
@@ -11,6 +11,7 @@ import { PageLoader } from '../../components/common/LoadingSpinner'
 import { TicketTimeline } from '../../components/tickets/TicketTimeline'
 import { AssignModal } from '../../components/tickets/AssignModal'
 import { ResolveModal } from '../../components/tickets/ResolveModal'
+import { EditTicketModal } from '../../components/tickets/EditTicketModal'
 import { useToast } from '../../context/ToastContext'
 import { useAppSelector } from '../../store/hooks'
 import { getErrorMessage, getAttachmentUrl } from '../../lib/utils'
@@ -56,7 +57,15 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const [reviewRemarks, setReviewRemarks] = useState('')
   const [reopenOpen, setReopenOpen] = useState(false)
   const [reopenReason, setReopenReason] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
   const [activeImageModal, setActiveImageModal] = useState<string | null>(null)
+
+  // Staff Feedback state (Admin & Manager)
+  const [feedbackRating, setFeedbackRating] = useState<number>(0)
+  const [feedbackHoverRating, setFeedbackHoverRating] = useState<number>(0)
+  const [feedbackComment, setFeedbackComment] = useState('')
+  const [feedbackEditing, setFeedbackEditing] = useState(false)
+  const [feedbackLoading, setFeedbackLoading] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -99,9 +108,18 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
     )
   }
 
+  const isAdmin = role === 'admin' || role === 'superadmin'
+  const isTicketAssigned = Boolean(ticket.assignedTo) || ticket.status === 'assigned'
+
   const canAssign =
     (role === 'admin' || role === 'manager') &&
-    ['new', 'reopened', 'assigned'].includes(ticket.status)
+    !isTicketAssigned &&
+    ['new', 'reopened'].includes(ticket.status)
+
+  const canReassign =
+    (role === 'admin' || role === 'manager') &&
+    isTicketAssigned &&
+    ['assigned', 'accepted', 'in_progress', 'reopened'].includes(ticket.status)
   const canClose =
     (role === 'admin' || role === 'manager') && ticket.status !== 'closed' && ticket.status !== 'pending_approval'
   const canReopen =
@@ -116,6 +134,39 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   // pending_approval → only manager/admin can approve and close
   const canApproveClose =
     (role === 'admin' || role === 'manager') && ticket.status === 'pending_approval'
+  const canManageFeedback = role === 'admin' || role === 'superadmin' || role === 'manager'
+
+  useEffect(() => {
+    if (ticket?.feedback) {
+      setFeedbackRating(ticket.feedback.rating || 0)
+      setFeedbackComment(ticket.feedback.comment || '')
+    } else {
+      setFeedbackRating(0)
+      setFeedbackComment('')
+    }
+  }, [ticket?.feedback])
+
+  const handleSaveStaffFeedback = async () => {
+    if (!ticket) return
+    if (feedbackRating < 1) {
+      toast.error('Please select a rating from 1 to 5 stars.')
+      return
+    }
+    setFeedbackLoading(true)
+    try {
+      await ticketService.submitStaffFeedback(ticket._id, {
+        rating: feedbackRating,
+        comment: feedbackComment.trim(),
+      })
+      toast.success('Feedback saved successfully!')
+      setFeedbackEditing(false)
+      await load()
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to save feedback'))
+    } finally {
+      setFeedbackLoading(false)
+    }
+  }
 
   const run = async (fn: () => Promise<void>, success: string) => {
     setActionLoading(true)
@@ -155,15 +206,28 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               {ticket.title ? `${ticket.ticketCode} • ${ticket.complaintType}` : ticket.complaintType}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
+            {isAdmin && (
+              <Button
+                type="button"
+                id="header-edit-ticket-btn"
+                variant="outline"
+                size="sm"
+                onClick={() => setEditOpen(true)}
+                className="bg-white/15 hover:bg-white/25 border-white/30 text-white font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer backdrop-blur-xs"
+              >
+                <Pencil size={13} />
+                Edit Ticket
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Action buttons */}
-      {(canAssign || canClose || canReopen || canAccept || canStart || canResolve || canApproveClose) && (
+      {(canAssign || canReassign || canClose || canReopen || canAccept || canStart || canResolve || canApproveClose || isAdmin) && (
         <div className="mb-5 flex flex-wrap gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
           <p className="w-full text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
             Actions
@@ -253,8 +317,27 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           )}
 
           {ticket.status !== 'pending_approval' && canAssign && (
-            <Button type="button" id="action-assign" onClick={() => setAssignOpen(true)}>
+            <Button
+              type="button"
+              id="action-assign"
+              onClick={() => setAssignOpen(true)}
+              className="bg-[var(--primary-blue)] hover:bg-blue-700 text-white font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <UserPlus size={14} />
               Assign Ticket
+            </Button>
+          )}
+
+          {ticket.status !== 'pending_approval' && canReassign && (
+            <Button
+              type="button"
+              id="action-reassign"
+              variant="outline"
+              onClick={() => setAssignOpen(true)}
+              className="border-indigo-300 bg-indigo-50/80 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-400 font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <UserCheck size={14} />
+              Reassign Ticket
             </Button>
           )}
           {ticket.status !== 'pending_approval' && canAccept && (
@@ -321,6 +404,18 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               Close Ticket
             </Button>
           )}
+          {/* {isAdmin && (
+            <Button
+              id="action-edit-ticket"
+              type="button"
+              variant="outline"
+              onClick={() => setEditOpen(true)}
+              className="border-blue-300 bg-blue-50/60 text-[var(--primary-blue)] hover:bg-blue-100/80 font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Pencil size={13} />
+              Edit Ticket Details
+            </Button>
+          )} */}
         </div>
       )}
 
@@ -330,7 +425,22 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
         <div className="space-y-4 lg:col-span-3">
           {/* Details */}
           <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
-            <h2 className="text-base font-bold text-[var(--ink)] mb-4">Ticket Details</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-[var(--ink)]">Ticket Details</h2>
+              {isAdmin && (
+                <Button
+                  type="button"
+                  id="card-edit-ticket-btn"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold border-blue-200 text-[var(--primary-blue)] hover:bg-[var(--primary-blue-light)] cursor-pointer"
+                >
+                  <Pencil size={12} />
+                  Edit Details
+                </Button>
+              )}
+            </div>
             <dl className="grid gap-4 text-sm sm:grid-cols-2">
               <Info label="Requester" value={ticket.requester.name} />
               <Info label="Mobile" value={ticket.requester.mobile} />
@@ -520,6 +630,193 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
             )}
           </div>
 
+          {/* Work Done Feedback & Rating (Admin & Manager accessible) */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
+                  <Star size={18} className="text-amber-500 fill-amber-500" />
+                  Work Done Feedback &amp; Rating
+                </h2>
+                <p className="text-xs text-[var(--ink-muted)] mt-0.5">
+                  Quality assessment and satisfaction rating for the executed work.
+                </p>
+              </div>
+
+              {ticket.feedback?.rating && !feedbackEditing && canManageFeedback && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFeedbackRating(ticket.feedback?.rating || 5)
+                    setFeedbackComment(ticket.feedback?.comment || '')
+                    setFeedbackEditing(true)
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-2)] px-3 py-1.5 text-xs font-bold text-[var(--ink)] transition-colors cursor-pointer"
+                >
+                  <Pencil size={13} /> Edit Feedback
+                </button>
+              )}
+            </div>
+
+            {ticket.feedback?.rating && !feedbackEditing ? (
+              <div className="rounded-xl border border-amber-200/80 bg-gradient-to-br from-amber-50/70 to-orange-50/40 p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={22}
+                          className={
+                            star <= (ticket.feedback?.rating || 0)
+                              ? 'text-amber-500 fill-amber-500'
+                              : 'text-slate-300'
+                          }
+                        />
+                      ))}
+                    </div>
+                    <span className="text-lg font-black text-amber-950">
+                      {ticket.feedback.rating} / 5
+                    </span>
+                    <span className="rounded-full bg-amber-200/80 px-2.5 py-0.5 text-xs font-bold text-amber-900 border border-amber-300">
+                      {ticket.feedback.rating === 5
+                        ? '★ Excellent'
+                        : ticket.feedback.rating === 4
+                          ? '★ Good'
+                          : ticket.feedback.rating === 3
+                            ? '★ Average'
+                            : ticket.feedback.rating === 2
+                              ? '★ Poor'
+                              : '★ Very Poor'}
+                    </span>
+                  </div>
+
+                  {ticket.feedback.submittedAt && (
+                    <span className="text-xs text-amber-800/80 font-medium">
+                      Submitted on {format(new Date(ticket.feedback.submittedAt), 'dd MMM yyyy, HH:mm')}
+                    </span>
+                  )}
+                </div>
+
+                {ticket.feedback.comment ? (
+                  <div className="mt-3.5 rounded-lg bg-white/90 border border-amber-200/60 p-3.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-900/70 mb-1">
+                      Feedback Remarks
+                    </p>
+                    <p className="text-sm text-[var(--ink)] italic leading-relaxed">
+                      "{ticket.feedback.comment}"
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-amber-800/70 italic">
+                    No additional written remarks provided.
+                  </p>
+                )}
+              </div>
+            ) : canManageFeedback ? (
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--ink)] mb-2">
+                    Select Satisfaction Rating (1 - 5 Stars) *
+                  </label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const activeVal = feedbackHoverRating || feedbackRating
+                        const isFilled = star <= activeVal
+                        return (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setFeedbackRating(star)}
+                            onMouseEnter={() => setFeedbackHoverRating(star)}
+                            onMouseLeave={() => setFeedbackHoverRating(0)}
+                            className="p-1 text-slate-300 hover:scale-110 transition-transform cursor-pointer focus:outline-none"
+                            title={`${star} Star${star > 1 ? 's' : ''}`}
+                          >
+                            <Star
+                              size={28}
+                              className={
+                                isFilled
+                                  ? 'text-amber-500 fill-amber-500'
+                                  : 'text-slate-300 hover:text-amber-400'
+                              }
+                            />
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {feedbackRating > 0 && (
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900 border border-amber-200">
+                        {feedbackRating === 5
+                          ? '5 Stars - Excellent'
+                          : feedbackRating === 4
+                            ? '4 Stars - Good'
+                            : feedbackRating === 3
+                              ? '3 Stars - Average'
+                              : feedbackRating === 2
+                                ? '2 Stars - Poor'
+                                : '1 Star - Very Poor'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="staff-feedback-comment"
+                    className="block text-xs font-bold uppercase tracking-wider text-[var(--ink)] mb-1.5"
+                  >
+                    Feedback Comments &amp; Review Remarks
+                  </label>
+                  <textarea
+                    id="staff-feedback-comment"
+                    rows={3}
+                    value={feedbackComment}
+                    onChange={(e) => setFeedbackComment(e.target.value)}
+                    placeholder="Enter review comments regarding the work completed, timeliness, or resolution quality..."
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--white)] p-3 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleSaveStaffFeedback}
+                    loading={feedbackLoading}
+                    size="md"
+                    className="gap-1.5"
+                  >
+                    <ThumbsUp size={14} />
+                    {ticket.feedback?.rating ? 'Update Feedback' : 'Submit Feedback'}
+                  </Button>
+
+                  {feedbackEditing && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        setFeedbackRating(ticket.feedback?.rating || 0)
+                        setFeedbackComment(ticket.feedback?.comment || '')
+                        setFeedbackEditing(false)
+                      }}
+                      size="md"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)] p-6 text-center">
+                <Star size={24} className="mx-auto mb-2 text-[var(--ink-muted)] opacity-50" />
+                <p className="text-xs font-semibold text-[var(--ink-muted)]">
+                  No feedback has been recorded for this ticket yet.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Comments */}
           <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
             <h2 className="text-base font-bold text-[var(--ink)] mb-4 flex items-center gap-2">
@@ -615,14 +912,26 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
         open={assignOpen}
         onClose={() => setAssignOpen(false)}
         employees={employees}
+        isReassign={isTicketAssigned}
+        currentAssigneeName={getName(ticket.assignedTo)}
         expectedResolutionAt={ticket.expectedResolutionAt}
         initialPriority={ticket.priority}
         loading={actionLoading}
         onSubmit={async (payload) => {
           await run(async () => {
-            await ticketService.assign(ticket._id, payload)
+            if (isTicketAssigned) {
+              await ticketService.reassign(ticket._id, {
+                assignedTo: payload.assignedTo,
+                message: payload.message,
+              })
+            } else {
+              await ticketService.assign(ticket._id, {
+                assignedTo: payload.assignedTo,
+                priority: payload.priority,
+              })
+            }
             setAssignOpen(false)
-          }, 'Ticket assigned')
+          }, isTicketAssigned ? 'Ticket reassigned successfully' : 'Ticket assigned successfully')
         }}
       />
 
@@ -704,6 +1013,16 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
             />
           </div>
         </div>
+      )}
+
+      {/* Edit Ticket Modal (Admin Only) */}
+      {isAdmin && (
+        <EditTicketModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          ticket={ticket}
+          onSuccess={load}
+        />
       )}
     </div>
   )

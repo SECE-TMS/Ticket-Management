@@ -7,6 +7,7 @@ import validate from '../middlewares/validate.middleware';
 import {
   createTicketSchema,
   trackTicketSchema,
+  updateTicketSchema,
   assignTicketSchema,
   reassignTicketSchema,
   statusUpdateSchema,
@@ -87,6 +88,14 @@ router.get(
 );
 
 router.patch(
+  '/:id',
+  authenticate,
+  requireRole('admin'),
+  validate(updateTicketSchema),
+  ticketController.updateDetails
+);
+
+router.patch(
   '/:id/assign',
   authenticate,
   requireRole('admin', 'manager'),
@@ -146,6 +155,13 @@ router.post(
   requireRole('admin', 'manager', 'employee'),
   validate(commentSchema),
   ticketController.comment
+);
+
+router.post(
+  '/:id/feedback',
+  authenticate,
+  requireRole('admin', 'manager'),
+  ticketController.submitStaffFeedback
 );
 
 export default router;

@@ -40,6 +40,15 @@ export const getById = async (req: AuthRequest, res: Response, next: NextFunctio
   }
 };
 
+export const updateDetails = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await ticketService.updateTicketDetails(req.params.id, req.body, req.user!);
+    return sendSuccess(res, { data, message: 'Ticket updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const assign = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = await ticketService.assignTicket(req.params.id, req.body, req.user!);
@@ -149,6 +158,20 @@ export const submitFeedback = async (req: Request, res: Response, next: NextFunc
       tags
     );
     return sendSuccess(res, { data: ticket, message: 'Thank you for your feedback!' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const submitStaffFeedback = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { rating, comment, tags } = req.body;
+    const ticket = await ticketService.submitFeedbackByStaff(
+      req.params.id,
+      { rating: Number(rating), comment, tags },
+      req.user!
+    );
+    return sendSuccess(res, { data: ticket, message: 'Feedback recorded successfully' });
   } catch (err) {
     next(err);
   }
