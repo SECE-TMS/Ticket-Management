@@ -216,10 +216,12 @@ export interface Activity {
 export interface NotificationItem {
   _id: string
   recipient: string
-  ticket?: string | Ticket
+  ticket?: Ticket | { _id: string; ticketCode: string; status: string; title?: string } | null
+  task?: Task | { _id: string; taskCode: string; title: string; status: string; priority: string } | null
   type: string
   message: string
   isRead: boolean
+  channel?: 'in_app' | 'email'
   createdAt: string
 }
 
@@ -283,6 +285,7 @@ export interface AdminDashboard {
   deptPerformance: DepartmentPerformance[]
   feedbackMonthlyTrend: FeedbackMonthlyTrend[]
   recent: Ticket[]
+  recentFeedbacks?: Ticket[]
 }
 
 export interface ManagerDashboard {
@@ -291,10 +294,19 @@ export interface ManagerDashboard {
     overdue: number
     unassigned: number
     employees: number
+    avgRating?: number
+    totalFeedback?: number
+    satisfactionRate?: number
   }
   byStatus: Record<string, number>
   workload: Array<{ employeeId: string; name: string; openCount: number }>
   recent: Ticket[]
+  feedbacks?: {
+    avgRating: number
+    totalFeedback: number
+    satisfactionRate: number
+    recent: Ticket[]
+  }
 }
 
 export interface EmployeeDashboard {
@@ -302,9 +314,74 @@ export interface EmployeeDashboard {
     open: number
     overdue: number
     resolved: number
+    avgRating?: number
+    totalFeedback?: number
+    satisfactionRate?: number
   }
   byStatus: Record<string, number>
   recent: Ticket[]
+  feedbacks?: {
+    avgRating: number
+    totalFeedback: number
+    satisfactionRate: number
+    recent: Ticket[]
+  }
+}
+
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled'
+
+export interface TaskChecklistItem {
+  _id?: string
+  title: string
+  completed: boolean
+  completedAt?: string | null
+  completedBy?: UserRef | User | string | null
+}
+
+export interface TaskActivity {
+  _id?: string
+  actor?: UserRef | null
+  action: string
+  message?: string
+  createdAt: string
+}
+
+export interface Task {
+  _id: string
+  taskCode: string
+  title: string
+  description: string
+  department: Department | string
+  assignedTo: UserRef | User
+  assignedBy: UserRef | User
+  priority: TaskPriority
+  status: TaskStatus
+  dueDate?: string | null
+  relatedTicket?: Ticket | string | null
+  checklist: TaskChecklistItem[]
+  attachments?: Attachment[]
+  completionRemarks?: string
+  completionProof?: Attachment | null
+  completedAt?: string | null
+  completedBy?: UserRef | string | null
+  cancelledReason?: string
+  notificationPreferences?: {
+    inApp: boolean
+    email: boolean
+    sms: boolean
+  }
+  activities: TaskActivity[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TaskStats {
+  total: number
+  pending: number
+  in_progress: number
+  completed: number
+  cancelled: number
 }
 
 export function getId(entity: { _id?: string; id?: string } | string | null | undefined): string {
@@ -321,3 +398,4 @@ export function getName(
   if (typeof entity === 'string') return fallback
   return entity.name || fallback
 }
+

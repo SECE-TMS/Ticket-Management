@@ -38,7 +38,7 @@ import type { Activity, Ticket } from '../../types'
 import { getName } from '../../types'
 
 const schema = z.object({
-  ticketCode: z.string().min(5, 'Enter your ticket code'),
+  ticketCode: z.string().min(1, 'Enter your ticket code'),
   mobile: z.string().regex(/^\d{10}$/, 'Enter the 10-digit mobile used when raising'),
 })
 
@@ -139,6 +139,25 @@ export function TrackTicket() {
     }
   }
 
+  const handleDownloadCompletionProof = async (url: string, code: string) => {
+    try {
+      const fullUrl = getAttachmentUrl(url)
+      const res = await fetch(fullUrl)
+      const blob = await res.blob()
+      const blobUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = `ticket-${code}-work-done.jpg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(blobUrl)
+      toast.success('Completion proof image downloaded successfully!')
+    } catch {
+      window.open(getAttachmentUrl(url), '_blank')
+    }
+  }
+
   const {
     register,
     handleSubmit,
@@ -217,7 +236,7 @@ export function TrackTicket() {
                   {...register('ticketCode')}
                   className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 font-mono text-sm font-bold uppercase tracking-wider text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.ticketCode ? 'border-[var(--danger)]' : 'border-[var(--border)]'
                     }`}
-                  placeholder="  TMS-2026-000001"
+                  placeholder="e.g. 1000"
                   autoComplete="off"
                 />
               </div>
@@ -267,7 +286,9 @@ export function TrackTicket() {
       </div>
 
       {/* Ticket Details View */}
-      {ticket && (
+      {ticket && (() => {
+        const hasFeedback = Boolean(ticket.feedback?.rating && ticket.feedback.rating >= 1)
+        return (
         <div className="mt-8 space-y-6 animate-fade-in">
           {/* Main Status & Progress Header */}
           <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--white)] shadow-md">
@@ -521,21 +542,60 @@ export function TrackTicket() {
 
                       {ticket.resolution?.attachment?.url ? (
                         ticket.resolution.attachment.type === 'image' ? (
-                          <div
-                            className="group relative cursor-pointer overflow-hidden rounded-xl border border-green-200 bg-black/5"
-                            onClick={() => setActiveImageModal(ticket.resolution!.attachment!.url!)}
-                          >
-                            <img
-                              src={getAttachmentUrl(ticket.resolution.attachment.url)}
-                              alt="Completion Resolution Proof"
-                              className="h-48 w-full object-cover transition-all duration-200 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-all group-hover:opacity-100">
-                              <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-[var(--ink)] shadow-md">
-                                <ExternalLink size={13} /> View Resolution Photo
-                              </span>
+                          hasFeedback ? (
+                            <div className="space-y-3">
+                              <div
+                                className="group relative cursor-pointer overflow-hidden rounded-xl border border-green-200 bg-black/5 shadow-xs"
+                                onClick={() => setActiveImageModal(ticket.resolution!.attachment!.url!)}
+                              >
+                                <img
+                                  src={getAttachmentUrl(ticket.resolution.attachment.url)}
+                                  alt="Completion Resolution Proof"
+                                  className="h-48 w-full object-cover transition-all duration-200 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-all group-hover:opacity-100">
+                                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-[var(--ink)] shadow-md">
+                                    <ExternalLink size={13} /> View Full Photo
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDownloadCompletionProof(ticket.resolution!.attachment!.url!, ticket.ticketCode)
+                                }
+                                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-4 text-xs font-bold shadow-xs cursor-pointer transition-all"
+                              >
+                                <Download size={14} /> Download Completion Proof Image
+                              </button>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="relative overflow-hidden rounded-xl border border-amber-300 bg-amber-50/70 p-3.5 text-center">
+                              <div className="relative h-44 w-full overflow-hidden rounded-lg bg-slate-200 flex items-center justify-center">
+                                <img
+                                  src={getAttachmentUrl(ticket.resolution.attachment.url)}
+                                  alt="Work Done Proof (Locked)"
+                                  className="h-full w-full object-cover filter blur-md opacity-35 select-none pointer-events-none"
+                                />
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-3 bg-slate-900/40 backdrop-blur-xs text-white">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg mb-2">
+                                    <Lock size={18} />
+                                  </div>
+                                  <p className="font-bold text-xs sm:text-sm">Work Done Image Locked</p>
+                                  <p className="text-[11px] text-white/90 max-w-xs mt-0.5">
+                                    Submit your feedback below to unlock and download the completion proof photo.
+                                  </p>
+                                  <a
+                                    href="#feedback-section"
+                                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
+                                  >
+                                    ★ Submit Feedback to Unlock
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          )
                         ) : (
                           <div className="rounded-xl border border-green-200 bg-[var(--white)] p-4">
                             <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[var(--success)]">
@@ -716,7 +776,8 @@ export function TrackTicket() {
             <TicketTimeline activities={activities} />
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* Lightbox Image Zoom Modal */}
       {activeImageModal && (
@@ -725,13 +786,25 @@ export function TrackTicket() {
           onClick={() => setActiveImageModal(null)}
         >
           <div className="relative max-w-4xl w-full flex flex-col items-center">
-            <button
-              type="button"
-              onClick={() => setActiveImageModal(null)}
-              className="absolute -top-10 right-0 inline-flex items-center gap-1 text-sm font-bold text-white hover:text-[var(--gold)] cursor-pointer"
-            >
-              <X size={20} /> Close
-            </button>
+            <div className="absolute -top-10 right-0 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDownloadCompletionProof(activeImageModal, ticket?.ticketCode || 'proof')
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white px-3 py-1 text-xs font-bold cursor-pointer transition-colors backdrop-blur-xs"
+              >
+                <Download size={14} /> Download Image
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveImageModal(null)}
+                className="inline-flex items-center gap-1 text-sm font-bold text-white hover:text-[var(--gold)] cursor-pointer"
+              >
+                <X size={20} /> Close
+              </button>
+            </div>
             <img
               src={getAttachmentUrl(activeImageModal)}
               alt="Enlarged attachment"
@@ -816,7 +889,7 @@ function FeedbackCard({
   if (hasFeedback && ticket.feedback) {
     const existingFeedback = ticket.feedback
     return (
-      <div className="rounded-2xl border border-[var(--gold)]/40 bg-[var(--gold-light)]/40 p-6 shadow-xs space-y-4">
+      <div id="feedback-section" className="rounded-2xl border border-[var(--gold)]/40 bg-[var(--gold-light)]/40 p-6 shadow-xs space-y-4">
         <div className="flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-2">
             <ThumbsUp size={18} className="text-[var(--gold-dark)]" />
@@ -876,7 +949,7 @@ function FeedbackCard({
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--primary-blue)]/30 bg-[var(--primary-blue-light)]/30 p-6 shadow-sm">
+    <div id="feedback-section" className="rounded-2xl border border-[var(--primary-blue)]/30 bg-[var(--primary-blue-light)]/30 p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-2">
         <MessageSquare size={18} className="text-[var(--primary-blue)]" />
         <h4 className="text-sm font-bold uppercase tracking-wider text-[var(--primary-blue)]">

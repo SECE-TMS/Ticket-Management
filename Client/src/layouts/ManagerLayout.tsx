@@ -1,10 +1,11 @@
 import { Outlet } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Users } from 'lucide-react'
+import { CheckSquare, LayoutDashboard, Ticket, Users } from 'lucide-react'
 import { Sidebar, type SidebarItem } from '../components/common/Sidebar'
 
 const managerItems: SidebarItem[] = [
   { to: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/manager/tickets', label: 'Tickets', icon: Ticket },
+  { to: '/manager/tasks', label: 'Tasks', icon: CheckSquare },
   { to: '/manager/employees', label: 'Employees', icon: Users },
 ]
 

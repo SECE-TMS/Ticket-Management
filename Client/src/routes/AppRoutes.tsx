@@ -22,6 +22,14 @@ import {
   ManagerTicketDetail,
   ManagerTickets,
 } from '../pages/roleTickets'
+import {
+  AdminTaskDetail,
+  AdminTasks,
+  EmployeeTaskDetail,
+  EmployeeTasks,
+  ManagerTaskDetail,
+  ManagerTasks,
+} from '../pages/roleTasks'
 import { ManagerDashboard } from '../pages/manager/ManagerDashboard'
 import { ManagerEmployees } from '../pages/manager/ManagerEmployees'
 import { EmployeeDashboard } from '../pages/employee/EmployeeDashboard'
@@ -52,6 +60,8 @@ export function AppRoutes() {
               <Route path="users" element={<AdminUsers />} />
               <Route path="tickets" element={<AdminTickets />} />
               <Route path="tickets/:id" element={<AdminTicketDetail />} />
+              <Route path="tasks" element={<AdminTasks />} />
+              <Route path="tasks/:id" element={<AdminTaskDetail />} />
               <Route path="feedback" element={<AdminFeedback />} />
               <Route path="qr-generator" element={<QrGeneratorPage />} />
               <Route path="settings" element={<AdminSettings />} />
@@ -65,6 +75,8 @@ export function AppRoutes() {
               <Route path="employees" element={<ManagerEmployees />} />
               <Route path="tickets" element={<ManagerTickets />} />
               <Route path="tickets/:id" element={<ManagerTicketDetail />} />
+              <Route path="tasks" element={<ManagerTasks />} />
+              <Route path="tasks/:id" element={<ManagerTaskDetail />} />
             </Route>
           </Route>
 
@@ -74,6 +86,8 @@ export function AppRoutes() {
               <Route path="dashboard" element={<EmployeeDashboard />} />
               <Route path="tickets" element={<EmployeeTickets />} />
               <Route path="tickets/:id" element={<EmployeeTicketDetail />} />
+              <Route path="tasks" element={<EmployeeTasks />} />
+              <Route path="tasks/:id" element={<EmployeeTaskDetail />} />
             </Route>
           </Route>
 

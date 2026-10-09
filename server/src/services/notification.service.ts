@@ -15,7 +15,8 @@ export const listNotifications = async (
 
   const [items, total, unreadCount] = await Promise.all([
     Notification.find(filter)
-      .populate('ticket', 'ticketCode status')
+      .populate('ticket', 'ticketCode status title')
+      .populate('task', 'taskCode title status priority')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { logout } from '../../store/slices/authSlice'
 import { cn } from '../../lib/utils'
 import { ChangePasswordModal } from './ChangePasswordModal'
+import { NotificationBell } from './NotificationBell'
 import isaiiCleanLogo from '../../assets/isaii_clean.png'
 import sriEshwarCleanLogo from '../../assets/sri_eshwar_clean.png'
 
@@ -78,6 +79,9 @@ export function Sidebar({ items, title }: SidebarProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            <div className="text-[var(--ink)]">
+              <NotificationBell />
+            </div>
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--gold)] text-[var(--primary-blue-deeper)] text-xs font-bold uppercase shadow-xs">
               {getInitials(user?.name)}
             </div>
@@ -200,7 +204,7 @@ export function Sidebar({ items, title }: SidebarProps) {
 
         {/* User profile & Logout footer */}
         <div className="p-3 border-t border-white/10">
-          <div className="flex items-center gap-3 rounded-xl bg-white/6 p-2.5">
+          <div className="flex items-center gap-2 rounded-xl bg-white/6 p-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--gold)] text-[var(--primary-blue-deeper)] text-xs font-bold uppercase shrink-0 shadow-xs">
               {getInitials(user?.name)}
             </div>
@@ -212,10 +216,11 @@ export function Sidebar({ items, title }: SidebarProps) {
                 {user?.role ?? ''}
               </p>
             </div>
+            <NotificationBell placement="sidebar-flyout" variant="dark" />
             <button
               type="button"
               onClick={() => setChangePasswordOpen(true)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-[var(--white)] transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-[var(--white)] transition-colors cursor-pointer shrink-0"
               aria-label="Change Password"
               title="Change Password"
             >
@@ -224,7 +229,7 @@ export function Sidebar({ items, title }: SidebarProps) {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-[var(--white)] transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-[var(--white)] transition-colors cursor-pointer shrink-0"
               aria-label="Logout"
               title="Logout"
             >

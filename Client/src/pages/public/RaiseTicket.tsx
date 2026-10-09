@@ -47,7 +47,7 @@ const schema = z
     email: z.string().email('Enter a valid email address').or(z.literal('')).optional(),
     department: z.string().min(1, 'Select a department'),
     mobile: z.string().optional(),
-    complaintType: z.string().min(1, 'Select a complaint type'),
+    complaintType: z.string().min(1, 'Select a Ticket type'),
     title: z
       .string()
       .min(15, 'Ticket Title must be at least 15 characters')
@@ -1014,7 +1014,7 @@ export function RaiseTicket() {
               {selectedDept && (
                 <div className="flex flex-col gap-1.5 animate-fade-in">
                   <label htmlFor="rt-complaint-type" className="text-xs font-bold text-[var(--ink)]">
-                    Complaint Type <span className="text-[var(--danger)]">*</span>
+                    Ticket Category <span className="text-[var(--danger)]">*</span>
                   </label>
                   <select
                     {...register('complaintType')}

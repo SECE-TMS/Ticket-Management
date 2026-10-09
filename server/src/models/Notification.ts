@@ -9,6 +9,11 @@ export const TYPES = [
   'ticket_closed',
   'ticket_reopened',
   'comment_added',
+  'feedback_received',
+  'task_created',
+  'task_assigned',
+  'task_updated',
+  'task_completed',
 ] as const;
 
 export type NotificationType = (typeof TYPES)[number];
@@ -16,6 +21,7 @@ export type NotificationType = (typeof TYPES)[number];
 export interface INotification {
   recipient: mongoose.Types.ObjectId;
   ticket: mongoose.Types.ObjectId | null;
+  task?: mongoose.Types.ObjectId | null;
   type: NotificationType;
   message: string;
   isRead: boolean;
@@ -33,6 +39,7 @@ const notificationSchema = new Schema<INotification>({
     index: true,
   },
   ticket: { type: Schema.Types.ObjectId, ref: 'Ticket', default: null },
+  task: { type: Schema.Types.ObjectId, ref: 'Task', default: null },
   type: { type: String, enum: TYPES, required: true },
   message: { type: String, required: true },
   isRead: { type: Boolean, default: false },

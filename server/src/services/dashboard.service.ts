@@ -70,6 +70,7 @@ export const adminDashboard = async (query: Record<string, unknown> = {}) => {
     usersCount,
     overdueCount,
     recent,
+    recentFeedbacks,
     byDepartment,
     byPriorityRows,
     monthlyTrendRaw,
@@ -89,6 +90,13 @@ export const adminDashboard = async (query: Record<string, unknown> = {}) => {
     }),
     Ticket.find(match)
       .sort({ createdAt: -1 })
+      .limit(10)
+      .populate('department', 'name')
+      .populate('assignedTo', 'name')
+      .populate('requester', 'name mobile')
+      .lean(),
+    Ticket.find({ ...match, 'feedback.rating': { $exists: true, $ne: null } })
+      .sort({ 'feedback.submittedAt': -1 })
       .limit(10)
       .populate('department', 'name')
       .populate('assignedTo', 'name')
@@ -210,7 +218,7 @@ export const adminDashboard = async (query: Record<string, unknown> = {}) => {
         $project: {
           departmentId: '$_id',
           name: { $ifNull: ['$deptDoc.name', 'Unassigned'] },
-          code: { $ifNull: ['$deptDoc.code', 'DEPT'] },
+          code: { $ifNull: ['$deptDoc.code', { $ifNull: ['$deptDoc.name', 'DEPT'] }] },
           total: 1,
           open: 1,
           resolved: 1,
@@ -336,6 +344,7 @@ export const adminDashboard = async (query: Record<string, unknown> = {}) => {
     deptPerformance: deptPerformanceRaw,
     feedbackMonthlyTrend,
     recent,
+    recentFeedbacks,
   };
 };
 
@@ -344,7 +353,7 @@ export const managerDashboard = async (actor: IUserDocument) => {
   const deptId = toObjectId(actor.department);
   const match = { department: deptId };
 
-  const [byStatus, open, overdue, unassigned, employees, recent] = await Promise.all([
+  const [byStatus, open, overdue, unassigned, employees, recent, feedbackTickets] = await Promise.all([
     countByStatus(match),
     Ticket.countDocuments({ ...match, status: { $in: [...OPEN_STATUSES] } }),
     Ticket.countDocuments({
@@ -358,6 +367,13 @@ export const managerDashboard = async (actor: IUserDocument) => {
       .sort({ createdAt: -1 })
       .limit(10)
       .populate('assignedTo', 'name')
+      .populate('requester', 'name mobile')
+      .lean(),
+    Ticket.find({ ...match, 'feedback.rating': { $exists: true, $ne: null } })
+      .sort({ 'feedback.submittedAt': -1 })
+      .limit(10)
+      .populate('assignedTo', 'name')
+      .populate('requester', 'name mobile')
       .lean(),
   ]);
 
@@ -383,18 +399,30 @@ export const managerDashboard = async (actor: IUserDocument) => {
     { $sort: { openCount: -1 } },
   ]);
 
+  const feedbackScores = feedbackTickets.map((t) => t.feedback?.rating || 0).filter((r) => r > 0);
+  const totalFeedback = feedbackScores.length;
+  const avgRating = totalFeedback > 0 ? Number((feedbackScores.reduce((a, b) => a + b, 0) / totalFeedback).toFixed(1)) : 0;
+  const satisfiedCount = feedbackScores.filter((r) => r >= 4).length;
+  const satisfactionRate = totalFeedback > 0 ? Math.round((satisfiedCount / totalFeedback) * 100) : 0;
+
   return {
-    totals: { open, overdue, unassigned, employees },
+    totals: { open, overdue, unassigned, employees, avgRating, totalFeedback, satisfactionRate },
     byStatus,
     workload,
     recent,
+    feedbacks: {
+      avgRating,
+      totalFeedback,
+      satisfactionRate,
+      recent: feedbackTickets,
+    },
   };
 };
 
 export const employeeDashboard = async (actor: IUserDocument) => {
   const match = { assignedTo: actor._id };
 
-  const [byStatus, open, overdue, resolved, recent] = await Promise.all([
+  const [byStatus, open, overdue, resolved, recent, feedbackTickets] = await Promise.all([
     countByStatus(match),
     Ticket.countDocuments({ ...match, status: { $in: [...OPEN_STATUSES] } }),
     Ticket.countDocuments({
@@ -402,17 +430,36 @@ export const employeeDashboard = async (actor: IUserDocument) => {
       status: { $in: [...OPEN_STATUSES] },
       expectedResolutionAt: { $lt: new Date() },
     }),
-    Ticket.countDocuments({ ...match, status: 'resolved' }),
+    Ticket.countDocuments({ ...match, status: { $in: ['resolved', 'closed'] } }),
     Ticket.find(match)
       .sort({ updatedAt: -1 })
       .limit(10)
       .populate('department', 'name')
+      .populate('requester', 'name mobile')
+      .lean(),
+    Ticket.find({ ...match, 'feedback.rating': { $exists: true, $ne: null } })
+      .sort({ 'feedback.submittedAt': -1 })
+      .limit(10)
+      .populate('department', 'name')
+      .populate('requester', 'name mobile')
       .lean(),
   ]);
 
+  const feedbackScores = feedbackTickets.map((t) => t.feedback?.rating || 0).filter((r) => r > 0);
+  const totalFeedback = feedbackScores.length;
+  const avgRating = totalFeedback > 0 ? Number((feedbackScores.reduce((a, b) => a + b, 0) / totalFeedback).toFixed(1)) : 0;
+  const satisfiedCount = feedbackScores.filter((r) => r >= 4).length;
+  const satisfactionRate = totalFeedback > 0 ? Math.round((satisfiedCount / totalFeedback) * 100) : 0;
+
   return {
-    totals: { open, overdue, resolved },
+    totals: { open, overdue, resolved, avgRating, totalFeedback, satisfactionRate },
     byStatus,
     recent,
+    feedbacks: {
+      avgRating,
+      totalFeedback,
+      satisfactionRate,
+      recent: feedbackTickets,
+    },
   };
 };
