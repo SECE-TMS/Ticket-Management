@@ -1,13 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  BarChart3,
-  Building2,
-  Clock,
-  RefreshCw,
-  ShieldCheck,
-  TrendingUp,
-  Users,
-} from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import {
   Area,
   AreaChart,
@@ -130,7 +122,7 @@ export function SuperAdminAnalytics() {
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <TrendingUp size={22} />
+              {/* <TrendingUp size={22} /> */}
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Overall Resolution</p>
@@ -143,7 +135,7 @@ export function SuperAdminAnalytics() {
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <ShieldCheck size={22} />
+              {/* <ShieldCheck size={22} /> */}
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">SLA Compliance</p>
@@ -156,7 +148,7 @@ export function SuperAdminAnalytics() {
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-              <Users size={22} />
+              {/* <Users size={22} /> */}
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Active Staff Pool</p>
@@ -169,7 +161,7 @@ export function SuperAdminAnalytics() {
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-              <Clock size={22} />
+              {/* <Clock size={22} /> */}
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Active Ticket Backlog</p>
@@ -186,12 +178,12 @@ export function SuperAdminAnalytics() {
         <div className="lg:col-span-8 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs flex flex-col justify-between">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <TrendingUp size={18} className="text-[var(--primary-blue)]" />
+              {/* <TrendingUp size={18} className="text-[var(--primary-blue)]" /> */}
               <h3 className="font-bold text-[var(--ink)]">6-Month Ticket Creation vs Resolution</h3>
             </div>
-            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-[var(--primary-blue)] border border-blue-200">
+            {/* <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-[var(--primary-blue)] border border-blue-200">
               Monthly Timeline
-            </span>
+            </span> */}
           </div>
 
           <div className="h-72 w-full">
@@ -249,7 +241,7 @@ export function SuperAdminAnalytics() {
         <div className="lg:col-span-4 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs flex flex-col justify-between">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Building2 size={18} className="text-[var(--primary-blue)]" />
+              {/* <Building2 size={18} className="text-[var(--primary-blue)]" /> */}
               <h3 className="font-bold text-[var(--ink)]">Department Share</h3>
             </div>
           </div>
@@ -317,7 +309,7 @@ export function SuperAdminAnalytics() {
         <div className="lg:col-span-8 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs flex flex-col justify-between">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BarChart3 size={18} className="text-[var(--primary-blue)]" />
+              {/* <BarChart3 size={18} className="text-[var(--primary-blue)]" /> */}
               <h3 className="font-bold text-[var(--ink)]">Department Resolution & Overdue Analysis</h3>
             </div>
           </div>
@@ -357,7 +349,7 @@ export function SuperAdminAnalytics() {
         <div className="lg:col-span-4 rounded-2xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs flex flex-col justify-between">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Users size={18} className="text-purple-600" />
+              {/* <Users size={18} className="text-purple-600" /> */}
               <h3 className="font-bold text-[var(--ink)]">Staff Role Mix</h3>
             </div>
           </div>
