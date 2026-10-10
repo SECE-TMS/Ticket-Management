@@ -33,15 +33,16 @@ export const generateRefreshToken = (payload: TokenPayload): string => {
 };
 
 export const verifyAccessToken = (token: string): JwtPayload & TokenPayload =>
-  jwt.verify(token, accessSecret()) as JwtPayload & TokenPayload;
+  jwt.verify(token, accessSecret(), { algorithms: ['HS256'] }) as JwtPayload & TokenPayload;
 
 export const verifyRefreshToken = (token: string): JwtPayload & TokenPayload =>
-  jwt.verify(token, refreshSecret()) as JwtPayload & TokenPayload;
+  jwt.verify(token, refreshSecret(), { algorithms: ['HS256'] }) as JwtPayload & TokenPayload;
 
 export const generateResetToken = (payload: TokenPayload): string => {
-  const options: SignOptions = { expiresIn: '1h' };
+  const options: SignOptions = { expiresIn: '1h', algorithm: 'HS256' };
   return jwt.sign(payload, accessSecret(), options);
 };
 
 export const verifyResetToken = (token: string): JwtPayload & TokenPayload =>
-  jwt.verify(token, accessSecret()) as JwtPayload & TokenPayload;
+  jwt.verify(token, accessSecret(), { algorithms: ['HS256'] }) as JwtPayload & TokenPayload;
+
