@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Clock,
   ExternalLink,
+  History,
   MessageCircle,
   PlayCircle,
   Square,
@@ -358,6 +359,52 @@ export function TaskDetailPage({ backTo }: TaskDetailPageProps) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Past Task Completion History */}
+          {task.completionHistory && task.completionHistory.length > 0 && (
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-5 shadow-xs">
+              <h3 className="text-sm font-bold text-[var(--ink)] mb-3 flex items-center gap-2">
+                <History size={16} className="text-indigo-600" />
+                Past Completion Proofs History ({task.completionHistory.length})
+              </h3>
+              <div className="space-y-3 divide-y divide-[var(--border)]">
+                {task.completionHistory.map((h, idx) => (
+                  <div key={idx} className="pt-3 first:pt-0 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-700">
+                        Revision #{task.completionHistory!.length - idx}
+                      </span>
+                      <span className="text-[var(--ink-muted)]">
+                        {h.completedAt ? format(new Date(h.completedAt), 'dd MMM yyyy, HH:mm') : '—'}
+                      </span>
+                    </div>
+                    {h.completionRemarks && (
+                      <p className="text-xs text-[var(--ink)] italic bg-slate-50 p-2 rounded-lg border border-slate-200">
+                        "{h.completionRemarks}"
+                      </p>
+                    )}
+                    {h.completionProof?.url && (
+                      <div
+                        className="group relative cursor-pointer overflow-hidden rounded-lg border border-slate-200 max-h-36 max-w-xs bg-black/5"
+                        onClick={() => setActiveImageModal(h.completionProof!.url)}
+                      >
+                        <img
+                          src={getAttachmentUrl(h.completionProof.url)}
+                          alt="Archived Task Proof"
+                          className="h-full w-full object-cover transition-all group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-all group-hover:opacity-100">
+                          <span className="inline-flex items-center gap-1 rounded bg-white/90 px-2 py-1 text-[11px] font-bold text-[var(--ink)]">
+                            <ExternalLink size={11} /> View Photo
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

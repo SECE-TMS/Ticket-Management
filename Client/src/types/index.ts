@@ -160,6 +160,17 @@ export interface TimeWiseFeedbackAnalytics {
   monthly: FeedbackTimeTrendItem[]
 }
 
+export interface ResolutionHistoryItem {
+  _id?: string
+  remarks: string
+  attachment: Attachment | null
+  attachments?: Attachment[]
+  resolvedAt?: string | null
+  resolvedBy?: UserRef | string | null
+  actionType?: 'resolved' | 'reopened' | 'updated_proof' | 'approval_rejected' | 'requester_rejected' | string
+  createdAt: string
+}
+
 export interface Ticket {
   _id: string
   ticketCode: string
@@ -184,8 +195,10 @@ export interface Ticket {
   resolution?: {
     remarks?: string
     attachment?: Attachment | null
+    attachments?: Attachment[]
     resolvedAt?: string | null
   }
+  resolutionHistory?: ResolutionHistoryItem[]
   closedBy?: UserRef | string | null
   closedAt?: string | null
   reopenCount?: number
@@ -347,6 +360,16 @@ export interface TaskActivity {
   createdAt: string
 }
 
+export interface TaskCompletionHistoryItem {
+  _id?: string
+  completionRemarks?: string
+  completionProof?: Attachment | null
+  completedAt?: string | null
+  completedBy?: UserRef | string | null
+  actionType?: string
+  createdAt: string
+}
+
 export interface Task {
   _id: string
   taskCode: string
@@ -363,6 +386,7 @@ export interface Task {
   attachments?: Attachment[]
   completionRemarks?: string
   completionProof?: Attachment | null
+  completionHistory?: TaskCompletionHistoryItem[]
   completedAt?: string | null
   completedBy?: UserRef | string | null
   cancelledReason?: string

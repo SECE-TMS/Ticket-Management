@@ -34,6 +34,17 @@ export interface ITicketComment {
   createdAt: Date;
 }
 
+export interface ITicketResolutionHistoryItem {
+  _id?: mongoose.Types.ObjectId | string;
+  remarks: string;
+  attachment: IAttachment | null;
+  attachments: IAttachment[];
+  resolvedAt: Date | null;
+  resolvedBy?: mongoose.Types.ObjectId | null;
+  actionType?: string;
+  createdAt: Date;
+}
+
 export interface ITicketResolution {
   remarks: string;
   attachment: IAttachment | null;
@@ -71,6 +82,7 @@ export interface ITicket {
   assignedBy: mongoose.Types.ObjectId | null;
   expectedResolutionAt: Date | null;
   resolution: ITicketResolution;
+  resolutionHistory: ITicketResolutionHistoryItem[];
   closedBy: mongoose.Types.ObjectId | null;
   closedAt: Date | null;
   reopenCount: number;
@@ -91,6 +103,19 @@ const attachmentSchema = new Schema<IAttachment>(
     publicId: { type: String, default: null },
   },
   { _id: false }
+);
+
+const ticketResolutionHistorySchema = new Schema<ITicketResolutionHistoryItem>(
+  {
+    remarks: { type: String, default: '' },
+    attachment: { type: attachmentSchema, default: null },
+    attachments: { type: [attachmentSchema], default: [] },
+    resolvedAt: { type: Date, default: null },
+    resolvedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    actionType: { type: String, default: 'resolved' },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true }
 );
 
 const ticketSchema = new Schema<ITicket>(
@@ -125,6 +150,7 @@ const ticketSchema = new Schema<ITicket>(
       attachments: { type: [attachmentSchema], default: [] },
       resolvedAt: { type: Date, default: null },
     },
+    resolutionHistory: { type: [ticketResolutionHistorySchema], default: [] },
     closedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     closedAt: { type: Date, default: null },
     reopenCount: { type: Number, default: 0 },

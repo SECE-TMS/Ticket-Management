@@ -354,6 +354,7 @@ export const getTaskById = async (
     .populate('assignedTo', 'name email phone rollNumber avatarUrl')
     .populate('assignedBy', 'name email role')
     .populate('completedBy', 'name email')
+    .populate('completionHistory.completedBy', 'name email')
     .populate('relatedTicket', 'ticketCode title complaintType status priority requester')
     .populate('activities.actor', 'name role email');
 
@@ -414,6 +415,8 @@ export const updateTask = async (
     .populate('department', 'name')
     .populate('assignedTo', 'name email phone avatarUrl')
     .populate('assignedBy', 'name email role')
+    .populate('completedBy', 'name email')
+    .populate('completionHistory.completedBy', 'name email')
     .populate('relatedTicket', 'ticketCode title status');
 };
 
@@ -448,6 +451,18 @@ export const updateTaskStatus = async (
         task.completionProof = uploaded;
       }
     }
+
+    if (!task.completionHistory) {
+      task.completionHistory = [];
+    }
+    task.completionHistory.push({
+      completionRemarks: task.completionRemarks || '',
+      completionProof: task.completionProof || null,
+      completedAt: new Date(),
+      completedBy: actor._id as unknown as Types.ObjectId,
+      actionType: 'completed',
+      createdAt: new Date(),
+    });
   } else if (payload.status === 'cancelled') {
     task.cancelledReason = payload.cancelledReason?.trim() || '';
   }
@@ -484,6 +499,7 @@ export const updateTaskStatus = async (
     .populate('assignedTo', 'name email phone avatarUrl')
     .populate('assignedBy', 'name email role')
     .populate('completedBy', 'name email')
+    .populate('completionHistory.completedBy', 'name email')
     .populate('relatedTicket', 'ticketCode title status');
 };
 

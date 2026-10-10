@@ -86,6 +86,16 @@ export const resolve = async (req: AuthRequest, res: Response, next: NextFunctio
   }
 };
 
+export const updateResolutionProof = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const files = (req.files as Express.Multer.File[]) || (req.file ? [req.file] : []);
+    const data = await ticketService.updateResolutionProof(req.params.id, req.body, req.file, files, req.user!);
+    return sendSuccess(res, { data, message: 'Work completion proof updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const close = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = await ticketService.closeTicket(req.params.id, req.user!);

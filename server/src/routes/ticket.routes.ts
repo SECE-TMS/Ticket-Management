@@ -128,6 +128,14 @@ router.post(
   ticketController.resolve
 );
 
+router.post(
+  '/:id/update-resolution',
+  authenticate,
+  requireRole('admin', 'manager', 'employee'),
+  singleAttachment('attachment'),
+  ticketController.updateResolutionProof
+);
+
 router.patch(
   '/:id/close',
   authenticate,

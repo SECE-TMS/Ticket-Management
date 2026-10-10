@@ -11,6 +11,8 @@ import { PageLoader } from '../../components/common/LoadingSpinner'
 import { TicketTimeline } from '../../components/tickets/TicketTimeline'
 import { AssignModal } from '../../components/tickets/AssignModal'
 import { ResolveModal } from '../../components/tickets/ResolveModal'
+import { EditResolutionModal } from '../../components/tickets/EditResolutionModal'
+import { ResolutionHistoryCard } from '../../components/tickets/ResolutionHistoryCard'
 import { EditTicketModal } from '../../components/tickets/EditTicketModal'
 import { useToast } from '../../context/ToastContext'
 import { useAppSelector } from '../../store/hooks'
@@ -58,6 +60,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const [reopenOpen, setReopenOpen] = useState(false)
   const [reopenReason, setReopenReason] = useState('')
   const [editOpen, setEditOpen] = useState(false)
+  const [editResolutionOpen, setEditResolutionOpen] = useState(false)
   const [activeImageModal, setActiveImageModal] = useState<string | null>(null)
 
   // Staff Feedback state (Admin & Manager)
@@ -145,6 +148,16 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const canApproveClose =
     (role === 'admin' || role === 'manager') && ticket.status === 'pending_approval'
   const canManageFeedback = role === 'admin' || role === 'superadmin' || role === 'manager'
+
+  const canEditResolutionProof =
+    Boolean(
+      role === 'admin' ||
+        role === 'superadmin' ||
+        role === 'manager' ||
+        (role === 'employee' && ticket.assignedTo && getId(ticket.assignedTo) === user?._id)
+    ) &&
+    (Boolean(ticket.resolution?.attachment?.url || ticket.resolution?.remarks) ||
+      ['pending_approval', 'resolved', 'reopened'].includes(ticket.status))
 
   const handleSaveStaffFeedback = async () => {
     if (!ticket) return
@@ -613,6 +626,16 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                         </p>
                       </div>
                     )}
+
+                    {canEditResolutionProof && (
+                      <button
+                        type="button"
+                        onClick={() => setEditResolutionOpen(true)}
+                        className="mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/80 hover:bg-blue-100 py-1.5 px-3 text-xs font-bold text-[var(--primary-blue)] transition-colors cursor-pointer"
+                      >
+                        <Pencil size={12} /> Change / Fix Proof &amp; Notes
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -630,6 +653,16 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                 <p className="text-sm leading-relaxed text-[var(--ink)]">
                   {ticket.resolution.remarks}
                 </p>
+              </div>
+            )}
+
+            {/* Past Uploaded Work Proofs & Revisions History */}
+            {ticket.resolutionHistory && ticket.resolutionHistory.length > 0 && (
+              <div className="mt-4">
+                <ResolutionHistoryCard
+                  history={ticket.resolutionHistory}
+                  onViewImage={(url) => setActiveImageModal(url)}
+                />
               </div>
             )}
           </div>
@@ -951,6 +984,23 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
             await ticketService.resolve(ticket._id, fd)
             setResolveOpen(false)
           }, 'Ticket resolved')
+        }}
+      />
+
+      <EditResolutionModal
+        open={editResolutionOpen}
+        onClose={() => setEditResolutionOpen(false)}
+        loading={actionLoading}
+        initialRemarks={ticket.resolution?.remarks || ''}
+        currentAttachment={ticket.resolution?.attachment || null}
+        onSubmit={async ({ remarks, file }) => {
+          await run(async () => {
+            const fd = new FormData()
+            if (remarks) fd.append('remarks', remarks)
+            if (file) fd.append('attachment', file)
+            await ticketService.updateResolution(ticket._id, fd)
+            setEditResolutionOpen(false)
+          }, 'Work completion proof updated successfully')
         }}
       />
 
