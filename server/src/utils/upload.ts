@@ -36,14 +36,28 @@ export const getAttachmentType = (mimetype: string): AttachmentType | null => {
   return null;
 };
 
+const ALLOWED_EXTENSIONS: Record<AttachmentType, string[]> = {
+  image: ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'],
+  audio: ['.mp3', '.wav', '.ogg', '.m4a', '.aac'],
+  video: ['.mp4', '.webm', '.mov', '.mkv'],
+};
+
 const saveFileLocally = (file: UploadableFile, type: AttachmentType): UploadedAttachment => {
   ensureUploadsDir();
-  const ext =
-    path.extname(file.originalname) ||
-    (type === 'image' ? '.jpg' : type === 'audio' ? '.mp3' : '.mp4');
+  const rawExt = path.extname(file.originalname).toLowerCase();
+  const allowed = ALLOWED_EXTENSIONS[type] || [];
+  const ext = allowed.includes(rawExt)
+    ? rawExt
+    : type === 'image'
+    ? '.jpg'
+    : type === 'audio'
+    ? '.mp3'
+    : '.mp4';
+
   const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${ext}`;
   const filePath = path.join(uploadsDir, filename);
   fs.writeFileSync(filePath, new Uint8Array(file.buffer));
+
 
   return {
     url: `/uploads/${filename}`,

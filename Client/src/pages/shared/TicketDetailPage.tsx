@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Pencil, Star, ThumbsUp, UserCheck, UserPlus, Volume2, X } from 'lucide-react'
+import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Pencil, Share2, Star, ThumbsUp, UserCheck, UserPlus, Volume2, X } from 'lucide-react'
 import { ticketService } from '../../services/ticketService'
 import { userService } from '../../services/userService'
 import { Button } from '../../components/common/Button'
@@ -14,6 +14,7 @@ import { ResolveModal } from '../../components/tickets/ResolveModal'
 import { EditResolutionModal } from '../../components/tickets/EditResolutionModal'
 import { ResolutionHistoryCard } from '../../components/tickets/ResolutionHistoryCard'
 import { EditTicketModal } from '../../components/tickets/EditTicketModal'
+import { ShareTicketModal } from '../../components/tickets/ShareTicketModal'
 import { useToast } from '../../context/ToastContext'
 import { useAppSelector } from '../../store/hooks'
 import { getErrorMessage, getAttachmentUrl } from '../../lib/utils'
@@ -61,6 +62,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const [reopenReason, setReopenReason] = useState('')
   const [editOpen, setEditOpen] = useState(false)
   const [editResolutionOpen, setEditResolutionOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [activeImageModal, setActiveImageModal] = useState<string | null>(null)
 
   // Staff Feedback state (Admin & Manager)
@@ -149,15 +151,19 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
     (role === 'admin' || role === 'manager') && ticket.status === 'pending_approval'
   const canManageFeedback = role === 'admin' || role === 'superadmin' || role === 'manager'
 
+  const currentUserId = getId(user)
+  const assignedUserId = getId(ticket.assignedTo)
+  const isAssignedToMe = Boolean(currentUserId && assignedUserId && currentUserId === assignedUserId)
+
   const canEditResolutionProof =
     Boolean(
       role === 'admin' ||
         role === 'superadmin' ||
         role === 'manager' ||
-        (role === 'employee' && ticket.assignedTo && getId(ticket.assignedTo) === user?._id)
+        (role === 'employee' && isAssignedToMe)
     ) &&
     (Boolean(ticket.resolution?.attachment?.url || ticket.resolution?.remarks) ||
-      ['pending_approval', 'resolved', 'reopened'].includes(ticket.status))
+      ['pending_approval', 'resolved', 'closed', 'reopened'].includes(ticket.status))
 
   const handleSaveStaffFeedback = async () => {
     if (!ticket) return
@@ -222,6 +228,17 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
+            <Button
+              type="button"
+              id="header-share-ticket-btn"
+              variant="outline"
+              size="sm"
+              onClick={() => setShareOpen(true)}
+              className="bg-white/15 hover:bg-white/25 border-white/30 text-white font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer backdrop-blur-xs"
+            >
+              <Share2 size={13} />
+              Share
+            </Button>
             {isAdmin && (
               <Button
                 type="button"
@@ -240,7 +257,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
       </div>
 
       {/* Action buttons */}
-      {(canAssign || canReassign || canClose || canReopen || canAccept || canStart || canResolve || canApproveClose || isAdmin) && (
+      {(canAssign || canReassign || canClose || canReopen || canAccept || canStart || canResolve || canApproveClose || canEditResolutionProof || ticket.status === 'pending_approval' || isAdmin) && (
         <div className="mb-5 flex flex-wrap gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
           <p className="w-full text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
             Actions
@@ -321,11 +338,24 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
 
           {/* Pending Approval Notice for Employee */}
           {ticket.status === 'pending_approval' && role === 'employee' && (
-            <div className="w-full rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm">
-              <p className="font-semibold text-orange-800">⏳ Submitted for Approval</p>
-              <p className="text-xs text-orange-600 mt-0.5">
-                You have submitted your resolution work. The ticket is currently under review by your department manager.
-              </p>
+            <div className="w-full rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="font-semibold text-orange-800">⏳ Submitted for Approval</p>
+                <p className="text-xs text-orange-600 mt-0.5">
+                  You have submitted your resolution work. The ticket is currently under review by your department manager.
+                </p>
+              </div>
+              {canEditResolutionProof && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEditResolutionOpen(true)}
+                  className="bg-white border-orange-300 text-orange-800 hover:bg-orange-100 font-bold shrink-0 gap-1.5"
+                >
+                  <Pencil size={13} /> Update / Reupload Proof
+                </Button>
+              )}
             </div>
           )}
 
@@ -389,6 +419,18 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               onClick={() => setResolveOpen(true)}
             >
               {role === 'employee' ? 'Complete & Request Approval' : 'Mark Resolved'}
+            </Button>
+          )}
+          {canEditResolutionProof && (
+            <Button
+              type="button"
+              id="action-edit-proof"
+              variant="outline"
+              onClick={() => setEditResolutionOpen(true)}
+              className="border-blue-300 bg-blue-50/80 text-blue-700 hover:bg-blue-100 hover:border-blue-400 font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Pencil size={14} />
+              {ticket.resolution?.attachment?.url ? 'Change / Reupload Proof' : 'Upload Proof / Notes'}
             </Button>
           )}
           {ticket.status !== 'pending_approval' && canReopen && (
@@ -1076,6 +1118,21 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           onClose={() => setEditOpen(false)}
           ticket={ticket}
           onSuccess={load}
+        />
+      )}
+
+      {/* Share Ticket Modal */}
+      {ticket && (
+        <ShareTicketModal
+          isOpen={shareOpen}
+          onClose={() => setShareOpen(false)}
+          ticketCode={ticket.ticketCode}
+          mobile={ticket.requester?.mobile}
+          requesterName={ticket.requester?.name}
+          departmentName={getName(ticket.department)}
+          title={ticket.title}
+          complaintType={ticket.complaintType}
+          status={ticket.status}
         />
       )}
     </div>

@@ -23,7 +23,7 @@ import { useToast } from '../../context/ToastContext'
 import { useAppSelector } from '../../store/hooks'
 import { getErrorMessage, getAttachmentUrl } from '../../lib/utils'
 import type { Task, TaskStatus } from '../../types'
-import { getName } from '../../types'
+import { getId, getName } from '../../types'
 
 interface TaskDetailPageProps {
   backTo: string
@@ -119,7 +119,9 @@ export function TaskDetailPage({ backTo }: TaskDetailPageProps) {
     )
   }
 
-  const isAssignedEmployee = user?._id?.toString() === (task.assignedTo as any)?._id?.toString()
+  const currentUserId = getId(user)
+  const assignedEmployeeId = getId(task.assignedTo)
+  const isAssignedEmployee = Boolean(currentUserId && assignedEmployeeId && currentUserId === assignedEmployeeId)
   const isManagerOrAdmin = role === 'admin' || role === 'superadmin' || role === 'manager'
   const canStart = (isAssignedEmployee || isManagerOrAdmin) && task.status === 'pending'
   const canComplete = (isAssignedEmployee || isManagerOrAdmin) && (task.status === 'pending' || task.status === 'in_progress')

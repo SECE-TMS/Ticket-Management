@@ -829,9 +829,12 @@ export function TrackTicket() {
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
           ticketCode={ticket.ticketCode}
-          mobile={ticket.requester.mobile}
+          mobile={ticket.requester?.mobile}
+          requesterName={ticket.requester?.name}
           departmentName={getName(ticket.department)}
+          title={ticket.title}
           complaintType={ticket.complaintType}
+          status={ticket.status}
         />
       )}
 
