@@ -787,9 +787,8 @@ export function RaiseTicket() {
                         {...register('requesterDepartment')}
                         id="rt-req-dept"
                         list="college-departments-list"
-                        className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] uppercase outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                          errors.requesterDepartment ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                        }`}
+                        className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] uppercase outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.requesterDepartment ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                          }`}
                         placeholder={selectedUserType === 'student' ? '  CSE / IT / ECE / MECH' : '  CSE / ADMIN / LIBRARY'}
                       />
                       <datalist id="college-departments-list">
@@ -1123,9 +1122,8 @@ export function RaiseTicket() {
                       id="rt-title"
                       type="text"
                       maxLength={30}
-                      className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                        errors.title ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                      }`}
+                      className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.title ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                        }`}
                       placeholder="e.g., Projector power issue"
                     />
                   </div>
@@ -1133,7 +1131,7 @@ export function RaiseTicket() {
                     <span className="text-xs text-[var(--danger)]">{errors.title.message}</span>
                   ) : (
                     <span className="text-[11px] text-[var(--ink-muted)]">
-                     
+
                     </span>
                   )}
                 </div>
