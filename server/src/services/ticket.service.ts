@@ -351,7 +351,8 @@ const populateTicket = <T extends TicketQuery>(query: T): T =>
     .populate('assignedTo', 'name email phone')
     .populate('assignedBy', 'name email')
     .populate('closedBy', 'name email')
-    .populate('comments.author', 'name email role') as T;
+    .populate('comments.author', 'name email role')
+    .populate('resolutionHistory.resolvedBy', 'name email role') as T;
 
 const assertTicketAccess = (ticket: ITicket & { department: unknown; assignedTo?: unknown }, actor?: IUserDocument) => {
   if (!actor) return;
@@ -880,6 +881,19 @@ export const resolveTicket = async (
     resolvedAt: newStatus === 'resolved' ? new Date() : null,
   };
 
+  if (!ticket.resolutionHistory) {
+    ticket.resolutionHistory = [];
+  }
+  ticket.resolutionHistory.push({
+    remarks: remarks || 'Resolved by department manager/staff',
+    attachment: resolutionAttachment,
+    attachments: resolutionAttachments,
+    resolvedAt: newStatus === 'resolved' ? new Date() : null,
+    resolvedBy: actor ? (actor._id as any) : null,
+    actionType: needsApproval ? 'pending_approval' : 'resolved',
+    createdAt: new Date(),
+  } as any);
+
   if (needsApproval && actor) {
     ticket.approvalRequestedAt = new Date();
     ticket.approvalRequestedBy = actor._id;
@@ -924,6 +938,73 @@ export const resolveTicket = async (
     });
     void notifyRequesterOnAction(ticket, 'Ticket Marked Resolved', remarks || 'Your ticket has been marked resolved.', 'resolved');
   }
+
+  return populateTicket(Ticket.findById(ticket._id));
+};
+
+export const updateResolutionProof = async (
+  id: string,
+  { remarks }: { remarks?: string },
+  file?: UploadableFile,
+  files?: Array<UploadableFile>,
+  actor?: IUserDocument
+) => {
+  const ticket = await Ticket.findById(id);
+  if (!ticket) throw ApiError.notFound('Ticket not found');
+  if (actor) assertTicketAccess(ticket, actor);
+
+  if (actor && actor.role === 'employee') {
+    if (!ticket.assignedTo || String(ticket.assignedTo) !== String(actor._id)) {
+      throw ApiError.forbidden('You can only update proof for your own assigned tickets');
+    }
+  }
+
+  const rawFiles = files && files.length ? files : file ? [file] : [];
+  let resolutionAttachments = ticket.resolution?.attachments ? [...ticket.resolution.attachments] : [];
+  let resolutionAttachment = ticket.resolution?.attachment || null;
+
+  if (rawFiles.length > 0) {
+    const newAttachments = [];
+    for (const f of rawFiles) {
+      const uploaded = await uploadBuffer(f, 'tms/resolutions');
+      if (uploaded) newAttachments.push(uploaded);
+    }
+    if (newAttachments.length > 0) {
+      resolutionAttachments = newAttachments;
+      resolutionAttachment = newAttachments[0];
+    }
+  }
+
+  const finalRemarks = remarks !== undefined ? remarks.trim() : (ticket.resolution?.remarks || '');
+
+  ticket.resolution = {
+    remarks: finalRemarks,
+    attachment: resolutionAttachment,
+    attachments: resolutionAttachments,
+    resolvedAt: ticket.resolution?.resolvedAt || new Date(),
+  };
+
+  if (!ticket.resolutionHistory) {
+    ticket.resolutionHistory = [];
+  }
+  ticket.resolutionHistory.push({
+    remarks: finalRemarks,
+    attachment: resolutionAttachment,
+    attachments: resolutionAttachments,
+    resolvedAt: new Date(),
+    resolvedBy: actor ? (actor._id as any) : null,
+    actionType: 'updated_proof',
+    createdAt: new Date(),
+  } as any);
+
+  await ticket.save();
+
+  await logActivity({
+    ticket,
+    actor,
+    action: 'updated',
+    message: `Work completion proof/notes updated by ${actor?.name || 'staff'}`,
+  });
 
   return populateTicket(Ticket.findById(ticket._id));
 };
@@ -986,7 +1067,6 @@ export const approveAndCloseTicket = async (id: string, actor: IUserDocument, me
   return populateTicket(Ticket.findById(ticket._id));
 };
 
-
 export const closeTicket = async (id: string, actor: IUserDocument) => {
   const ticket = await Ticket.findById(id);
   if (!ticket) throw ApiError.notFound('Ticket not found');
@@ -1043,6 +1123,31 @@ export const reopenTicket = async (id: string, actor: IUserDocument, message?: s
   }
 
   const fromStatus = ticket.status;
+  const isRejection = fromStatus === 'pending_approval';
+
+  // Ensure current proof is archived before wiping active resolution
+  if (ticket.resolution && (ticket.resolution.attachment?.url || (ticket.resolution.attachments && ticket.resolution.attachments.length > 0) || ticket.resolution.remarks)) {
+    if (!ticket.resolutionHistory) {
+      ticket.resolutionHistory = [];
+    }
+    const alreadySaved = ticket.resolutionHistory.some(
+      (h) =>
+        h.attachment?.url === ticket.resolution?.attachment?.url &&
+        h.remarks === ticket.resolution?.remarks
+    );
+    if (!alreadySaved) {
+      ticket.resolutionHistory.push({
+        remarks: ticket.resolution.remarks,
+        attachment: ticket.resolution.attachment,
+        attachments: ticket.resolution.attachments || [],
+        resolvedAt: ticket.resolution.resolvedAt || new Date(),
+        resolvedBy: ticket.assignedTo || (actor._id as any),
+        actionType: isRejection ? 'approval_rejected' : 'reopened',
+        createdAt: new Date(),
+      } as any);
+    }
+  }
+
   ticket.status = 'reopened';
   ticket.reopenCount = (ticket.reopenCount || 0) + 1;
   ticket.closedBy = null;
@@ -1050,7 +1155,6 @@ export const reopenTicket = async (id: string, actor: IUserDocument, message?: s
   ticket.resolution = { remarks: '', attachment: null, attachments: [], resolvedAt: null };
   await ticket.save();
 
-  const isRejection = fromStatus === 'pending_approval';
   const activityMsg = message?.trim()
     ? (isRejection ? `Work Rejected & Reopened: ${message.trim()}` : message.trim())
     : (isRejection ? 'Work rejected by reviewer and reopened for rework' : 'Ticket reopened');
@@ -1898,6 +2002,30 @@ export const requesterReopen = async ({
   if (!ticket) throw ApiError.notFound('Ticket not found or mobile mismatch');
 
   const fromStatus = ticket.status;
+
+  // Archive current resolution before clearing
+  if (ticket.resolution && (ticket.resolution.attachment?.url || (ticket.resolution.attachments && ticket.resolution.attachments.length > 0) || ticket.resolution.remarks)) {
+    if (!ticket.resolutionHistory) {
+      ticket.resolutionHistory = [];
+    }
+    const alreadySaved = ticket.resolutionHistory.some(
+      (h) =>
+        h.attachment?.url === ticket.resolution?.attachment?.url &&
+        h.remarks === ticket.resolution?.remarks
+    );
+    if (!alreadySaved) {
+      ticket.resolutionHistory.push({
+        remarks: ticket.resolution.remarks,
+        attachment: ticket.resolution.attachment,
+        attachments: ticket.resolution.attachments || [],
+        resolvedAt: ticket.resolution.resolvedAt || new Date(),
+        resolvedBy: ticket.assignedTo || null,
+        actionType: 'requester_rejected',
+        createdAt: new Date(),
+      } as any);
+    }
+  }
+
   ticket.status = 'reopened';
   ticket.reopenCount = (ticket.reopenCount || 0) + 1;
   ticket.closedBy = null;

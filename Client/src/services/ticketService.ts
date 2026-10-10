@@ -82,6 +82,11 @@ export const ticketService = {
     return data.data as Ticket
   },
 
+  async updateResolution(id: string, formData: FormData) {
+    const { data } = await api.post(`/tickets/${id}/update-resolution`, formData)
+    return data.data as Ticket
+  },
+
   async close(id: string) {
     const { data } = await api.patch(`/tickets/${id}/close`)
     return data.data as Ticket

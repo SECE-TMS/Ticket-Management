@@ -32,6 +32,7 @@ import { PriorityBadge, StatusBadge } from '../../components/common/Badge'
 import { TicketTimeline } from '../../components/tickets/TicketTimeline'
 import { ShareTicketModal } from '../../components/tickets/ShareTicketModal'
 import { TicketReceiptModal } from '../../components/tickets/TicketReceiptModal'
+import { ResolutionHistoryCard } from '../../components/tickets/ResolutionHistoryCard'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage, getAttachmentUrl } from '../../lib/utils'
 import type { Activity, Ticket } from '../../types'
@@ -632,6 +633,14 @@ export function TrackTicket() {
                     {ticket.resolution.remarks}
                   </p>
                 </div>
+              )}
+
+              {/* Past Uploaded Work Proofs & Revisions History */}
+              {ticket.resolutionHistory && ticket.resolutionHistory.length > 0 && (
+                <ResolutionHistoryCard
+                  history={ticket.resolutionHistory}
+                  onViewImage={(url) => setActiveImageModal(url)}
+                />
               )}
 
               {/* ── REQUESTER RESOLUTION REVIEW & APPROVAL ──────────────── */}

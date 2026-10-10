@@ -27,6 +27,16 @@ export interface ITaskActivity {
   createdAt: Date;
 }
 
+export interface ITaskCompletionHistoryItem {
+  _id?: mongoose.Types.ObjectId;
+  completionRemarks?: string;
+  completionProof?: ITaskAttachment | null;
+  completedAt?: Date | null;
+  completedBy?: mongoose.Types.ObjectId | null;
+  actionType?: string;
+  createdAt: Date;
+}
+
 export interface ITask {
   taskCode: string;
   title: string;
@@ -42,6 +52,7 @@ export interface ITask {
   attachments: ITaskAttachment[];
   completionRemarks?: string;
   completionProof?: ITaskAttachment | null;
+  completionHistory: ITaskCompletionHistoryItem[];
   completedAt?: Date | null;
   completedBy?: mongoose.Types.ObjectId | null;
   cancelledReason?: string;
@@ -74,6 +85,18 @@ const taskAttachmentSchema = new Schema<ITaskAttachment>(
     publicId: { type: String, default: null },
   },
   { _id: false }
+);
+
+const taskCompletionHistorySchema = new Schema<ITaskCompletionHistoryItem>(
+  {
+    completionRemarks: { type: String, default: '' },
+    completionProof: { type: taskAttachmentSchema, default: null },
+    completedAt: { type: Date, default: null },
+    completedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    actionType: { type: String, default: 'completed' },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true }
 );
 
 const taskActivitySchema = new Schema<ITaskActivity>(
@@ -131,6 +154,7 @@ const taskSchema = new Schema<ITask>(
     attachments: { type: [taskAttachmentSchema], default: [] },
     completionRemarks: { type: String, default: '' },
     completionProof: { type: taskAttachmentSchema, default: null },
+    completionHistory: { type: [taskCompletionHistorySchema], default: [] },
     completedAt: { type: Date, default: null },
     completedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     cancelledReason: { type: String, default: '' },
