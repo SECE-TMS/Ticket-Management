@@ -43,6 +43,7 @@ const schema = z
   .object({
     userType: z.enum(['student', 'staff', 'guest']),
     rollNumber: z.string().optional(),
+    requesterDepartment: z.string().optional(),
     name: z.string().min(2, 'Name is required'),
     email: z.string().email('Enter a valid email address').or(z.literal('')).optional(),
     department: z.string().min(1, 'Select a department'),
@@ -64,6 +65,18 @@ const schema = z
     {
       message: 'Roll Number / Staff ID is required',
       path: ['rollNumber'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.userType === 'student' || data.userType === 'staff') {
+        return !!data.requesterDepartment && data.requesterDepartment.trim().length >= 2
+      }
+      return true
+    },
+    {
+      message: 'Department is required',
+      path: ['requesterDepartment'],
     }
   )
 
@@ -137,6 +150,7 @@ export function RaiseTicket() {
     defaultValues: {
       userType: 'student',
       rollNumber: '',
+      requesterDepartment: '',
       name: '',
       email: '',
       department: '',
@@ -404,6 +418,9 @@ export function RaiseTicket() {
       formData.append('userType', values.userType)
       if ((values.userType === 'student' || values.userType === 'staff') && values.rollNumber) {
         formData.append('rollNumber', values.rollNumber.trim())
+      }
+      if ((values.userType === 'student' || values.userType === 'staff') && values.requesterDepartment) {
+        formData.append('requesterDepartment', values.requesterDepartment.trim())
       }
       formData.append('name', values.name)
       if (values.email) {
@@ -691,7 +708,7 @@ export function RaiseTicket() {
                         onClick={() => {
                           setValue('userType', role.id as 'student' | 'staff' | 'guest')
                           if (role.id === 'guest') {
-                            clearErrors('rollNumber')
+                            clearErrors(['rollNumber', 'requesterDepartment'])
                           }
                         }}
                         className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-3.5 text-center transition-all cursor-pointer ${isSelected
@@ -750,6 +767,50 @@ export function RaiseTicket() {
                     </div>
                     {errors.rollNumber && (
                       <span className="text-xs text-[var(--danger)]">{errors.rollNumber.message}</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Requester Department (Conditional for Student & Staff) */}
+                {(selectedUserType === 'student' || selectedUserType === 'staff') && (
+                  <div className="flex flex-col gap-1.5 animate-fade-in">
+                    <label htmlFor="rt-req-dept" className="text-xs font-bold text-[var(--ink)]">
+                      {selectedUserType === 'student' ? 'Student Department / Branch' : 'Staff Department'}{' '}
+                      <span className="text-[var(--danger)]">*</span>
+                    </label>
+                    <div className="relative">
+                      <Building2
+                        size={15}
+                        className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--ink-muted)]"
+                      />
+                      <input
+                        {...register('requesterDepartment')}
+                        id="rt-req-dept"
+                        list="college-departments-list"
+                        className={`h-11 w-full rounded-xl border bg-[var(--white)] pl-10 pr-3.5 text-sm text-[var(--ink)] uppercase outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                          errors.requesterDepartment ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                        }`}
+                        placeholder={selectedUserType === 'student' ? '  CSE / IT / ECE / MECH' : '  CSE / ADMIN / LIBRARY'}
+                      />
+                      <datalist id="college-departments-list">
+                        <option value="CSE" />
+                        <option value="IT" />
+                        <option value="AI & DS" />
+                        <option value="ECE" />
+                        <option value="EEE" />
+                        <option value="MECH" />
+                        <option value="CIVIL" />
+                        <option value="CSBS" />
+                        <option value="S&H" />
+                        <option value="MBA" />
+                        <option value="Admin Office" />
+                        <option value="Library" />
+                        <option value="Placement" />
+                        <option value="Physical Education" />
+                      </datalist>
+                    </div>
+                    {errors.requesterDepartment && (
+                      <span className="text-xs text-[var(--danger)]">{errors.requesterDepartment.message}</span>
                     )}
                   </div>
                 )}

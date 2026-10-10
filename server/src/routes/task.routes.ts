@@ -18,10 +18,10 @@ router.use(authenticate);
 // List tasks (accessible by admin, manager, employee)
 router.get('/', requireRole('admin', 'manager', 'employee'), taskController.list);
 
-// Create task (accessible by admin, manager)
+// Create task (accessible by admin, manager, employee)
 router.post(
   '/',
-  requireRole('admin', 'manager'),
+  requireRole('admin', 'manager', 'employee'),
   validate(createTaskSchema),
   taskController.create
 );

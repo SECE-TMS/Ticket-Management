@@ -13,6 +13,8 @@ export const createTicketSchema = z.object({
   priority: z.enum(PRIORITIES).optional().default('medium'),
   userType: z.enum(['student', 'staff', 'guest']).optional().default('guest'),
   rollNumber: z.string().max(50).optional().default(''),
+  requesterDepartment: z.string().max(100).optional().default(''),
+  departmentName: z.string().max(100).optional(),
 });
 
 export const trackTicketSchema = z.object({
@@ -33,6 +35,7 @@ export const updateTicketSchema = z.object({
       email: z.string().email().optional().or(z.literal('')),
       userType: z.enum(['student', 'staff', 'guest']).optional(),
       rollNumber: z.string().max(50).optional().or(z.literal('')),
+      department: z.string().max(100).optional().or(z.literal('')),
     })
     .optional(),
 });

@@ -21,6 +21,13 @@ export const userService = {
     return data.data as User[]
   },
 
+  async listAssignees(search?: string) {
+    const { data } = await api.get('/users/assignees', {
+      params: search ? { search } : undefined,
+    })
+    return data.data as User[]
+  },
+
   async create(payload: {
     name: string
     email: string

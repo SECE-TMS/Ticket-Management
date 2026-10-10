@@ -181,6 +181,7 @@ export interface Ticket {
     email?: string
     userType?: 'student' | 'staff' | 'guest'
     rollNumber?: string
+    department?: string
   }
   department: Department | string
   complaintType: string

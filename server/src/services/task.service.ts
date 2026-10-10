@@ -199,11 +199,26 @@ export const notifyTaskAssignment = async (
 export const createTask = async (data: CreateTaskInput, actor: { _id: Types.ObjectId | string; name: string }) => {
   const taskCode = await generateTaskCode();
 
+  const assigneeUser = await User.findById(data.assignedTo);
+  if (!assigneeUser) {
+    throw ApiError.notFound('Assignee user not found');
+  }
+
+  let departmentId = data.department || assigneeUser.department;
+  if (!departmentId) {
+    const firstDept = await Department.findOne();
+    if (firstDept) {
+      departmentId = firstDept._id;
+    } else {
+      throw ApiError.badRequest('Department could not be determined for the selected assignee');
+    }
+  }
+
   const task = await Task.create({
     taskCode,
     title: data.title.trim(),
     description: data.description.trim(),
-    department: data.department,
+    department: departmentId,
     assignedTo: data.assignedTo,
     assignedBy: actor._id,
     priority: data.priority || 'medium',
@@ -223,7 +238,7 @@ export const createTask = async (data: CreateTaskInput, actor: { _id: Types.Obje
       {
         actor: actor._id as unknown as Types.ObjectId,
         action: 'task_created',
-        message: `Task created and assigned to employee with priority ${data.priority || 'medium'}`,
+        message: `Task created and assigned to ${assigneeUser.name} with priority ${data.priority || 'medium'}`,
         createdAt: new Date(),
       },
     ],

@@ -460,7 +460,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               {ticket.requester.userType && (
                 <Info
                   label="Role & Roll No"
-                  value={`${ticket.requester.userType.toUpperCase()}${ticket.requester.rollNumber ? ` (${ticket.requester.rollNumber})` : ''}`}
+                  value={`${ticket.requester.userType.toUpperCase()}${ticket.requester.rollNumber ? ` (${ticket.requester.rollNumber})` : ''}${ticket.requester.department ? ` • ${ticket.requester.department}` : ''}`}
                 />
               )}
               {role !== 'employee' && (

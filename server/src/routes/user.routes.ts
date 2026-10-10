@@ -28,6 +28,11 @@ router.post(
   validate(createEmployeeSchema),
   userController.createEmployee
 );
+router.get(
+  '/assignees',
+  requireRole('admin', 'manager', 'employee'),
+  userController.listAssignees
+);
 router.get('/:id', requireRole('admin', 'manager', 'employee'), userController.getById);
 router.put(
   '/:id',

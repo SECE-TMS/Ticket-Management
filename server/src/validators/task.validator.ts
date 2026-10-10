@@ -4,7 +4,7 @@ import { objectId } from './auth.validator';
 export const createTaskSchema = z.object({
   title: z.string().min(2, 'Task title is required').max(200),
   description: z.string().min(2, 'Task description/instructions required').max(5000),
-  department: objectId,
+  department: objectId.optional(),
   assignedTo: objectId,
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   dueDate: z.string().datetime().or(z.string().min(1)).optional().nullable(),
