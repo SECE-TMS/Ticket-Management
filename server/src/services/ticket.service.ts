@@ -997,7 +997,15 @@ export const updateResolutionProof = async (
   if (actor) assertTicketAccess(ticket, actor);
 
   if (actor && actor.role === 'employee') {
-    if (!ticket.assignedTo || String(ticket.assignedTo) !== String(actor._id)) {
+    const assigned = ticket.assignedTo as { _id?: unknown } | unknown;
+    const assignedId = assigned
+      ? String(
+          assigned && typeof assigned === 'object' && '_id' in (assigned as object)
+            ? (assigned as { _id: unknown })._id
+            : assigned
+        )
+      : null;
+    if (!ticket.assignedTo || assignedId !== String(actor._id)) {
       throw ApiError.forbidden('You can only update proof for your own assigned tickets');
     }
   }

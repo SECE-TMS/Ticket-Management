@@ -552,8 +552,11 @@ export function RaiseTicket() {
           onClose={() => setShowShareModal(false)}
           ticketCode={ticketCode}
           mobile={mobileValue || createdTicket?.requester?.mobile}
+          requesterName={watch('name') || createdTicket?.requester?.name}
           departmentName={selectedDept?.name}
+          title={watch('title') || createdTicket?.title}
           complaintType={watch('complaintType')}
+          status={createdTicket?.status || 'new'}
         />
 
         <TicketReceiptModal

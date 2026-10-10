@@ -80,7 +80,7 @@ export function AssignModal({
             onChange={(e) => setAssignedTo(e.target.value)}
             className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none cursor-pointer focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
           >
-            <option value="">{isReassign ? 'Choose new technician…' : 'Select employee…'}</option>
+            <option value="">{isReassign ? 'Choose new Employee' : 'Select employee…'}</option>
             {employees.map((emp) => (
               <option key={getId(emp)} value={getId(emp)}>
                 {emp.name} · {emp.email}
