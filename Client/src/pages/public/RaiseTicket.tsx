@@ -1057,7 +1057,7 @@ export function RaiseTicket() {
                     className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.department ? 'border-[var(--danger)]' : 'border-[var(--border)]'
                       }`}
                   >
-                    <option value="">Select target department…</option>
+                    <option value="">Select Specific department…</option>
                     {departments.map((d) => (
                       <option key={getId(d)} value={getId(d)}>
                         {d.name}
@@ -1082,7 +1082,7 @@ export function RaiseTicket() {
                     className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.complaintType ? 'border-[var(--danger)]' : 'border-[var(--border)]'
                       }`}
                   >
-                    <option value="">Select complaint category…</option>
+                    <option value="">Select Ticket category…</option>
                     {(selectedDept.complaintTypes || []).map((type) => (
                       <option key={type} value={type}>
                         {type}
