@@ -62,6 +62,30 @@ export const listByDepartment = async (deptId: string, actor: IUserDocument) => 
   return users.map((u) => u.toSafeObject());
 };
 
+export const listAssignees = async (actor: IUserDocument, search?: string) => {
+  const filter: Record<string, unknown> = {
+    role: { $in: ['employee', 'manager'] },
+    isActive: true,
+  };
+
+  if (search && search.trim()) {
+    const s = search.trim();
+    filter.$or = [
+      { name: { $regex: s, $options: 'i' } },
+      { email: { $regex: s, $options: 'i' } },
+      { phone: { $regex: s, $options: 'i' } },
+      { rollNumber: { $regex: s, $options: 'i' } },
+    ];
+  }
+
+  const users = await User.find(filter)
+    .populate('department', 'name complaintTypes')
+    .sort({ name: 1 })
+    .limit(500);
+
+  return users.map((u) => u.toSafeObject());
+};
+
 export const createUser = async (data: Record<string, unknown>, actor: IUserDocument) => {
   if (data.role === 'admin') {
     throw ApiError.badRequest('Cannot create admin via API');

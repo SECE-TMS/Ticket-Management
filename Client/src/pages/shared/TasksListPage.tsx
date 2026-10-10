@@ -43,7 +43,7 @@ export function TasksListPage({
   const navigate = useNavigate()
   const user = useAppSelector((s) => s.auth.user)
   const role = user?.role
-  const canCreate = role === 'admin' || role === 'superadmin' || role === 'manager'
+  const canCreate = role === 'admin' || role === 'superadmin' || role === 'manager' || role === 'employee'
 
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState<Task[]>([])

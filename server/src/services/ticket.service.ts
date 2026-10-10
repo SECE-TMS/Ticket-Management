@@ -462,6 +462,11 @@ export const createPublicTicket = async (
       email: (body.email as string) || '',
       userType: (body.userType as 'student' | 'staff' | 'guest') || 'guest',
       rollNumber: (body.rollNumber as string) || '',
+      department:
+        (body.requesterDepartment as string) ||
+        (body.departmentName as string) ||
+        ((body.requester as any)?.department as string) ||
+        '',
     },
     department: department._id,
     complaintType: body.complaintType as string,
@@ -512,6 +517,25 @@ export const trackTicket = async ({
 
   if (!ticket) throw ApiError.notFound('Ticket not found');
 
+  if (
+    ticket.resolution &&
+    (ticket.resolution.attachment?.url || (ticket.resolution.attachments && ticket.resolution.attachments.length > 0) || ticket.resolution.remarks) &&
+    (!ticket.resolutionHistory || ticket.resolutionHistory.length === 0)
+  ) {
+    ticket.resolutionHistory = [
+      {
+        remarks: ticket.resolution.remarks || 'Completed',
+        attachment: ticket.resolution.attachment || null,
+        attachments: ticket.resolution.attachments || [],
+        resolvedAt: ticket.resolution.resolvedAt || ticket.updatedAt || ticket.createdAt,
+        resolvedBy: ticket.assignedTo as any,
+        actionType: 'resolved',
+        createdAt: ticket.resolution.resolvedAt || ticket.updatedAt || ticket.createdAt,
+      } as any,
+    ];
+    void Ticket.findByIdAndUpdate(ticket._id, { resolutionHistory: ticket.resolutionHistory }).exec();
+  }
+
   const activities = await ActivityLog.find({ ticket: ticket._id })
     .populate('actor', 'name role')
     .sort({ createdAt: 1 })
@@ -541,6 +565,25 @@ export const getTicketById = async (id: string, actor: IUserDocument) => {
   const ticket = await populateTicket(Ticket.findById(id));
   if (!ticket) throw ApiError.notFound('Ticket not found');
   assertTicketAccess(ticket, actor);
+
+  if (
+    ticket.resolution &&
+    (ticket.resolution.attachment?.url || (ticket.resolution.attachments && ticket.resolution.attachments.length > 0) || ticket.resolution.remarks) &&
+    (!ticket.resolutionHistory || ticket.resolutionHistory.length === 0)
+  ) {
+    ticket.resolutionHistory = [
+      {
+        remarks: ticket.resolution.remarks || 'Completed',
+        attachment: ticket.resolution.attachment || null,
+        attachments: ticket.resolution.attachments || [],
+        resolvedAt: ticket.resolution.resolvedAt || ticket.updatedAt || ticket.createdAt,
+        resolvedBy: ticket.assignedTo as any,
+        actionType: 'resolved',
+        createdAt: ticket.resolution.resolvedAt || ticket.updatedAt || ticket.createdAt,
+      } as any,
+    ];
+    void Ticket.findByIdAndUpdate(ticket._id, { resolutionHistory: ticket.resolutionHistory }).exec();
+  }
 
   const activities = await ActivityLog.find({ ticket: ticket._id })
     .populate('actor', 'name role')
@@ -959,10 +1002,39 @@ export const updateResolutionProof = async (
     }
   }
 
+  // 1. Ensure any existing resolution is archived in history before changing
+  if (
+    ticket.resolution &&
+    (ticket.resolution.attachment?.url ||
+      (ticket.resolution.attachments && ticket.resolution.attachments.length > 0) ||
+      ticket.resolution.remarks)
+  ) {
+    if (!ticket.resolutionHistory) {
+      ticket.resolutionHistory = [];
+    }
+    const alreadySaved = ticket.resolutionHistory.some(
+      (h) =>
+        h.attachment?.url === ticket.resolution?.attachment?.url &&
+        h.remarks === ticket.resolution?.remarks
+    );
+    if (!alreadySaved) {
+      ticket.resolutionHistory.push({
+        remarks: ticket.resolution.remarks || 'Resolved',
+        attachment: ticket.resolution.attachment || null,
+        attachments: ticket.resolution.attachments || [],
+        resolvedAt: ticket.resolution.resolvedAt || ticket.updatedAt || new Date(),
+        resolvedBy: ticket.assignedTo || (actor ? (actor._id as any) : null),
+        actionType: 'resolved',
+        createdAt: ticket.resolution.resolvedAt || ticket.updatedAt || new Date(),
+      } as any);
+    }
+  }
+
   const rawFiles = files && files.length ? files : file ? [file] : [];
   let resolutionAttachments = ticket.resolution?.attachments ? [...ticket.resolution.attachments] : [];
   let resolutionAttachment = ticket.resolution?.attachment || null;
 
+  let hasNewFile = false;
   if (rawFiles.length > 0) {
     const newAttachments = [];
     for (const f of rawFiles) {
@@ -972,10 +1044,12 @@ export const updateResolutionProof = async (
     if (newAttachments.length > 0) {
       resolutionAttachments = newAttachments;
       resolutionAttachment = newAttachments[0];
+      hasNewFile = true;
     }
   }
 
-  const finalRemarks = remarks !== undefined ? remarks.trim() : (ticket.resolution?.remarks || '');
+  const prevRemarks = ticket.resolution?.remarks || '';
+  const finalRemarks = remarks !== undefined ? remarks.trim() : prevRemarks;
 
   ticket.resolution = {
     remarks: finalRemarks,
@@ -987,13 +1061,15 @@ export const updateResolutionProof = async (
   if (!ticket.resolutionHistory) {
     ticket.resolutionHistory = [];
   }
+
+  // Push new revision to history
   ticket.resolutionHistory.push({
     remarks: finalRemarks,
     attachment: resolutionAttachment,
     attachments: resolutionAttachments,
     resolvedAt: new Date(),
     resolvedBy: actor ? (actor._id as any) : null,
-    actionType: 'updated_proof',
+    actionType: hasNewFile ? 'updated_proof' : 'updated_proof',
     createdAt: new Date(),
   } as any);
 

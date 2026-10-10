@@ -21,6 +21,15 @@ export const listByDepartment = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
+export const listAssignees = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await userService.listAssignees(req.user!, req.query.search as string);
+    return sendSuccess(res, { data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const create = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = await userService.createUser(req.body, req.user!);

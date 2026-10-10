@@ -31,6 +31,7 @@ export interface UpdateTicketPayload {
     email?: string
     userType?: 'student' | 'staff' | 'guest'
     rollNumber?: string
+    department?: string
   }
 }
 

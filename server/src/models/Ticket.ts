@@ -58,6 +58,7 @@ export interface IRequester {
   email: string;
   userType?: 'student' | 'staff' | 'guest';
   rollNumber?: string;
+  department?: string;
 }
 
 export interface ITicketFeedback {
@@ -128,6 +129,7 @@ const ticketSchema = new Schema<ITicket>(
       email: { type: String, trim: true, default: '' },
       userType: { type: String, enum: ['student', 'staff', 'guest'], default: 'guest' },
       rollNumber: { type: String, trim: true, default: '' },
+      department: { type: String, trim: true, default: '' },
     },
     department: {
       type: Schema.Types.ObjectId,

@@ -16,7 +16,7 @@ export interface TaskListParams {
 export interface CreateTaskPayload {
   title: string
   description: string
-  department: string
+  department?: string
   assignedTo: string
   priority?: TaskPriority
   dueDate?: string | null
