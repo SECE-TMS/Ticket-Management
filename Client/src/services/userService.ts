@@ -33,7 +33,8 @@ export const userService = {
     email: string
     password: string
     role: 'manager' | 'employee'
-    department: string
+    department?: string
+    departments?: string[]
     phone?: string
     rollNumber?: string
     managers?: string[]
@@ -47,6 +48,8 @@ export const userService = {
     name: string
     email: string
     password: string
+    department?: string
+    departments?: string[]
     phone?: string
     rollNumber?: string
     managers?: string[]
@@ -62,6 +65,7 @@ export const userService = {
       phone: string
       rollNumber: string
       department: string | null
+      departments: string[]
       role: 'manager' | 'employee'
       managers: string[]
       employees: string[]

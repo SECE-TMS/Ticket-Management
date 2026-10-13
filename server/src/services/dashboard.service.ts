@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import Ticket, { OPEN_STATUSES } from '../models/Ticket';
-import User, { type IUserDocument } from '../models/User';
+import User, { getUserDepartmentIds, type IUserDocument } from '../models/User';
 import Department from '../models/Department';
 import ApiError from '../utils/apiError';
 
@@ -349,9 +349,10 @@ export const adminDashboard = async (query: Record<string, unknown> = {}) => {
 };
 
 export const managerDashboard = async (actor: IUserDocument) => {
-  if (!actor.department) throw ApiError.badRequest('Manager has no department');
-  const deptId = toObjectId(actor.department);
-  const match = { department: deptId };
+  const managerDepts = getUserDepartmentIds(actor);
+  if (!managerDepts.length) throw ApiError.badRequest('Manager has no department assigned');
+  const deptObjectIds = managerDepts.map(toObjectId);
+  const match = deptObjectIds.length === 1 ? { department: deptObjectIds[0] } : { department: { $in: deptObjectIds } };
 
   const [byStatus, open, overdue, unassigned, employees, recent, feedbackTickets] = await Promise.all([
     countByStatus(match),
@@ -362,16 +363,25 @@ export const managerDashboard = async (actor: IUserDocument) => {
       expectedResolutionAt: { $lt: new Date() },
     }),
     Ticket.countDocuments({ ...match, status: 'new', assignedTo: null }),
-    User.countDocuments({ department: deptId, role: 'employee', isActive: true }),
+    User.countDocuments({
+      $or: [
+        { department: { $in: deptObjectIds } },
+        { departments: { $in: deptObjectIds } },
+      ],
+      role: 'employee',
+      isActive: true,
+    }),
     Ticket.find(match)
       .sort({ createdAt: -1 })
       .limit(10)
+      .populate('department', 'name')
       .populate('assignedTo', 'name')
       .populate('requester', 'name mobile')
       .lean(),
     Ticket.find({ ...match, 'feedback.rating': { $exists: true, $ne: null } })
       .sort({ 'feedback.submittedAt': -1 })
       .limit(10)
+      .populate('department', 'name')
       .populate('assignedTo', 'name')
       .populate('requester', 'name mobile')
       .lean(),
@@ -380,7 +390,7 @@ export const managerDashboard = async (actor: IUserDocument) => {
   const workload = await Ticket.aggregate([
     {
       $match: {
-        department: deptId,
+        ...match,
         assignedTo: { $ne: null },
         status: { $in: [...OPEN_STATUSES] },
       },

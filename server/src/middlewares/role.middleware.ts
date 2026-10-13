@@ -1,7 +1,7 @@
 import type { Response, NextFunction } from 'express';
 import ApiError from '../utils/apiError';
 import type { AuthRequest } from '../types/auth';
-import type { UserRole } from '../models/User';
+import { getUserDepartmentIds, type UserRole } from '../models/User';
 
 export const requireRole =
   (...roles: UserRole[]) =>
@@ -30,14 +30,14 @@ export const requireDepartmentScope =
       next(ApiError.unauthorized());
       return;
     }
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'superadmin') {
       next();
       return;
     }
 
     if (req.user.role === 'manager') {
-      const userDept = req.user.department ? String(req.user.department) : null;
-      if (!userDept) {
+      const userDepts = getUserDepartmentIds(req.user);
+      if (userDepts.length === 0) {
         next(ApiError.forbidden('Manager has no department assigned'));
         return;
       }
@@ -56,8 +56,8 @@ export const requireDepartmentScope =
         targetDept = String(req.query.department);
       }
 
-      if (targetDept && targetDept !== userDept) {
-        next(ApiError.forbidden('Access limited to your department'));
+      if (targetDept && !userDepts.includes(targetDept)) {
+        next(ApiError.forbidden('Access limited to your department(s)'));
         return;
       }
     }

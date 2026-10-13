@@ -20,6 +20,7 @@ interface UserForm {
   password: string
   role: 'manager' | 'employee'
   department: string
+  departments: string[]
   managers: string[]
   employees: string[]
   phone: string
@@ -32,6 +33,7 @@ const emptyForm: UserForm = {
   password: '',
   role: 'employee',
   department: '',
+  departments: [],
   managers: [],
   employees: [],
   phone: '',
@@ -127,12 +129,17 @@ export function AdminUsers() {
     setEditing(u)
     const existingMgrs = (u.managers || []).map((m) => (typeof m === 'object' ? getId(m) : m))
     const existingEmps = (u.employees || []).map((e) => (typeof e === 'object' ? getId(e) : e))
+    const existingDepts = (u.departments && u.departments.length > 0)
+      ? u.departments.map((d) => (typeof d === 'object' ? getId(d) : String(d)))
+      : (u.department ? [(typeof u.department === 'object' ? getId(u.department) : String(u.department))] : [])
+
     setForm({
       name: u.name,
       email: u.email,
       password: '',
       role: (u.role === 'admin' || u.role === 'superadmin') ? 'manager' : (u.role as 'manager' | 'employee'),
-      department: getId(u.department),
+      department: existingDepts[0] || getId(u.department) || '',
+      departments: existingDepts,
       managers: existingMgrs,
       employees: existingEmps,
       phone: u.phone || '',
@@ -150,6 +157,16 @@ export function AdminUsers() {
       toast.error('Password must meet all complexity requirements')
       return
     }
+
+    const finalDepts = form.departments.length > 0
+      ? form.departments
+      : (form.department ? [form.department] : [])
+
+    if (finalDepts.length === 0) {
+      toast.error('Please select at least one department')
+      return
+    }
+
     setSaving(true)
     try {
       if (editing) {
@@ -157,7 +174,8 @@ export function AdminUsers() {
           name: form.name,
           email: form.email,
           role: form.role,
-          department: form.department,
+          department: finalDepts[0],
+          departments: finalDepts,
           managers: form.role === 'employee' ? form.managers : [],
           employees: form.role === 'manager' ? form.employees : [],
           phone: form.phone || '',
@@ -171,6 +189,8 @@ export function AdminUsers() {
       } else {
         await userService.create({
           ...form,
+          department: finalDepts[0],
+          departments: finalDepts,
           managers: form.role === 'employee' ? form.managers : [],
           employees: form.role === 'manager' ? form.employees : [],
           phone: form.phone || undefined,
@@ -306,7 +326,28 @@ export function AdminUsers() {
                         {formatLabel(u.role)}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5 text-[var(--ink-muted)]">{getName(u.department, '—')}</td>
+                    <td className="px-4 py-3.5">
+                      {(() => {
+                        const depts = (u.departments && u.departments.length > 0)
+                          ? u.departments
+                          : (u.department ? [u.department] : [])
+                        if (!depts.length) {
+                          return <span className="text-xs text-[var(--ink-muted)]">—</span>
+                        }
+                        return (
+                          <div className="flex flex-wrap gap-1 max-w-[220px]">
+                            {depts.map((d) => (
+                              <span
+                                key={typeof d === 'object' ? getId(d) : String(d)}
+                                className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 border border-indigo-200"
+                              >
+                                {getName(d)}
+                              </span>
+                            ))}
+                          </div>
+                        )
+                      })()}
+                    </td>
                     <td className="px-4 py-3.5">
                       {u.role === 'employee' ? (
                         u.managers && u.managers.length > 0 ? (
@@ -469,22 +510,68 @@ export function AdminUsers() {
               <option value="employee">Employee</option>
             </select>
           </Field>
-          <Field label="Department">
-            <select
-              value={form.department}
-              onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-              className={`cursor-pointer ${inputClass}`}
-            >
-              <option value="">Select department…</option>
+          <div className="flex flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+                Assigned Departments (Single or Multiple)
+              </label>
+              <span className="text-xs font-bold text-[var(--primary-blue)]">
+                {form.departments.length} selected
+              </span>
+            </div>
+            <p className="text-xs text-[var(--ink-muted)]">
+              Select one or more departments this {form.role} belongs to:
+            </p>
+            <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
               {departments
                 .filter((d) => d.isActive !== false)
-                .map((d) => (
-                  <option key={getId(d)} value={getId(d)}>
-                    {d.name}
-                  </option>
-                ))}
-            </select>
-          </Field>
+                .map((d) => {
+                  const dId = getId(d)
+                  const isChecked = form.departments.includes(dId)
+                  return (
+                    <label
+                      key={dId}
+                      className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                        isChecked
+                          ? 'border-[var(--primary-blue)] bg-[var(--primary-blue-light)] text-[var(--primary-blue)] font-semibold shadow-xs'
+                          : 'border-[var(--border)] bg-white hover:bg-slate-50 text-[var(--ink)]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const nextDepts = [...form.departments, dId]
+                              setForm((f) => ({
+                                ...f,
+                                departments: nextDepts,
+                                department: nextDepts[0] || '',
+                              }))
+                            } else {
+                              const nextDepts = form.departments.filter((id) => id !== dId)
+                              setForm((f) => ({
+                                ...f,
+                                departments: nextDepts,
+                                department: nextDepts[0] || '',
+                              }))
+                            }
+                          }}
+                          className="rounded text-[var(--primary-blue)] focus:ring-[var(--primary-blue)] cursor-pointer"
+                        />
+                        <span>{d.name}</span>
+                      </div>
+                      {d.manager && (
+                        <span className="text-[10px] text-[var(--ink-muted)] font-normal rounded bg-white/80 px-1.5 py-0.5 border border-slate-200">
+                          Mgr: {typeof d.manager === 'object' ? d.manager.name : 'Assigned'}
+                        </span>
+                      )}
+                    </label>
+                  )
+                })}
+            </div>
+          </div>
 
           {/* Multiple Managers Selection for Employee */}
           {form.role === 'employee' && (

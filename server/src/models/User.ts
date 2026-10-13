@@ -10,6 +10,7 @@ export interface IUserSafeObject {
   email: string;
   role: UserRole;
   department: mongoose.Types.ObjectId | null;
+  departments: mongoose.Types.ObjectId[];
   managers?: any[];
   employees?: any[];
   phone: string;
@@ -27,6 +28,7 @@ export interface IUser {
   password: string;
   role: UserRole;
   department: mongoose.Types.ObjectId | null;
+  departments?: mongoose.Types.ObjectId[];
   managers?: mongoose.Types.ObjectId[];
   employees?: mongoose.Types.ObjectId[];
   phone: string;
@@ -50,6 +52,32 @@ export interface IUser {
 
 export type IUserDocument = HydratedDocument<IUser>;
 
+export const getUserDepartmentIds = (user?: {
+  department?: unknown;
+  departments?: unknown[];
+} | null): string[] => {
+  if (!user) return [];
+  const ids = new Set<string>();
+  if (Array.isArray(user.departments)) {
+    for (const d of user.departments) {
+      if (!d) continue;
+      if (typeof d === 'object' && '_id' in (d as object)) {
+        ids.add(String((d as { _id: unknown })._id));
+      } else {
+        ids.add(String(d));
+      }
+    }
+  }
+  if (user.department) {
+    if (typeof user.department === 'object' && '_id' in (user.department as object)) {
+      ids.add(String((user.department as { _id: unknown })._id));
+    } else {
+      ids.add(String(user.department));
+    }
+  }
+  return Array.from(ids);
+};
+
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true },
@@ -67,6 +95,12 @@ const userSchema = new Schema<IUser>(
       ref: 'Department',
       default: null,
     },
+    departments: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Department',
+      },
+    ],
     managers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     employees: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     phone: { type: String, trim: true, default: '' },
@@ -86,8 +120,17 @@ const userSchema = new Schema<IUser>(
 );
 
 userSchema.index({ role: 1, department: 1 });
+userSchema.index({ departments: 1 });
 
-userSchema.pre('save', async function hashPassword(next) {
+userSchema.pre('save', async function syncData(next) {
+  if (Array.isArray(this.departments) && this.departments.length > 0) {
+    if (!this.department || !this.departments.some((d) => String(d) === String(this.department))) {
+      this.department = this.departments[0];
+    }
+  } else if (this.department) {
+    this.departments = [this.department];
+  }
+
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   return next();
@@ -105,12 +148,17 @@ userSchema.methods.isLocked = function isLocked(this: IUserDocument): boolean {
 };
 
 userSchema.methods.toSafeObject = function toSafeObject(this: IUserDocument): IUserSafeObject {
+  const depts = (this.departments && this.departments.length > 0)
+    ? this.departments
+    : (this.department ? [this.department] : []);
+
   return {
     id: this._id,
     name: this.name,
     email: this.email,
     role: this.role,
     department: this.department,
+    departments: depts,
     managers: this.managers || [],
     employees: this.employees || [],
     phone: this.phone,

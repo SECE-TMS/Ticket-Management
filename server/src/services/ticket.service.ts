@@ -2,7 +2,7 @@ import mongoose, { type Query } from 'mongoose';
 // ExcelJS is lazy-loaded inside exportExcel() to avoid slow startup
 import Ticket, { OPEN_STATUSES, type ITicket, type ITicketDocument, type TicketStatus, type TicketPriority } from '../models/Ticket';
 import Department from '../models/Department';
-import User, { type IUserDocument } from '../models/User';
+import User, { getUserDepartmentIds, type IUserDocument } from '../models/User';
 import ActivityLog from '../models/ActivityLog';
 import Notification from '../models/Notification';
 import ApiError from '../utils/apiError';
@@ -366,8 +366,8 @@ const assertTicketAccess = (ticket: ITicket & { department: unknown; assignedTo?
   );
 
   if (actor.role === 'manager') {
-    const userDept = actor.department ? String(actor.department) : null;
-    if (userDept !== deptId) throw ApiError.forbidden('Access limited to your department');
+    const managerDepts = getUserDepartmentIds(actor);
+    if (!managerDepts.includes(deptId)) throw ApiError.forbidden('Access limited to your department(s)');
     return;
   }
 
@@ -390,7 +390,15 @@ const buildListFilter = (actor: IUserDocument, query: Record<string, unknown>) =
   const filter: Record<string, unknown> = {};
 
   if (actor.role === 'manager') {
-    filter.department = actor.department;
+    const managerDepts = getUserDepartmentIds(actor);
+    if (query.department) {
+      if (!managerDepts.includes(String(query.department))) {
+        throw ApiError.forbidden('Cannot filter outside your department(s)');
+      }
+      filter.department = query.department;
+    } else {
+      filter.department = managerDepts.length === 1 ? managerDepts[0] : { $in: managerDepts };
+    }
   } else if (actor.role === 'employee') {
     filter.assignedTo = actor._id;
   } else if (query.department) {
@@ -624,7 +632,8 @@ export const updateTicketDetails = async (
     ticket.department = newDept._id;
     if (ticket.assignedTo) {
       const assignedEmp = await User.findById(ticket.assignedTo);
-      if (assignedEmp && String(assignedEmp.department) !== String(newDept._id)) {
+      const empDepts = getUserDepartmentIds(assignedEmp);
+      if (assignedEmp && !empDepts.includes(String(newDept._id))) {
         ticket.assignedTo = null;
         ticket.assignedBy = null;
         if (ticket.status === 'assigned' || ticket.status === 'accepted' || ticket.status === 'in_progress') {
@@ -718,12 +727,16 @@ export const assignTicket = async (
     throw ApiError.badRequest('Assignee must be an active employee');
   }
 
-  if (String(employee.department) !== String(ticket.department)) {
+  const empDepts = getUserDepartmentIds(employee);
+  if (!empDepts.includes(String(ticket.department))) {
     throw ApiError.badRequest('Employee must belong to the ticket department');
   }
 
-  if (actor.role === 'manager' && String(actor.department) !== String(ticket.department)) {
-    throw ApiError.forbidden();
+  if (actor.role === 'manager') {
+    const managerDepts = getUserDepartmentIds(actor);
+    if (!managerDepts.includes(String(ticket.department))) {
+      throw ApiError.forbidden('Cannot assign tickets outside your department(s)');
+    }
   }
 
   const fromStatus = ticket.status;
@@ -776,8 +789,15 @@ export const reassignTicket = async (
   if (!employee || !employee.isActive || employee.role !== 'employee') {
     throw ApiError.badRequest('Assignee must be an active employee');
   }
-  if (String(employee.department) !== String(ticket.department)) {
+  const empDepts = getUserDepartmentIds(employee);
+  if (!empDepts.includes(String(ticket.department))) {
     throw ApiError.badRequest('Employee must belong to the ticket department');
+  }
+  if (actor.role === 'manager') {
+    const managerDepts = getUserDepartmentIds(actor);
+    if (!managerDepts.includes(String(ticket.department))) {
+      throw ApiError.forbidden('Cannot reassign tickets outside your department(s)');
+    }
   }
 
   const previous = ticket.assignedTo;

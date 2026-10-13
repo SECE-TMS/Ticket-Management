@@ -25,6 +25,7 @@ export const listAdmins = async (query: Record<string, unknown> = {}) => {
   const [items, total] = await Promise.all([
     User.find(filter)
       .populate('department', 'name')
+      .populate('departments', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -156,8 +157,16 @@ export const getDepartmentReport = async () => {
 
       // Staff counts
       const [managerCount, employeeCount] = await Promise.all([
-        User.countDocuments({ department: deptId, role: 'manager', isActive: true }),
-        User.countDocuments({ department: deptId, role: 'employee', isActive: true }),
+        User.countDocuments({
+          $or: [{ department: deptId }, { departments: deptId }],
+          role: 'manager',
+          isActive: true,
+        }),
+        User.countDocuments({
+          $or: [{ department: deptId }, { departments: deptId }],
+          role: 'employee',
+          isActive: true,
+        }),
       ]);
 
       return {

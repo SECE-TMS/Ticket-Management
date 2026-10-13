@@ -60,6 +60,7 @@ export interface User {
   email: string
   role: Role
   department: Department | string | null
+  departments?: Array<Department | string>
   managers?: Array<UserRef | User | string>
   employees?: Array<UserRef | User | string>
   phone?: string
