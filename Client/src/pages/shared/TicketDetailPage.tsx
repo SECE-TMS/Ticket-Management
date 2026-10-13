@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Pencil, Share2, Star, ThumbsUp, UserCheck, UserPlus, Volume2, X } from 'lucide-react'
+import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Pencil, RotateCcw, Share2, Star, ThumbsUp, UserCheck, UserPlus, Volume2, X } from 'lucide-react'
 import { ticketService } from '../../services/ticketService'
 import { userService } from '../../services/userService'
 import { Button } from '../../components/common/Button'
@@ -126,6 +126,11 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const isAdmin = role === 'admin' || role === 'superadmin'
   const isTicketAssigned = Boolean(ticket.assignedTo) || ticket.status === 'assigned'
 
+  const currentUserId = getId(user)
+  const assignedUserId = getId(ticket.assignedTo)
+  const isAssignedToMe = Boolean(currentUserId && assignedUserId && currentUserId === assignedUserId)
+  const isEmployeeAssigned = role === 'employee' ? isAssignedToMe : true
+
   const canAssign =
     (role === 'admin' || role === 'manager') &&
     !isTicketAssigned &&
@@ -136,10 +141,14 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
     isTicketAssigned &&
     ['assigned', 'accepted', 'in_progress', 'reopened'].includes(ticket.status)
   const canClose =
-    (role === 'admin' || role === 'manager') && ticket.status !== 'closed' && ticket.status !== 'pending_approval'
+    ['admin', 'manager', 'employee'].includes(role || '') &&
+    ticket.status !== 'closed' &&
+    ticket.status !== 'pending_approval' &&
+    isEmployeeAssigned
   const canReopen =
-    (role === 'admin' || role === 'manager') &&
-    ['resolved', 'closed', 'pending_approval'].includes(ticket.status)
+    ['admin', 'manager', 'employee'].includes(role || '') &&
+    ['resolved', 'closed', 'pending_approval'].includes(ticket.status) &&
+    isEmployeeAssigned
   const canAccept =
     role === 'employee' && (ticket.status === 'assigned' || ticket.status === 'reopened')
   const canStart = role === 'employee' && ticket.status === 'accepted'
@@ -150,10 +159,6 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const canApproveClose =
     (role === 'admin' || role === 'manager') && ticket.status === 'pending_approval'
   const canManageFeedback = role === 'admin' || role === 'superadmin' || role === 'manager'
-
-  const currentUserId = getId(user)
-  const assignedUserId = getId(ticket.assignedTo)
-  const isAssignedToMe = Boolean(currentUserId && assignedUserId && currentUserId === assignedUserId)
 
   const canEditResolutionProof =
     Boolean(
@@ -345,17 +350,30 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                   You have submitted your resolution work. The ticket is currently under review by your department manager.
                 </p>
               </div>
-              {canEditResolutionProof && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setEditResolutionOpen(true)}
-                  className="bg-white border-orange-300 text-orange-800 hover:bg-orange-100 font-bold shrink-0 gap-1.5"
-                >
-                  <Pencil size={13} /> Update / Reupload Proof
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {canEditResolutionProof && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditResolutionOpen(true)}
+                    className="bg-white border-orange-300 text-orange-800 hover:bg-orange-100 font-bold shrink-0 gap-1.5"
+                  >
+                    <Pencil size={13} /> Update / Reupload Proof
+                  </Button>
+                )}
+                {canReopen && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setReopenOpen(true)}
+                    className="bg-white border-red-300 text-red-800 hover:bg-red-50 font-bold shrink-0 gap-1.5"
+                  >
+                    <RotateCcw size={13} /> Reopen for Rework
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -437,10 +455,12 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
             <Button
               id="action-reopen"
               type="button"
-              variant="ghost"
+              variant="outline"
               loading={actionLoading}
               onClick={() => setReopenOpen(true)}
+              className="border-red-300 bg-red-50/70 text-red-700 hover:bg-red-100 font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
+              <RotateCcw size={14} />
               Reopen
             </Button>
           )}
@@ -455,7 +475,9 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                   await ticketService.close(ticket._id)
                 }, 'Ticket closed')
               }
+              className="border-slate-300 bg-slate-100/80 text-slate-700 hover:bg-slate-200 hover:border-slate-400 font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
+              <CheckCircle2 size={14} />
               Close Ticket
             </Button>
           )}
@@ -1055,7 +1077,11 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           onSubmit={(e) => {
             e.preventDefault()
             void run(async () => {
-              await ticketService.reopen(ticket._id, reopenReason.trim() || 'Reopened by manager')
+              await ticketService.reopen(
+                ticket._id,
+                reopenReason.trim() ||
+                  (role === 'employee' ? 'Reopened by technician' : 'Reopened by manager')
+              )
               setReopenOpen(false)
               setReopenReason('')
             }, 'Ticket reopened')
@@ -1063,7 +1089,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           className="space-y-4"
         >
           <p className="text-xs text-[var(--ink-muted)]">
-            Explain why this ticket is being reopened. The technician will be notified.
+            Explain why this ticket is being reopened. The technician, manager, and requester will be notified.
           </p>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)] mb-1">

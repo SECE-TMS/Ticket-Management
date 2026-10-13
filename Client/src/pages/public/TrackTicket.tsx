@@ -17,6 +17,7 @@ import {
   Lock,
   MessageSquare,
   Phone,
+  RotateCcw,
   Search,
   Send,
   Share2,
@@ -28,6 +29,7 @@ import {
 } from 'lucide-react'
 import { ticketService } from '../../services/ticketService'
 import { Button } from '../../components/common/Button'
+import { Modal } from '../../components/common/Modal'
 import { PriorityBadge, StatusBadge } from '../../components/common/Badge'
 import { TicketTimeline } from '../../components/tickets/TicketTimeline'
 import { ShareTicketModal } from '../../components/tickets/ShareTicketModal'
@@ -71,6 +73,8 @@ export function TrackTicket() {
   const [activeImageModal, setActiveImageModal] = useState<string | null>(null)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showReceiptModal, setShowReceiptModal] = useState(false)
+  const [showReopenModal, setShowReopenModal] = useState(false)
+  const [reopenReason, setReopenReason] = useState('')
   const [requesterReviewComment, setRequesterReviewComment] = useState('')
   const [newComment, setNewComment] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
@@ -347,6 +351,18 @@ export function TrackTicket() {
 
                   <StatusBadge status={ticket.status} />
                   <PriorityBadge priority={ticket.priority} />
+
+                  {(ticket.status === 'closed' || ticket.status === 'resolved') && (
+                    <button
+                      type="button"
+                      id="header-reopen-ticket-btn"
+                      onClick={() => setShowReopenModal(true)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-300/40 bg-red-500/20 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-500/30 transition-colors cursor-pointer shadow-xs"
+                      title="Reopen ticket if problem persists or reoccurred"
+                    >
+                      <RotateCcw size={14} className="text-red-200" /> Reopen Ticket
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -389,6 +405,23 @@ export function TrackTicket() {
 
             {/* Key Information Cards */}
             <div className="p-6 sm:p-8 space-y-6">
+              {/* Reopened Alert Banner */}
+              {ticket.status === 'reopened' && (
+                <div className="rounded-2xl border-2 border-amber-300 bg-amber-50/90 p-4 sm:p-5 shadow-xs">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl shrink-0">🔄</span>
+                    <div>
+                      <h4 className="text-sm sm:text-base font-bold text-amber-950">
+                        Ticket Reopened for Rework {ticket.reopenCount ? `(Revision #${ticket.reopenCount})` : ''}
+                      </h4>
+                      <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                        This ticket has been reopened for rework. The assigned technician and department head have been notified and are actively addressing your issue. You will receive updates as progress is made.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)] mb-1">
@@ -698,6 +731,34 @@ export function TrackTicket() {
                 </div>
               )}
 
+              {/* ── REOPEN OPTION FOR CLOSED TICKETS ──────────────── */}
+              {ticket.status === 'closed' && (
+                <div className="rounded-2xl border-2 border-red-200 bg-red-50/70 p-5 sm:p-6 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl shrink-0">🔄</span>
+                      <div>
+                        <h4 className="text-base font-bold text-red-950">
+                          Issue Not Resolved or Problem Reoccurred?
+                        </h4>
+                        <p className="text-xs text-red-800 mt-1 max-w-xl leading-relaxed">
+                          If your issue was not solved to your satisfaction, or the same problem has happened again, you can reopen this ticket. The assigned technician and department manager will be notified immediately for rework.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      id="card-reopen-ticket-btn"
+                      variant="outline"
+                      className="border-red-300 bg-white text-red-700 hover:bg-red-50 hover:border-red-400 font-bold shadow-xs cursor-pointer shrink-0 gap-1.5"
+                      onClick={() => setShowReopenModal(true)}
+                    >
+                      <RotateCcw size={14} /> Reopen Ticket
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* ── FEEDBACK & RATING SECTION FOR CLOSED TICKETS ──────────────── */}
               {ticket.status === 'closed' && (
                 <div id="feedback-section" className="scroll-mt-6">
@@ -845,6 +906,87 @@ export function TrackTicket() {
           onClose={() => setShowReceiptModal(false)}
           ticket={ticket}
         />
+      )}
+
+      {/* Requester Reopen Ticket Modal */}
+      {ticket && (
+        <Modal
+          open={showReopenModal}
+          onClose={() => {
+            setShowReopenModal(false)
+            setReopenReason('')
+          }}
+          title="Reopen Ticket for Rework"
+        >
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              if (!ticket) return
+              if (!reopenReason.trim()) {
+                toast.error('Please describe why you are reopening this ticket.')
+                return
+              }
+              setActionLoading(true)
+              try {
+                const res = await ticketService.trackReopen({
+                  ticketCode: ticket.ticketCode,
+                  mobile: ticket.requester.mobile,
+                  message: reopenReason.trim(),
+                })
+                setTicket(res.ticket)
+                setActivities(res.activities)
+                setShowReopenModal(false)
+                setReopenReason('')
+                toast.success('Ticket has been successfully reopened for rework!')
+              } catch (err) {
+                toast.error(getErrorMessage(err, 'Failed to reopen ticket'))
+              } finally {
+                setActionLoading(false)
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="rounded-xl bg-amber-50 border border-amber-200 p-3.5 text-xs text-amber-900 leading-relaxed">
+              <strong>Notice:</strong> Reopening this ticket will alert the assigned department and technician to resume work on your request. Please explain what is still not resolved.
+            </div>
+            <div>
+              <label
+                htmlFor="requester-reopen-modal-reason"
+                className="block text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)] mb-1.5"
+              >
+                Reason for Reopening <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="requester-reopen-modal-reason"
+                rows={4}
+                required
+                value={reopenReason}
+                onChange={(e) => setReopenReason(e.target.value)}
+                placeholder="Explain what is still not resolved or what problem recurred..."
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--white)] p-3 text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)] outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 shadow-xs"
+              />
+            </div>
+            <div className="flex justify-end gap-2.5 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowReopenModal(false)
+                  setReopenReason('')
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                loading={actionLoading}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer"
+              >
+                Confirm &amp; Reopen Ticket
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   )

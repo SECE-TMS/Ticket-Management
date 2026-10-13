@@ -1156,10 +1156,6 @@ export const closeTicket = async (id: string, actor: IUserDocument) => {
   if (!ticket) throw ApiError.notFound('Ticket not found');
   assertTicketAccess(ticket, actor);
 
-  if (actor.role === 'employee') {
-    throw ApiError.forbidden('Employees cannot close tickets');
-  }
-
   if (ticket.status === 'closed') {
     throw ApiError.badRequest('Ticket is already closed');
   }
@@ -1176,15 +1172,28 @@ export const closeTicket = async (id: string, actor: IUserDocument) => {
     action: 'closed',
     fromStatus,
     toStatus: 'closed',
-    message: 'Ticket completed & closed',
+    message:
+      actor.role === 'employee'
+        ? `Ticket completed & closed by technician (${actor.name})`
+        : 'Ticket completed & closed',
   });
 
-  if (ticket.assignedTo) {
+  if (ticket.assignedTo && String(ticket.assignedTo) !== String(actor._id)) {
     await notify({
       recipient: ticket.assignedTo,
       ticket,
       type: 'ticket_closed',
       message: `Ticket ${ticket.ticketCode} closed`,
+    });
+  }
+
+  const dept = await Department.findById(ticket.department);
+  if (dept?.manager && String(dept.manager) !== String(actor._id)) {
+    await notify({
+      recipient: dept.manager,
+      ticket,
+      type: 'ticket_closed',
+      message: `Ticket ${ticket.ticketCode} closed by ${actor.name}`,
     });
   }
 
@@ -1197,10 +1206,6 @@ export const reopenTicket = async (id: string, actor: IUserDocument, message?: s
   const ticket = await Ticket.findById(id);
   if (!ticket) throw ApiError.notFound('Ticket not found');
   assertTicketAccess(ticket, actor);
-
-  if (actor.role === 'employee') {
-    throw ApiError.forbidden('Employees cannot reopen tickets');
-  }
 
   if (!['resolved', 'closed', 'pending_approval'].includes(ticket.status)) {
     throw ApiError.badRequest('Only resolved, closed, or pending approval tickets can be reopened');
@@ -1240,8 +1245,8 @@ export const reopenTicket = async (id: string, actor: IUserDocument, message?: s
   await ticket.save();
 
   const activityMsg = message?.trim()
-    ? (isRejection ? `Work Rejected & Reopened: ${message.trim()}` : message.trim())
-    : (isRejection ? 'Work rejected by reviewer and reopened for rework' : 'Ticket reopened');
+    ? (isRejection ? `Work Rejected & Reopened: ${message.trim()}` : `Ticket reopened by ${actor.name}: ${message.trim()}`)
+    : (isRejection ? 'Work rejected by reviewer and reopened for rework' : `Ticket reopened by ${actor.name}`);
 
   await logActivity({
     ticket,
@@ -1252,14 +1257,19 @@ export const reopenTicket = async (id: string, actor: IUserDocument, message?: s
     message: activityMsg,
   });
 
-  const recipients = [ticket.assignedTo].filter(Boolean);
-  await notifyMany(recipients, {
-    ticket,
-    type: 'ticket_reopened',
-    message: isRejection
-      ? `Ticket ${ticket.ticketCode} work rejected: ${message?.trim() || 'Please review feedback and rework.'}`
-      : `Ticket ${ticket.ticketCode} reopened`,
-  });
+  const dept = await Department.findById(ticket.department);
+  const recipients = [ticket.assignedTo, dept?.manager]
+    .filter(Boolean)
+    .filter((r) => String(r) !== String(actor._id));
+  if (recipients.length > 0) {
+    await notifyMany(recipients as any, {
+      ticket,
+      type: 'ticket_reopened',
+      message: isRejection
+        ? `Ticket ${ticket.ticketCode} work rejected: ${message?.trim() || 'Please review feedback and rework.'}`
+        : `Ticket ${ticket.ticketCode} reopened by ${actor.name}${message?.trim() ? `: ${message.trim()}` : ''}`,
+    });
+  }
 
   void notifyRequesterOnAction(ticket, 'Ticket Reopened', message || 'Your ticket has been reopened for further action.', 'reopened');
 
@@ -2085,6 +2095,14 @@ export const requesterReopen = async ({
 
   if (!ticket) throw ApiError.notFound('Ticket not found or mobile mismatch');
 
+  if (ticket.status === 'reopened') {
+    throw ApiError.badRequest('Ticket is already reopened');
+  }
+
+  if (!['resolved', 'closed', 'pending_approval'].includes(ticket.status)) {
+    throw ApiError.badRequest('Only resolved, closed, or pending approval tickets can be reopened');
+  }
+
   const fromStatus = ticket.status;
 
   // Archive current resolution before clearing
@@ -2104,7 +2122,7 @@ export const requesterReopen = async ({
         attachments: ticket.resolution.attachments || [],
         resolvedAt: ticket.resolution.resolvedAt || new Date(),
         resolvedBy: ticket.assignedTo || null,
-        actionType: 'requester_rejected',
+        actionType: fromStatus === 'closed' ? 'reopened_from_closed' : 'requester_rejected',
         createdAt: new Date(),
       } as any);
     }
@@ -2118,8 +2136,12 @@ export const requesterReopen = async ({
   await ticket.save();
 
   const activityMsg = message?.trim()
-    ? `Work Rejected by Requester (${ticket.requester.name}): ${message.trim()}`
-    : `Ticket rejected and reopened by requester (${ticket.requester.name})`;
+    ? (fromStatus === 'closed'
+        ? `Ticket reopened from Closed status by requester (${ticket.requester.name}): ${message.trim()}`
+        : `Work Rejected by Requester (${ticket.requester.name}): ${message.trim()}`)
+    : (fromStatus === 'closed'
+        ? `Ticket reopened from Closed status by requester (${ticket.requester.name})`
+        : `Ticket rejected and reopened by requester (${ticket.requester.name})`);
 
   await logActivity({
     ticket,
@@ -2129,14 +2151,17 @@ export const requesterReopen = async ({
     message: activityMsg,
   });
 
-  const recipients = [ticket.assignedTo].filter(Boolean);
+  const dept = await Department.findById(ticket.department);
+  const recipients = [ticket.assignedTo, dept?.manager].filter(Boolean);
   if (recipients.length > 0) {
-    await notifyMany(recipients, {
+    await notifyMany(recipients as any, {
       ticket,
       type: 'ticket_reopened',
-      message: `Ticket ${ticket.ticketCode} work rejected by requester: ${message?.trim() || 'Needs rework'}`,
+      message: `Ticket ${ticket.ticketCode} reopened by requester (${ticket.requester.name}): ${message?.trim() || 'Needs rework'}`,
     });
   }
+
+  void notifyRequesterOnAction(ticket, 'Ticket Reopened', message || 'Your ticket has been reopened for rework.', 'reopened');
 
   const populated = await populateTicket(Ticket.findById(ticket._id));
   const activities = await ActivityLog.find({ ticket: ticket._id })
