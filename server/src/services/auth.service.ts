@@ -67,7 +67,9 @@ export const login = async ({ email, password }: { email: string; password: stri
   user.lockUntil = null;
   const tokens = await issueTokens(user);
 
-  const populated = await User.findById(user._id).populate('department', 'name');
+  const populated = await User.findById(user._id)
+    .populate('department', 'name')
+    .populate('departments', 'name');
   if (!populated) throw ApiError.notFound('User not found');
 
   return {
@@ -102,7 +104,9 @@ export const logout = async (userId?: string | unknown) => {
 };
 
 export const me = async (userId: string | unknown) => {
-  const user = await User.findById(userId).populate('department', 'name complaintTypes slaHours');
+  const user = await User.findById(userId)
+    .populate('department', 'name complaintTypes slaHours')
+    .populate('departments', 'name complaintTypes slaHours');
   if (!user) throw ApiError.notFound('User not found');
   return user.toSafeObject();
 };

@@ -1,4 +1,4 @@
-import User, { type IUserDocument } from '../models/User';
+import User, { getUserDepartmentIds, type IUserDocument } from '../models/User';
 import Department from '../models/Department';
 import ApiError from '../utils/apiError';
 
@@ -9,7 +9,12 @@ export const listUsers = async (query: Record<string, unknown> = {}) => {
   if (query.role && query.role !== 'superadmin') {
     filter.role = query.role;
   }
-  if (query.department) filter.department = query.department;
+  if (query.department) {
+    filter.$or = [
+      { department: query.department },
+      { departments: query.department },
+    ];
+  }
   if (query.isActive !== undefined) {
     filter.isActive = query.isActive === 'true' || query.isActive === true;
   }
@@ -28,6 +33,7 @@ export const listUsers = async (query: Record<string, unknown> = {}) => {
   const [items, total] = await Promise.all([
     User.find(filter)
       .populate('department', 'name')
+      .populate('departments', 'name')
       .populate('managers', 'name email phone role')
       .populate('employees', 'name email phone role')
       .sort({ createdAt: -1 })
@@ -44,17 +50,21 @@ export const listUsers = async (query: Record<string, unknown> = {}) => {
 
 export const listByDepartment = async (deptId: string, actor: IUserDocument) => {
   if (actor.role === 'manager') {
-    const userDept = actor.department ? String(actor.department) : null;
-    if (userDept !== String(deptId)) {
-      throw ApiError.forbidden('Access limited to your department');
+    const userDepts = getUserDepartmentIds(actor);
+    if (!userDepts.includes(String(deptId))) {
+      throw ApiError.forbidden('Access limited to your department(s)');
     }
   }
 
   const dept = await Department.findById(deptId);
   if (!dept) throw ApiError.notFound('Department not found');
 
-  const users = await User.find({ department: deptId, role: { $ne: 'admin' } })
+  const users = await User.find({
+    $or: [{ department: deptId }, { departments: deptId }],
+    role: { $ne: 'admin' },
+  })
     .populate('department', 'name')
+    .populate('departments', 'name')
     .populate('managers', 'name email phone role')
     .populate('employees', 'name email phone role')
     .sort({ role: 1, name: 1 });
@@ -80,6 +90,7 @@ export const listAssignees = async (actor: IUserDocument, search?: string) => {
 
   const users = await User.find(filter)
     .populate('department', 'name complaintTypes')
+    .populate('departments', 'name complaintTypes')
     .sort({ name: 1 })
     .limit(500);
 
@@ -91,21 +102,35 @@ export const createUser = async (data: Record<string, unknown>, actor: IUserDocu
     throw ApiError.badRequest('Cannot create admin via API');
   }
 
-  const dept = await Department.findById(data.department as string);
-  if (!dept) throw ApiError.notFound('Department not found');
+  const rawDepts = Array.isArray(data.departments) && data.departments.length > 0
+    ? (data.departments as string[]).map(String)
+    : (data.department ? [String(data.department)] : []);
+
+  if (rawDepts.length === 0) {
+    throw ApiError.badRequest('At least one department is required');
+  }
+
+  const depts = await Department.find({ _id: { $in: rawDepts } });
+  if (depts.length !== rawDepts.length) {
+    throw ApiError.notFound('One or more selected departments not found');
+  }
 
   const existing = await User.findOne({ email: String(data.email).toLowerCase() });
   if (existing) throw ApiError.conflict('Email already registered');
 
   const user = await User.create({
     ...data,
+    department: rawDepts[0],
+    departments: rawDepts,
     email: String(data.email).toLowerCase(),
     createdBy: actor._id,
   });
 
   if (data.role === 'manager') {
-    dept.manager = user._id;
-    await dept.save();
+    await Department.updateMany(
+      { _id: { $in: rawDepts } },
+      { $set: { manager: user._id } }
+    );
     if (Array.isArray(data.employees) && data.employees.length > 0) {
       await User.updateMany(
         { _id: { $in: data.employees } },
@@ -123,6 +148,7 @@ export const createUser = async (data: Record<string, unknown>, actor: IUserDocu
 
   const populated = await User.findById(user._id)
     .populate('department', 'name')
+    .populate('departments', 'name')
     .populate('managers', 'name email phone role')
     .populate('employees', 'name email phone role');
   if (!populated) throw ApiError.notFound('User not found');
@@ -133,8 +159,19 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
   if (actor.role !== 'manager') {
     throw ApiError.forbidden('Only managers can create employees in their department');
   }
-  if (!actor.department) {
+  const managerDepts = getUserDepartmentIds(actor);
+  if (managerDepts.length === 0) {
     throw ApiError.badRequest('Manager has no department assigned');
+  }
+
+  const rawDepts = Array.isArray(data.departments) && data.departments.length > 0
+    ? (data.departments as string[]).map(String)
+    : (data.department ? [String(data.department)] : [managerDepts[0]]);
+
+  for (const d of rawDepts) {
+    if (!managerDepts.includes(d)) {
+      throw ApiError.forbidden('You can only assign employees to department(s) you manage');
+    }
   }
 
   const existing = await User.findOne({ email: String(data.email).toLowerCase() });
@@ -151,7 +188,8 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
     phone: (data.phone as string) || '',
     rollNumber: (data.rollNumber as string) || '',
     role: 'employee',
-    department: actor.department,
+    department: rawDepts[0],
+    departments: rawDepts,
     managers: userManagers,
     createdBy: actor._id,
   });
@@ -163,6 +201,7 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
 
   const populated = await User.findById(user._id)
     .populate('department', 'name')
+    .populate('departments', 'name')
     .populate('managers', 'name email phone role')
     .populate('employees', 'name email phone role');
   if (!populated) throw ApiError.notFound('User not found');
@@ -172,16 +211,17 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
 export const getById = async (id: string, actor: IUserDocument) => {
   const user = await User.findById(id)
     .populate('department', 'name')
+    .populate('departments', 'name')
     .populate('managers', 'name email phone role')
     .populate('employees', 'name email phone role');
   if (!user) throw ApiError.notFound('User not found');
 
   if (actor.role === 'manager') {
-    const userDept = actor.department ? String(actor.department) : null;
-    const dept = user.department as unknown as { _id?: unknown } | null;
-    const targetDept = dept ? String(dept._id || user.department) : null;
-    if (String(user._id) !== String(actor._id) && userDept !== targetDept) {
-      throw ApiError.forbidden('Access limited to your department');
+    const managerDepts = getUserDepartmentIds(actor);
+    const targetDepts = getUserDepartmentIds(user);
+    const sharesDept = targetDepts.some((d) => managerDepts.includes(d));
+    if (String(user._id) !== String(actor._id) && !sharesDept) {
+      throw ApiError.forbidden('Access limited to your department(s)');
     }
   } else if (actor.role === 'employee' && String(user._id) !== String(actor._id)) {
     throw ApiError.forbidden();
@@ -207,22 +247,31 @@ export const updateUser = async (
   }
 
   if (actor.role === 'manager') {
-    const userDept = actor.department ? String(actor.department) : null;
-    const targetDept = user.department ? String(user.department) : null;
-    if (String(user._id) !== String(actor._id) && userDept !== targetDept) {
-      throw ApiError.forbidden('Access limited to your department');
+    const managerDepts = getUserDepartmentIds(actor);
+    const targetDepts = getUserDepartmentIds(user);
+    const sharesDept = targetDepts.some((d) => managerDepts.includes(d));
+    if (String(user._id) !== String(actor._id) && !sharesDept) {
+      throw ApiError.forbidden('Access limited to your department(s)');
     }
     delete data.role;
     delete data.department;
+    delete data.departments;
   }
 
   if (actor.role !== 'admin') {
     delete data.role;
     delete data.department;
+    delete data.departments;
   }
 
   if (!data.password) {
     delete data.password;
+  }
+
+  if (Array.isArray(data.departments) && data.departments.length > 0) {
+    data.department = data.departments[0];
+  } else if (data.department) {
+    data.departments = [data.department];
   }
 
   // Handle relationship synchronization
@@ -258,6 +307,7 @@ export const updateUser = async (
   await user.save();
   const populated = await User.findById(user._id)
     .populate('department', 'name')
+    .populate('departments', 'name')
     .populate('managers', 'name email phone role')
     .populate('employees', 'name email phone role');
   if (!populated) throw ApiError.notFound('User not found');

@@ -1,7 +1,7 @@
-import type { Types } from 'mongoose';
+import mongoose, { type Types } from 'mongoose';
 import Task, { type ITask, type TaskPriority, type TaskStatus } from '../models/Task';
 import Counter from '../models/Counter';
-import User from '../models/User';
+import User, { getUserDepartmentIds } from '../models/User';
 import Department from '../models/Department';
 import Notification from '../models/Notification';
 import ApiError from '../utils/apiError';
@@ -196,7 +196,10 @@ export const notifyTaskAssignment = async (
 /**
  * Creates and assigns a new task.
  */
-export const createTask = async (data: CreateTaskInput, actor: { _id: Types.ObjectId | string; name: string }) => {
+export const createTask = async (
+  data: CreateTaskInput,
+  actor: { _id: Types.ObjectId | string; name: string; role?: string; department?: any; departments?: any }
+) => {
   const taskCode = await generateTaskCode();
 
   const assigneeUser = await User.findById(data.assignedTo);
@@ -204,7 +207,11 @@ export const createTask = async (data: CreateTaskInput, actor: { _id: Types.Obje
     throw ApiError.notFound('Assignee user not found');
   }
 
+  const assigneeDepts = getUserDepartmentIds(assigneeUser);
   let departmentId = data.department || assigneeUser.department;
+  if (!departmentId && assigneeDepts.length > 0) {
+    departmentId = assigneeDepts[0];
+  }
   if (!departmentId) {
     const firstDept = await Department.findOne();
     if (firstDept) {
@@ -212,6 +219,19 @@ export const createTask = async (data: CreateTaskInput, actor: { _id: Types.Obje
     } else {
       throw ApiError.badRequest('Department could not be determined for the selected assignee');
     }
+  }
+
+  // If manager is creating, check manager's departments
+  if (actor.role === 'manager') {
+    const managerDepts = getUserDepartmentIds(actor);
+    if (managerDepts.length > 0 && !managerDepts.includes(String(departmentId))) {
+      throw ApiError.forbidden('You can only create and assign tasks in your own department(s)');
+    }
+  }
+
+  // Check if assignee belongs to this department
+  if (assigneeDepts.length > 0 && !assigneeDepts.includes(String(departmentId))) {
+    throw ApiError.badRequest('Assignee does not belong to the selected department');
   }
 
   const task = await Task.create({
@@ -261,7 +281,7 @@ export const createTask = async (data: CreateTaskInput, actor: { _id: Types.Obje
  */
 export const listTasks = async (
   query: TaskListQuery,
-  actor: { _id: Types.ObjectId | string; role: string; department?: Types.ObjectId | string | null }
+  actor: { _id: Types.ObjectId | string; role: string; department?: Types.ObjectId | string | null; departments?: any }
 ) => {
   const page = Number(query.page) || 1;
   const limit = Math.min(Number(query.limit) || 20, 100);
@@ -272,8 +292,15 @@ export const listTasks = async (
   // Role scoping
   if (actor.role === 'employee') {
     filter.assignedTo = actor._id;
-  } else if (actor.role === 'manager' && actor.department) {
-    filter.department = actor.department;
+  } else if (actor.role === 'manager') {
+    const managerDepts = getUserDepartmentIds(actor);
+    if (query.department && managerDepts.includes(String(query.department))) {
+      filter.department = query.department;
+    } else if (managerDepts.length === 1) {
+      filter.department = managerDepts[0];
+    } else if (managerDepts.length > 1) {
+      filter.department = { $in: managerDepts };
+    }
   }
 
   // Explicit filters
@@ -304,6 +331,10 @@ export const listTasks = async (
     filter.createdAt = createdAtFilter;
   }
 
+  const managerDeptIds = actor.role === 'manager'
+    ? getUserDepartmentIds(actor).map((d) => new mongoose.Types.ObjectId(d))
+    : [];
+
   const [items, total, stats] = await Promise.all([
     Task.find(filter)
       .populate('department', 'name')
@@ -319,10 +350,20 @@ export const listTasks = async (
       {
         $match:
           actor.role === 'employee'
-            ? { assignedTo: actor._id as unknown as Types.ObjectId }
-            : actor.role === 'manager' && actor.department
-              ? { department: actor.department as unknown as Types.ObjectId }
-              : {},
+            ? { assignedTo: new mongoose.Types.ObjectId(String(actor._id)) }
+            : actor.role === 'manager'
+              ? (
+                  query.department && managerDeptIds.some(d => d.toString() === String(query.department))
+                    ? { department: new mongoose.Types.ObjectId(String(query.department)) }
+                    : managerDeptIds.length === 1
+                      ? { department: managerDeptIds[0] }
+                      : managerDeptIds.length > 1
+                        ? { department: { $in: managerDeptIds } }
+                        : {}
+                )
+              : query.department
+                ? { department: new mongoose.Types.ObjectId(String(query.department)) }
+                : {},
       },
       {
         $group: {
@@ -362,7 +403,7 @@ export const listTasks = async (
  */
 export const getTaskById = async (
   id: string,
-  actor: { _id: Types.ObjectId | string; role: string; department?: Types.ObjectId | string | null }
+  actor: { _id: Types.ObjectId | string; role: string; department?: Types.ObjectId | string | null; departments?: any }
 ) => {
   const task = await Task.findById(id)
     .populate('department', 'name complaintTypes')
@@ -380,6 +421,15 @@ export const getTaskById = async (
   // Security check for employee
   if (actor.role === 'employee' && task.assignedTo._id.toString() !== actor._id.toString()) {
     throw ApiError.forbidden('You do not have access to this task');
+  }
+
+  // Security check for manager
+  if (actor.role === 'manager') {
+    const managerDepts = getUserDepartmentIds(actor);
+    const taskDeptId = (task.department as any)?._id?.toString() || task.department?.toString();
+    if (managerDepts.length > 0 && taskDeptId && !managerDepts.includes(taskDeptId)) {
+      throw ApiError.forbidden('You do not have access to tasks in this department');
+    }
   }
 
   return task;

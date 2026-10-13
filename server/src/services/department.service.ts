@@ -1,7 +1,7 @@
 import Department from '../models/Department';
 import Ticket, { OPEN_STATUSES } from '../models/Ticket';
 import ApiError from '../utils/apiError';
-import type { IUserDocument } from '../models/User';
+import { getUserDepartmentIds, type IUserDocument } from '../models/User';
 
 export const listActive = async () => {
   return Department.find({ isActive: true })
@@ -22,9 +22,9 @@ export const getById = async (id: string, actor: IUserDocument) => {
   if (!dept) throw ApiError.notFound('Department not found');
 
   if (actor.role === 'manager') {
-    const userDept = actor.department ? String(actor.department) : null;
-    if (userDept !== String(dept._id)) {
-      throw ApiError.forbidden('Access limited to your department');
+    const userDepts = getUserDepartmentIds(actor);
+    if (!userDepts.includes(String(dept._id))) {
+      throw ApiError.forbidden('Access limited to your department(s)');
     }
   }
 

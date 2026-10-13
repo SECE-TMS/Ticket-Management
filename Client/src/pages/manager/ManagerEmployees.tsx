@@ -37,7 +37,26 @@ function getInitials(name: string) {
 export function ManagerEmployees() {
   const toast = useToast()
   const user = useAppSelector((s) => s.auth.user)
-  const deptId = getId(user?.department)
+
+  const managerDepts: Array<{ _id: string; name: string }> = (
+    user?.departments && user.departments.length > 0
+      ? user.departments
+      : user?.department
+        ? [user.department]
+        : []
+  ).map((d) => (typeof d === 'object' && d !== null ? (d as { _id: string; name: string }) : { _id: String(d), name: 'My Department' }))
+
+  const [selectedDeptId, setSelectedDeptId] = useState<string>(
+    () => managerDepts[0]?._id || getId(user?.department) || ''
+  )
+
+  useEffect(() => {
+    if (!selectedDeptId && managerDepts.length > 0) {
+      setSelectedDeptId(managerDepts[0]._id)
+    }
+  }, [managerDepts, selectedDeptId])
+
+  const activeDeptId = selectedDeptId || managerDepts[0]?._id || getId(user?.department)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -49,20 +68,20 @@ export function ManagerEmployees() {
   const [form, setForm] = useState<EmpForm>(emptyForm)
 
   const load = useCallback(async () => {
-    if (!deptId) {
+    if (!activeDeptId) {
       setLoading(false)
       return
     }
     setLoading(true)
     try {
-      const users = await userService.listByDepartment(deptId)
+      const users = await userService.listByDepartment(activeDeptId)
       setEmployees(users.filter((u) => u.role === 'employee'))
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to load employees'))
     } finally {
       setLoading(false)
     }
-  }, [deptId, toast])
+  }, [activeDeptId, toast])
 
   useEffect(() => {
     void load()
@@ -124,6 +143,8 @@ export function ManagerEmployees() {
           name: form.name,
           email: form.email,
           password: form.password,
+          department: activeDeptId,
+          departments: [activeDeptId],
           phone: form.phone || undefined,
           rollNumber: form.rollNumber || undefined,
         })
@@ -140,7 +161,7 @@ export function ManagerEmployees() {
     }
   }
 
-  if (!deptId) {
+  if (!activeDeptId) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--white)] p-10 text-center shadow-xs">
         <div className="flex flex-col items-center justify-center gap-3">
@@ -165,9 +186,30 @@ export function ManagerEmployees() {
         title="Employees"
         description="Manage technicians and staff in your department."
         actions={
-          <Button type="button" id="add-employee-btn" onClick={openCreate}>
-            + Add Employee
-          </Button>
+          <div className="flex items-center gap-2.5">
+            {managerDepts.length > 1 && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-[var(--ink-muted)]">Department:</span>
+                <select
+                  value={activeDeptId}
+                  onChange={(e) => {
+                    setSelectedDeptId(e.target.value)
+                    setPage(1)
+                  }}
+                  className="h-9 rounded-lg border border-[var(--border)] bg-white px-2.5 text-xs font-semibold text-[var(--ink)] shadow-xs cursor-pointer focus:border-[var(--primary-blue)]"
+                >
+                  {managerDepts.map((d) => (
+                    <option key={d._id} value={d._id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <Button type="button" id="add-employee-btn" onClick={openCreate}>
+              + Add Employee
+            </Button>
+          </div>
         }
       />
 
@@ -177,6 +219,7 @@ export function ManagerEmployees() {
             <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
               <th className="px-4 py-3 first:rounded-tl-xl">Employee</th>
               <th className="px-4 py-3">Email</th>
+              {managerDepts.length > 1 && <th className="px-4 py-3">Department(s)</th>}
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 last:rounded-tr-xl">Actions</th>
@@ -205,6 +248,27 @@ export function ManagerEmployees() {
                   <td className="px-4 py-3.5 text-[var(--ink-muted)]">
                     {e.email} {e.rollNumber ? `• ID: ${e.rollNumber}` : ''}
                   </td>
+                  {managerDepts.length > 1 && (
+                    <td className="px-4 py-3.5">
+                      {(() => {
+                        const depts = (e.departments && e.departments.length > 0)
+                          ? e.departments
+                          : (e.department ? [e.department] : [])
+                        return (
+                          <div className="flex flex-wrap gap-1">
+                            {depts.map((d) => (
+                              <span
+                                key={typeof d === 'object' ? getId(d) : String(d)}
+                                className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-800 border border-blue-200"
+                              >
+                                {typeof d === 'object' ? d.name : 'Dept'}
+                              </span>
+                            ))}
+                          </div>
+                        )
+                      })()}
+                    </td>
+                  )}
                   <td className="px-4 py-3.5 text-[var(--ink-muted)]">{e.phone || '—'}</td>
                   <td className="px-4 py-3.5">
                     <Badge
@@ -241,7 +305,7 @@ export function ManagerEmployees() {
               ))}
             {!employees.length && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-sm text-[var(--ink-muted)]">
+                <td colSpan={managerDepts.length > 1 ? 6 : 5} className="py-8 text-center text-sm text-[var(--ink-muted)]">
                   No employees yet. Add your first technician to start assigning tickets.
                 </td>
               </tr>

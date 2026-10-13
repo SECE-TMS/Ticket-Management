@@ -5,10 +5,7 @@ import type { AuthRequest } from '../types/auth';
 
 export const create = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await taskService.createTask(req.body, {
-      _id: req.user!._id,
-      name: req.user!.name,
-    });
+    const data = await taskService.createTask(req.body, req.user!);
     return sendSuccess(res, {
       statusCode: 201,
       data,
@@ -21,11 +18,7 @@ export const create = async (req: AuthRequest, res: Response, next: NextFunction
 
 export const list = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await taskService.listTasks(req.query as taskService.TaskListQuery, {
-      _id: req.user!._id,
-      role: req.user!.role,
-      department: req.user!.department as any,
-    });
+    const data = await taskService.listTasks(req.query as taskService.TaskListQuery, req.user!);
     return sendSuccess(res, { data });
   } catch (err) {
     next(err);
@@ -34,11 +27,7 @@ export const list = async (req: AuthRequest, res: Response, next: NextFunction) 
 
 export const getById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await taskService.getTaskById(req.params.id, {
-      _id: req.user!._id,
-      role: req.user!.role,
-      department: req.user!.department as any,
-    });
+    const data = await taskService.getTaskById(req.params.id, req.user!);
     return sendSuccess(res, { data });
   } catch (err) {
     next(err);

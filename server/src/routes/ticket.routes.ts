@@ -139,7 +139,7 @@ router.post(
 router.patch(
   '/:id/close',
   authenticate,
-  requireRole('admin', 'manager'),
+  requireRole('admin', 'manager', 'employee'),
   ticketController.close
 );
 
@@ -153,7 +153,7 @@ router.patch(
 router.patch(
   '/:id/reopen',
   authenticate,
-  requireRole('admin', 'manager'),
+  requireRole('admin', 'manager', 'employee'),
   ticketController.reopen
 );
 
