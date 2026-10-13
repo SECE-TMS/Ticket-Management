@@ -391,40 +391,70 @@ const buildListFilter = (actor: IUserDocument, query: Record<string, unknown>) =
 
   if (actor.role === 'manager') {
     const managerDepts = getUserDepartmentIds(actor);
-    if (query.department) {
-      if (!managerDepts.includes(String(query.department))) {
+    const deptQuery = query.department && query.department !== 'all' && query.department !== '' && query.department !== 'undefined'
+      ? String(query.department)
+      : null;
+    if (deptQuery) {
+      if (!managerDepts.includes(deptQuery)) {
         throw ApiError.forbidden('Cannot filter outside your department(s)');
       }
-      filter.department = query.department;
+      filter.department = deptQuery;
     } else {
       filter.department = managerDepts.length === 1 ? managerDepts[0] : { $in: managerDepts };
     }
   } else if (actor.role === 'employee') {
     filter.assignedTo = actor._id;
-  } else if (query.department) {
+  } else if (query.department && query.department !== 'all' && query.department !== '' && query.department !== 'undefined') {
     filter.department = query.department;
   }
 
-  if (query.status) filter.status = query.status;
-  if (query.priority) filter.priority = query.priority;
-  if (query.assignedTo && actor.role !== 'employee') filter.assignedTo = query.assignedTo;
-
-  if (query.from || query.to) {
-    const createdAt: Record<string, Date> = {};
-    if (query.from) createdAt.$gte = new Date(String(query.from));
-    if (query.to) createdAt.$lte = new Date(String(query.to));
-    filter.createdAt = createdAt;
+  if (query.status && query.status !== 'all' && query.status !== '' && query.status !== 'undefined') {
+    filter.status = query.status;
+  }
+  if (query.priority && query.priority !== 'all' && query.priority !== '' && query.priority !== 'undefined') {
+    filter.priority = query.priority;
+  }
+  if (query.assignedTo && query.assignedTo !== 'all' && query.assignedTo !== '' && query.assignedTo !== 'undefined' && actor.role !== 'employee') {
+    filter.assignedTo = query.assignedTo;
   }
 
-  if (query.search) {
+  const fromVal = query.from || query.startDate;
+  const toVal = query.to || query.endDate;
+  if (fromVal || toVal) {
+    const createdAt: Record<string, Date> = {};
+    if (fromVal && String(fromVal).trim() !== '' && String(fromVal) !== 'undefined' && String(fromVal) !== 'null') {
+      const fromD = new Date(String(fromVal));
+      if (!isNaN(fromD.getTime())) {
+        if (String(fromVal).length <= 10) {
+          fromD.setHours(0, 0, 0, 0);
+        }
+        createdAt.$gte = fromD;
+      }
+    }
+    if (toVal && String(toVal).trim() !== '' && String(toVal) !== 'undefined' && String(toVal) !== 'null') {
+      const toD = new Date(String(toVal));
+      if (!isNaN(toD.getTime())) {
+        if (String(toVal).length <= 10) {
+          toD.setHours(23, 59, 59, 999);
+        }
+        createdAt.$lte = toD;
+      }
+    }
+    if (Object.keys(createdAt).length > 0) {
+      filter.createdAt = createdAt;
+    }
+  }
+
+  if (query.search && String(query.search).trim() !== '' && query.search !== 'undefined') {
+    const s = String(query.search).trim();
     filter.$or = [
-      { ticketCode: { $regex: query.search, $options: 'i' } },
-      { title: { $regex: query.search, $options: 'i' } },
-      { 'requester.name': { $regex: query.search, $options: 'i' } },
-      { 'requester.mobile': { $regex: query.search, $options: 'i' } },
-      { 'requester.rollNumber': { $regex: query.search, $options: 'i' } },
-      { complaintType: { $regex: query.search, $options: 'i' } },
-      { description: { $regex: query.search, $options: 'i' } },
+      { ticketCode: { $regex: s, $options: 'i' } },
+      { title: { $regex: s, $options: 'i' } },
+      { 'requester.name': { $regex: s, $options: 'i' } },
+      { 'requester.mobile': { $regex: s, $options: 'i' } },
+      { 'requester.rollNumber': { $regex: s, $options: 'i' } },
+      { complaintType: { $regex: s, $options: 'i' } },
+      { description: { $regex: s, $options: 'i' } },
     ];
   }
 
@@ -1407,7 +1437,25 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
   // Metadata Row
   worksheet.mergeCells('A2:P2');
   const metaCell = worksheet.getCell('A2');
-  metaCell.value = `Generated on: ${new Date().toLocaleString()} | Total Records: ${tickets.length} | Exported by: ${actor.name}`;
+
+  const filterSummaryParts: string[] = [];
+  if (filter.createdAt) {
+    const ca = filter.createdAt as Record<string, Date>;
+    if (ca.$gte && ca.$lte) {
+      filterSummaryParts.push(`Date: ${ca.$gte.toLocaleDateString()} to ${ca.$lte.toLocaleDateString()}`);
+    } else if (ca.$gte) {
+      filterSummaryParts.push(`Date From: ${ca.$gte.toLocaleDateString()}`);
+    } else if (ca.$lte) {
+      filterSummaryParts.push(`Date To: ${ca.$lte.toLocaleDateString()}`);
+    }
+  }
+  if (query.status && query.status !== 'all') filterSummaryParts.push(`Status: ${query.status}`);
+  if (query.priority && query.priority !== 'all') filterSummaryParts.push(`Priority: ${query.priority}`);
+  if (query.department && query.department !== 'all') filterSummaryParts.push(`Dept Filter: Active`);
+  if (query.search) filterSummaryParts.push(`Search: "${query.search}"`);
+
+  const filterLabel = filterSummaryParts.length > 0 ? ` | Filter: [${filterSummaryParts.join(', ')}]` : ' | Filter: All Records';
+  metaCell.value = `Generated on: ${new Date().toLocaleString()} | Matching Records: ${tickets.length}${filterLabel} | Exported by: ${actor.name}`;
   metaCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: '475569' } };
   metaCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
   metaCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -1522,15 +1570,15 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
         right: { style: 'thin', color: { argb: 'E2E8F0' } },
       };
 
-      // Column 7: Priority formatting
-      if (colNumber === 7) {
+      // Column 8: Priority formatting
+      if (colNumber === 8) {
         const pStyle = priorityFills[t.priority] || priorityFills.medium;
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: pStyle.fgColor } };
         cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: pStyle.textColor } };
       }
 
-      // Column 8: Status formatting
-      if (colNumber === 8) {
+      // Column 9: Status formatting
+      if (colNumber === 9) {
         const sStyle = statusFills[t.status] || statusFills.new;
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: sStyle.fgColor } };
         cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: sStyle.textColor } };

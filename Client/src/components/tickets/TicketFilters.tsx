@@ -1,4 +1,4 @@
-import { Download, Search } from 'lucide-react'
+import { Download, FileSpreadsheet, RotateCcw, Search, X } from 'lucide-react'
 import { PRIORITIES, STATUSES, formatLabel } from '../../lib/utils'
 import type { Department, TicketPriority, TicketStatus } from '../../types'
 import { Button } from '../common/Button'
@@ -18,7 +18,11 @@ interface TicketFiltersProps {
   onFromDateChange?: (v: string) => void
   onToDateChange?: (v: string) => void
   onExportExcel?: () => void
-  exporting?: boolean
+  onExportCsv?: () => void
+  exporting?: boolean | 'excel' | 'csv' | null
+  filteredCount?: number
+  hasActiveFilters?: boolean
+  onResetFilters?: () => void
   extra?: React.ReactNode
 }
 
@@ -37,7 +41,11 @@ export function TicketFilters({
   onFromDateChange,
   onToDateChange,
   onExportExcel,
+  onExportCsv,
   exporting = false,
+  filteredCount,
+  hasActiveFilters = false,
+  onResetFilters,
   extra,
 }: TicketFiltersProps) {
   return (
@@ -160,23 +168,105 @@ export function TicketFilters({
         </div>
       )}
 
-      {/* Excel Download Button */}
-      {onExportExcel && (
-        <div className="flex flex-col justify-end lg:col-span-1">
+      {/* Export & Reset Actions */}
+      <div className="flex flex-wrap items-end gap-2 lg:col-span-2">
+        {onExportExcel && (
           <Button
             type="button"
             onClick={onExportExcel}
-            loading={exporting}
+            loading={exporting === true || exporting === 'excel'}
             variant="secondary"
-            className="h-10 w-full font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs border-0"
+            className="h-10 flex-1 font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs border-0 text-xs sm:text-sm"
+            title="Download report of currently filtered tickets in Excel (.xlsx) format"
           >
-            <Download size={15} className="mr-1.5" />
+            <FileSpreadsheet size={15} className="mr-1.5 shrink-0" />
             Excel Report
           </Button>
-        </div>
-      )}
+        )}
+        {onExportCsv && (
+          <Button
+            type="button"
+            onClick={onExportCsv}
+            loading={exporting === 'csv'}
+            variant="outline"
+            className="h-10 flex-1 font-bold border-slate-300 text-slate-700 hover:bg-slate-50 text-xs sm:text-sm"
+            title="Download report of currently filtered tickets in CSV (.csv) format"
+          >
+            <Download size={15} className="mr-1.5 shrink-0" />
+            CSV
+          </Button>
+        )}
+        {hasActiveFilters && onResetFilters && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onResetFilters}
+            className="h-10 px-2.5 text-xs text-[var(--ink-muted)] hover:text-rose-600"
+            title="Reset all active filters"
+          >
+            <RotateCcw size={14} className="mr-1" />
+            Reset
+          </Button>
+        )}
+      </div>
 
       {extra && <div className="flex flex-col gap-1.5">{extra}</div>}
+
+      {/* Active Filter Pill Summary Banner */}
+      {hasActiveFilters && (
+        <div className="col-span-full mt-1 flex flex-wrap items-center gap-2 rounded-lg bg-blue-50/70 border border-blue-200/80 px-3 py-2 text-xs text-blue-950">
+          <span className="font-bold text-blue-900 flex items-center gap-1">
+            Active Filters ({filteredCount !== undefined ? `${filteredCount} tickets match` : 'Filtered'}):
+          </span>
+          {fromDate && toDate && (
+            <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
+              📅 Date: {fromDate} → {toDate}
+            </span>
+          )}
+          {fromDate && !toDate && (
+            <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
+              📅 From: {fromDate}
+            </span>
+          )}
+          {!fromDate && toDate && (
+            <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
+              📅 To: {toDate}
+            </span>
+          )}
+          {status && (
+            <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
+              Status: {formatLabel(status)}
+            </span>
+          )}
+          {priority && (
+            <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
+              Priority: {formatLabel(priority)}
+            </span>
+          )}
+          {department && (
+            <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
+              Dept: {departments.find((d) => d._id === department)?.name || department}
+            </span>
+          )}
+          {search && (
+            <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
+              Search: "{search}"
+            </span>
+          )}
+          <span className="ml-auto text-[11px] text-blue-700 font-medium italic">
+            ⬇ Download will include only this filtered data
+          </span>
+          {onResetFilters && (
+            <button
+              type="button"
+              onClick={onResetFilters}
+              className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer flex items-center gap-0.5 ml-2"
+            >
+              <X size={12} /> Clear all
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

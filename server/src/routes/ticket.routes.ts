@@ -61,14 +61,14 @@ router.get(
 router.get(
   '/export',
   authenticate,
-  requireRole('admin', 'manager'),
+  requireRole('admin', 'manager', 'employee'),
   ticketController.exportCsv
 );
 
 router.get(
   '/export-excel',
   authenticate,
-  requireRole('admin', 'manager'),
+  requireRole('admin', 'manager', 'employee'),
   ticketController.exportExcel
 );
 
