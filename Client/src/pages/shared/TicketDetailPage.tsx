@@ -279,7 +279,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                     Review Resolution &amp; Decision
                   </h3>
                   <p className="text-xs text-amber-800 mt-0.5">
-                    The assigned technician completed this ticket. Review their resolution notes and media proof below. You can approve to close, or reject with comments to automatically reopen for rework.
+                    The assigned employee completed this ticket. Review their resolution notes and media proof below. You can approve to close, or reject with comments to automatically reopen for rework.
                   </p>
 
                   {/* Comment input textarea */}
@@ -331,7 +331,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                         void run(async () => {
                           await ticketService.reopen(ticket._id, reviewRemarks.trim())
                           setReviewRemarks('')
-                        }, 'Ticket rejected — automatically reopened for technician rework.')
+                        }, 'Ticket rejected — automatically reopened for employee rework.')
                       }}
                     >
                       ✕ Reject &amp; Reopen for Rework
@@ -648,7 +648,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                   </div>
                 </div>
 
-                {/* Card 2: Technician Resolution Proof Attachment (After) */}
+                {/* Card 2: employee Resolution Proof Attachment (After) */}
                 <div className="flex flex-col justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
                   <div>
                     {(() => {
@@ -689,7 +689,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                       ) : (
                         <div className="rounded-lg border border-green-200 bg-[var(--white)] p-3">
                           <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[var(--success)]">
-                            <Volume2 size={15} /> Technician Audio Proof
+                            <Volume2 size={15} /> Employee Audio Proof
                           </div>
                           <audio controls src={getAttachmentUrl(ticket.resolution.attachment.url)} className="w-full h-10" />
                         </div>
@@ -700,7 +700,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                         <p className="text-xs font-semibold text-[var(--ink-muted)]">
                           {ticket.status === 'resolved' || ticket.status === 'closed'
                             ? 'Resolved without attachment'
-                            : 'Pending technician completion proof'}
+                            : 'Pending employee completion proof'}
                         </p>
                       </div>
                     )}
@@ -719,13 +719,13 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               </div>
             </div>
 
-            {/* Technician Resolution Remarks Callout */}
+            {/* employee Resolution Remarks Callout */}
             {ticket.resolution?.remarks && (
               <div className="mt-4 rounded-xl border border-[var(--success)]/30 bg-[var(--success-light)] p-4 shadow-xs">
                 <div className="flex items-center gap-2 mb-1">
                   <CheckCircle2 size={16} className="text-[var(--success)]" />
                   <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--success)]">
-                    Technician Resolution Notes
+                    Employee Resolution Notes
                   </h4>
                 </div>
                 <p className="text-sm leading-relaxed text-[var(--ink)]">
@@ -1094,7 +1094,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               await ticketService.reopen(
                 ticket._id,
                 reopenReason.trim() ||
-                  (role === 'employee' ? 'Reopened by technician' : 'Reopened by manager')
+                  (role === 'employee' ? 'Reopened by employee' : 'Reopened by manager')
               )
               setReopenOpen(false)
               setReopenReason('')
@@ -1103,7 +1103,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           className="space-y-4"
         >
           <p className="text-xs text-[var(--ink-muted)]">
-            Explain why this ticket is being reopened. The technician, manager, and requester will be notified.
+            Explain why this ticket is being reopened. The employee, manager, and requester will be notified.
           </p>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)] mb-1">

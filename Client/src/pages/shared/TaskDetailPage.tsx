@@ -331,7 +331,7 @@ export function TaskDetailPage({ backTo }: TaskDetailPageProps) {
               {task.completionRemarks && (
                 <div className="rounded-lg bg-white/90 border border-emerald-200 p-3.5">
                   <p className="text-xs font-bold text-emerald-900 uppercase mb-1">
-                    Technician Resolution Remarks
+                    Employee Resolution Remarks
                   </p>
                   <p className="text-sm text-[var(--ink)] leading-relaxed italic">
                     "{task.completionRemarks}"

@@ -677,7 +677,7 @@ export const updateTicketDetails = async (
         if (ticket.status === 'assigned' || ticket.status === 'accepted' || ticket.status === 'in_progress') {
           ticket.status = 'new';
         }
-        changes.push(`Department changed to ${newDept.name} (assigned technician removed)`);
+        changes.push(`Department changed to ${newDept.name} (assigned employee removed)`);
       } else {
         changes.push(`Department changed to ${newDept.name}`);
       }
@@ -1252,7 +1252,7 @@ export const closeTicket = async (id: string, actor: IUserDocument) => {
     toStatus: 'closed',
     message:
       actor.role === 'employee'
-        ? `Ticket completed & closed by technician (${actor.name})`
+        ? `Ticket completed & closed by employee (${actor.name})`
         : 'Ticket completed & closed',
   });
 

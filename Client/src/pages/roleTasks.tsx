@@ -5,7 +5,7 @@ export function AdminTasks() {
   return (
     <TasksListPage
       title="Task Assignments &amp; Work Orders"
-      description="Create, assign, and track specific technician tasks across all campus departments."
+      description="Create, assign, and track specific tasks across all campus departments."
       detailBase="/admin/tasks"
     />
   )
