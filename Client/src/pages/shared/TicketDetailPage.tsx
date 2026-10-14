@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Trash2, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { ticketService } from '../../services/ticketService';
 import { userService } from '../../services/userService';
-import { Button } from '../../components/common/Button';
-import { Modal } from '../../components/common/Modal';
 import { PageLoader } from '../../components/common/LoadingSpinner';
 import { TicketTimeline } from '../../components/tickets/TicketTimeline';
 import { AssignModal } from '../../components/tickets/AssignModal';
@@ -19,9 +17,12 @@ import { TicketInfoCard } from '../../components/tickets/detail/TicketInfoCard';
 import { TicketMediaGallery } from '../../components/tickets/detail/TicketMediaGallery';
 import { TicketFeedbackCard } from '../../components/tickets/detail/TicketFeedbackCard';
 import { TicketCommentsThread } from '../../components/tickets/detail/TicketCommentsThread';
+import { ReopenTicketModal } from '../../components/tickets/detail/ReopenTicketModal';
+import { TicketImageLightbox } from '../../components/tickets/detail/TicketImageLightbox';
+import { DeleteTicketModal } from '../../components/tickets/detail/DeleteTicketModal';
 import { useToast } from '../../context/ToastContext';
 import { useAppSelector } from '../../store/hooks';
-import { getErrorMessage, getAttachmentUrl } from '../../lib/utils';
+import { getErrorMessage } from '../../lib/utils';
 import type { Activity, Ticket, User } from '../../types';
 import { getId, getName } from '../../types';
 
@@ -396,73 +397,29 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
         }}
       />
 
-      <Modal
+      <ReopenTicketModal
         open={reopenOpen}
         onClose={() => setReopenOpen(false)}
-        title="Reopen Ticket"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void run(async () => {
-              await ticketService.reopen(
-                ticket._id,
-                reopenReason.trim() ||
-                  (role === 'employee' ? 'Reopened by employee' : 'Reopened by manager')
-              );
-              setReopenOpen(false);
-              setReopenReason('');
-            }, 'Ticket reopened');
-          }}
-          className="space-y-4"
-        >
-          <p className="text-xs text-[var(--ink-muted)]">
-            Explain why this ticket is being reopened. The employee, manager, and requester will be notified.
-          </p>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)] mb-1">
-              Reopen Reason / Instructions
-            </label>
-            <textarea
-              rows={3}
-              value={reopenReason}
-              onChange={(e) => setReopenReason(e.target.value)}
-              placeholder="Enter reason for reopening..."
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--white)] p-3 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setReopenOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" loading={actionLoading}>
-              Confirm Reopen
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        reason={reopenReason}
+        setReason={setReopenReason}
+        loading={actionLoading}
+        onConfirmReopen={() => {
+          void run(async () => {
+            await ticketService.reopen(
+              ticket._id,
+              reopenReason.trim() ||
+                (role === 'employee' ? 'Reopened by employee' : 'Reopened by manager')
+            );
+            setReopenOpen(false);
+            setReopenReason('');
+          }, 'Ticket reopened');
+        }}
+      />
 
-      {activeImageModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs animate-fade-in"
-          onClick={() => setActiveImageModal(null)}
-        >
-          <div className="relative max-w-4xl w-full flex flex-col items-center">
-            <button
-              type="button"
-              onClick={() => setActiveImageModal(null)}
-              className="absolute -top-10 right-0 inline-flex items-center gap-1 text-sm font-bold text-white hover:text-[var(--gold)] cursor-pointer"
-            >
-              <X size={20} /> Close
-            </button>
-            <img
-              src={getAttachmentUrl(activeImageModal)}
-              alt="Enlarged attachment"
-              className="max-h-[80vh] w-auto rounded-2xl shadow-2xl object-contain border border-white/20"
-            />
-          </div>
-        </div>
-      )}
+      <TicketImageLightbox
+        imageUrl={activeImageModal}
+        onClose={() => setActiveImageModal(null)}
+      />
 
       {isAdmin && (
         <EditTicketModal
@@ -492,53 +449,19 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
       )}
 
       {isAdmin && ticket && (
-        <Modal
+        <DeleteTicketModal
           open={deleteModalOpen}
           onClose={() => setDeleteModalOpen(false)}
-          title="Delete Ticket Permanently"
-        >
-          <div className="space-y-4">
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 leading-relaxed">
-              <p className="font-bold text-sm mb-1 text-red-950 flex items-center gap-1.5">
-                <Trash2 size={16} className="text-red-600" />
-                Warning: Permanent and Irreversible Action
-              </p>
-              Are you sure you want to permanently delete ticket{' '}
-              <strong className="font-mono text-red-950 bg-red-100 px-1.5 py-0.5 rounded">
-                #{ticket.ticketCode}
-              </strong>{' '}
-              ({ticket.title || ticket.complaintType})?
-              <br />
-              All associated resolution history, media attachments, activity logs, and notifications will be permanently removed from the database.
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDeleteModalOpen(false)}
-                disabled={actionLoading}
-              >
-                Cancel
-              </Button>
-              <Button
-                id="confirm-delete-ticket-btn"
-                type="button"
-                loading={actionLoading}
-                className="bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-md"
-                onClick={() =>
-                  void run(async () => {
-                    await ticketService.delete(ticket._id);
-                    setDeleteModalOpen(false);
-                    navigate(backTo);
-                  }, 'Ticket deleted permanently')
-                }
-              >
-                Yes, Delete Permanently
-              </Button>
-            </div>
-          </div>
-        </Modal>
+          ticket={ticket}
+          loading={actionLoading}
+          onConfirmDelete={() =>
+            void run(async () => {
+              await ticketService.delete(ticket._id);
+              setDeleteModalOpen(false);
+              navigate(backTo);
+            }, 'Ticket deleted permanently')
+          }
+        />
       )}
     </div>
   );
