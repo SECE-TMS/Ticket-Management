@@ -61,8 +61,8 @@ export function Landing() {
           </h1>
 
           <p className="mt-5 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
-            Raise facility issues in minutes and follow every status update — from assignment to
-            completion — without waiting on phone calls.
+            Raise facility issues in minutes and follow every status update from assignment to
+            completion without waiting on phone calls.
           </p>
 
           {/* CTA buttons */}

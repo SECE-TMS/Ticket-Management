@@ -125,7 +125,7 @@ export function TasksListPage({
     const cleanPhone = employeePhone.replace(/\D/g, '').slice(-10)
     const clientOrigin = window.location.origin
     const taskUrl = `${clientOrigin}/employee/tasks/${task._id}`
-    const msg = `*TMS Task Assignment Notice*\n\nHello *${getName(task.assignedTo)}*,\nYou have been assigned a task:\n\n📋 *Task:* ${task.taskCode} - ${task.title}\n⚡ *Priority:* ${task.priority.toUpperCase()}\n⏰ *Due Date:* ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Standard'}\n\n*Instructions:*\n${task.description.slice(0, 150)}${task.description.length > 150 ? '...' : ''}\n\n👉 *View & Work on Task:* ${taskUrl}`
+    const msg = `*TMS Task Assignment Notice*\n\nHello *${getName(task.assignedTo)}*,\nYou have been assigned a task:\n\n📋 *Task:* ${task.taskCode} - ${task.title}\n *Priority:* ${task.priority.toUpperCase()}\n *Due Date:* ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Standard'}\n\n*Instructions:*\n${task.description.slice(0, 150)}${task.description.length > 150 ? '...' : ''}\n\n👉 *View & Work on Task:* ${taskUrl}`
 
     const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`
     window.open(waUrl, '_blank')

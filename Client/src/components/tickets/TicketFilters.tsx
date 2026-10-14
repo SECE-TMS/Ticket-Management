@@ -220,17 +220,17 @@ export function TicketFilters({
           </span>
           {fromDate && toDate && (
             <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
-              📅 Date: {fromDate} → {toDate}
+               Date: {fromDate} → {toDate}
             </span>
           )}
           {fromDate && !toDate && (
             <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
-              📅 From: {fromDate}
+               From: {fromDate}
             </span>
           )}
           {!fromDate && toDate && (
             <span className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 font-medium border border-blue-200 text-blue-800">
-              📅 To: {toDate}
+               To: {toDate}
             </span>
           )}
           {status && (

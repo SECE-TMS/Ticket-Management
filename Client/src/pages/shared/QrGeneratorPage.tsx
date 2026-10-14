@@ -21,7 +21,7 @@ import { getErrorMessage } from '../../lib/utils'
 import type { Department } from '../../types'
 import { getId } from '../../types'
 
-import sriEshwarLogo from '../../assets/Sri Eshwar.png'
+import sriEshwarLogo from '../../assets/sri_eshwar_clean.png'
 import isaiiLogo from '../../assets/isaii.jpg'
 // import qrCenterLogo from '../../assets/logo_remove-removebg-preview.png'
 
@@ -410,7 +410,7 @@ async function composePosterPng(opts: {
   ctx.fill()
 
   ctx.fillStyle = '#0F172A'
-  ctx.fillText(`📍 ${locText}`, W / 2, currentY)
+  ctx.fillText(` ${locText}`, W / 2, currentY)
   currentY += locH / 2 + 55
 
   // Central Pure White QR Box Container
