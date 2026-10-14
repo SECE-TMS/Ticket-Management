@@ -95,6 +95,13 @@ router.patch(
   ticketController.updateDetails
 );
 
+router.delete(
+  '/:id',
+  authenticate,
+  requireRole('admin'),
+  ticketController.deleteTicket
+);
+
 router.patch(
   '/:id/assign',
   authenticate,

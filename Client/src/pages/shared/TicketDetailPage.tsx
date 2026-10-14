@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Pencil, RotateCcw, Share2, Star, ThumbsUp, UserCheck, UserPlus, Volume2, X } from 'lucide-react'
+import { ArrowLeft, Camera, CheckCircle2, Clock, ExternalLink, MessageSquare, Pencil, RotateCcw, Share2, Star, ThumbsUp, Trash2, UserCheck, UserPlus, Volume2, X } from 'lucide-react'
 import { ticketService } from '../../services/ticketService'
 import { userService } from '../../services/userService'
 import { Button } from '../../components/common/Button'
@@ -63,7 +63,9 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const [editOpen, setEditOpen] = useState(false)
   const [editResolutionOpen, setEditResolutionOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [activeImageModal, setActiveImageModal] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   // Staff Feedback state (Admin & Manager)
   const [feedbackRating, setFeedbackRating] = useState<number>(0)
@@ -143,7 +145,6 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
   const canClose =
     ['admin', 'manager', 'employee'].includes(role || '') &&
     ticket.status !== 'closed' &&
-    ticket.status !== 'pending_approval' &&
     isEmployeeAssigned
   const canReopen =
     ['admin', 'manager', 'employee'].includes(role || '') &&
@@ -464,7 +465,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               Reopen
             </Button>
           )}
-          {ticket.status !== 'pending_approval' && canClose && (
+          {canClose && (
             <Button
               id="action-close"
               type="button"
@@ -475,24 +476,25 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
                   await ticketService.close(ticket._id)
                 }, 'Ticket closed')
               }
-              className="border-slate-300 bg-slate-100/80 text-slate-700 hover:bg-slate-200 hover:border-slate-400 font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400 font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <CheckCircle2 size={14} />
               Close Ticket
             </Button>
           )}
-          {/* {isAdmin && (
+
+          {isAdmin && (
             <Button
-              id="action-edit-ticket"
+              id="action-delete-ticket"
               type="button"
               variant="outline"
-              onClick={() => setEditOpen(true)}
-              className="border-blue-300 bg-blue-50/60 text-[var(--primary-blue)] hover:bg-blue-100/80 font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+              onClick={() => setDeleteModalOpen(true)}
+              className="border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-400 font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer ml-auto"
             >
-              <Pencil size={13} />
-              Edit Ticket Details
+              <Trash2 size={14} />
+              Delete Permanently
             </Button>
-          )} */}
+          )}
         </div>
       )}
 
@@ -532,6 +534,18 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               )}
               {role !== 'employee' && (
                 <Info label="Assignee" value={getName(ticket.assignedTo, 'Unassigned')} />
+              )}
+              {ticket.eventDate && (
+                <Info
+                  label="Event Date"
+                  value={format(new Date(ticket.eventDate), 'dd MMM yyyy')}
+                />
+              )}
+              {ticket.venue && (
+                <Info label="Venue" value={ticket.venue} />
+              )}
+              {ticket.eventTime && (
+                <Info label="Time" value={ticket.eventTime} />
               )}
               <Info
                 label="Created"
@@ -1159,7 +1173,62 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           title={ticket.title}
           complaintType={ticket.complaintType}
           status={ticket.status}
+          eventDate={ticket.eventDate}
+          venue={ticket.venue}
+          eventTime={ticket.eventTime}
+          priority={ticket.priority}
         />
+      )}
+
+      {/* Admin Permanent Delete Confirmation Modal */}
+      {isAdmin && ticket && (
+        <Modal
+          open={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          title="Delete Ticket Permanently"
+        >
+          <div className="space-y-4">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 leading-relaxed">
+              <p className="font-bold text-sm mb-1 text-red-950 flex items-center gap-1.5">
+                <Trash2 size={16} className="text-red-600" />
+                Warning: Permanent and Irreversible Action
+              </p>
+              Are you sure you want to permanently delete ticket{' '}
+              <strong className="font-mono text-red-950 bg-red-100 px-1.5 py-0.5 rounded">
+                #{ticket.ticketCode}
+              </strong>{' '}
+              ({ticket.title || ticket.complaintType})?
+              <br />
+              All associated resolution history, media attachments, activity logs, and notifications will be permanently removed from the database.
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={actionLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                id="confirm-delete-ticket-btn"
+                type="button"
+                loading={actionLoading}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-md"
+                onClick={() =>
+                  void run(async () => {
+                    await ticketService.delete(ticket._id)
+                    setDeleteModalOpen(false)
+                    navigate(backTo)
+                  }, 'Ticket deleted permanently')
+                }
+              >
+                Yes, Delete Permanently
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )

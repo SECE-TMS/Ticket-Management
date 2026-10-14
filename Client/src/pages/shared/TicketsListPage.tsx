@@ -8,6 +8,7 @@ import { PageLoader } from '../../components/common/LoadingSpinner'
 import { PageHeader } from '../../components/common/KpiCard'
 import { useToast } from '../../context/ToastContext'
 import { useAppSelector } from '../../store/hooks'
+import { CheckCircle2, Inbox } from 'lucide-react'
 import { getErrorMessage } from '../../lib/utils'
 import type { Department, Ticket, TicketPriority, TicketStatus } from '../../types'
 
@@ -37,6 +38,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
   const [toDate, setToDate] = useState('')
   const [limit, setLimit] = useState(10)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [tab, setTab] = useState<'all' | 'active' | 'closed'>('all')
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(search), 300)
@@ -89,9 +91,15 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
 
   const getFilterParams = (): TicketListParams => {
     const activeSearch = (search || debouncedSearch || '').trim()
+    let effectiveStatus: TicketStatus | 'active' | '' = status
+    if (tab === 'closed') {
+      effectiveStatus = 'closed'
+    } else if (tab === 'active' && !status) {
+      effectiveStatus = 'active'
+    }
     return {
       search: activeSearch || undefined,
-      status: status || undefined,
+      status: effectiveStatus || undefined,
       priority: priority || undefined,
       department: department || undefined,
       from: fromDate || undefined,
@@ -116,7 +124,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
     } finally {
       setLoading(false)
     }
-  }, [page, limit, debouncedSearch, search, status, priority, department, fromDate, toDate, toast])
+  }, [page, limit, debouncedSearch, search, status, priority, department, fromDate, toDate, tab, toast])
 
   useEffect(() => {
     void load()
@@ -124,7 +132,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, status, priority, department, fromDate, toDate, limit])
+  }, [debouncedSearch, status, priority, department, fromDate, toDate, limit, tab])
 
   const handleExportExcel = async () => {
     setExporting('excel')
@@ -173,6 +181,60 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
           ) : undefined
         }
       />
+
+      {/* Ticket List Tab Navigation */}
+      <div className="mb-4 flex items-center gap-1.5 border-b border-[var(--border)] pb-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => {
+            setTab('all')
+            setStatus('')
+            setPage(1)
+          }}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            tab === 'all'
+              ? 'bg-[var(--primary-blue)] text-white shadow-xs'
+              : 'text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]'
+          }`}
+        >
+          <Inbox size={15} />
+          <span>All Tickets</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setTab('active')
+            setStatus('')
+            setPage(1)
+          }}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            tab === 'active'
+              ? 'bg-[var(--primary-blue)] text-white shadow-xs'
+              : 'text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]'
+          }`}
+        >
+          <span className="flex h-2 w-2 rounded-full bg-emerald-400"></span>
+          <span>Active Tickets</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setTab('closed')
+            setStatus('closed')
+            setPage(1)
+          }}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            tab === 'closed'
+              ? 'bg-slate-800 text-white shadow-xs'
+              : 'text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]'
+          }`}
+        >
+          <CheckCircle2 size={15} className={tab === 'closed' ? 'text-emerald-400' : 'text-slate-500'} />
+          <span>Closed Tickets</span>
+        </button>
+      </div>
 
       <TicketFilters
         search={search}

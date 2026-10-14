@@ -82,6 +82,9 @@ export interface ITicket {
   assignedTo: mongoose.Types.ObjectId | null;
   assignedBy: mongoose.Types.ObjectId | null;
   expectedResolutionAt: Date | null;
+  eventDate?: Date | null;
+  venue?: string;
+  eventTime?: string;
   resolution: ITicketResolution;
   resolutionHistory: ITicketResolutionHistoryItem[];
   closedBy: mongoose.Types.ObjectId | null;
@@ -146,6 +149,9 @@ const ticketSchema = new Schema<ITicket>(
     assignedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     assignedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     expectedResolutionAt: { type: Date, default: null },
+    eventDate: { type: Date, default: null },
+    venue: { type: String, trim: true, default: '' },
+    eventTime: { type: String, trim: true, default: '' },
     resolution: {
       remarks: { type: String, default: '' },
       attachment: { type: attachmentSchema, default: null },

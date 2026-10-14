@@ -10,7 +10,7 @@ import type {
 export interface TicketListParams {
   page?: number
   limit?: number
-  status?: TicketStatus | ''
+  status?: TicketStatus | 'active' | ''
   priority?: TicketPriority | ''
   department?: string
   assignedTo?: string
@@ -25,6 +25,9 @@ export interface UpdateTicketPayload {
   title?: string
   description?: string
   priority?: TicketPriority
+  eventDate?: string | null
+  venue?: string
+  eventTime?: string
   requester?: {
     name?: string
     mobile?: string
@@ -200,5 +203,10 @@ export const ticketService = {
   async approveClose(id: string, message?: string) {
     const { data } = await api.patch(`/tickets/${id}/approve-close`, { message })
     return data.data as Ticket
+  },
+
+  async delete(id: string) {
+    const { data } = await api.delete(`/tickets/${id}`)
+    return data.data as { message: string; ticketCode: string }
   },
 }

@@ -15,6 +15,9 @@ export const createTicketSchema = z.object({
   rollNumber: z.string().max(50).optional().default(''),
   requesterDepartment: z.string().max(100).optional().default(''),
   departmentName: z.string().max(100).optional(),
+  eventDate: z.string().optional().or(z.literal('')).or(z.null()),
+  venue: z.string().max(200).optional().default(''),
+  eventTime: z.string().max(50).optional().default(''),
 });
 
 export const trackTicketSchema = z.object({
@@ -28,6 +31,9 @@ export const updateTicketSchema = z.object({
   title: z.string().max(100).optional().or(z.literal('')),
   description: z.string().min(5).max(5000).optional(),
   priority: z.enum(PRIORITIES).optional(),
+  eventDate: z.string().optional().or(z.literal('')).or(z.null()),
+  venue: z.string().max(200).optional().or(z.literal('')),
+  eventTime: z.string().max(50).optional().or(z.literal('')),
   requester: z
     .object({
       name: z.string().min(2).max(100).optional(),
@@ -66,7 +72,7 @@ export const commentSchema = z.object({
 export const listTicketsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
-  status: z.enum(STATUSES).optional(),
+  status: z.enum([...STATUSES, 'active'] as const).optional(),
   priority: z.enum(PRIORITIES).optional(),
   department: objectId.optional(),
   assignedTo: objectId.optional(),

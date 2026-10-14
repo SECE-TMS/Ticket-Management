@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Building2, Check, Copy, ExternalLink, FileText, Mail, MessageCircle, Phone, Share2, Tag, User, X } from 'lucide-react'
+import { Building2, Calendar, Check, Clock, Copy, ExternalLink, FileText, Mail, MapPin, MessageCircle, Phone, Share2, Tag, User, X, Zap } from 'lucide-react'
 import { Button } from '../common/Button'
 import { useToast } from '../../context/ToastContext'
 
@@ -13,6 +13,10 @@ interface ShareTicketModalProps {
   requesterName?: string
   title?: string
   status?: string
+  eventDate?: string | null
+  venue?: string
+  eventTime?: string
+  priority?: string
 }
 
 export function ShareTicketModal({
@@ -25,6 +29,10 @@ export function ShareTicketModal({
   requesterName = '',
   title = '',
   status = '',
+  eventDate = null,
+  venue = '',
+  eventTime = '',
+  priority = '',
 }: ShareTicketModalProps) {
   const toast = useToast()
   const [copiedLink, setCopiedLink] = useState(false)
@@ -36,11 +44,23 @@ export function ShareTicketModal({
   const origin = window.location.origin
   const trackUrl = `${origin}/track-ticket?ticketCode=${encodeURIComponent(ticketCode)}${mobile ? `&mobile=${encodeURIComponent(mobile)}` : ''}`
 
+  const formattedEventDate = eventDate
+    ? new Date(eventDate).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : null
+
   const shareText = [
     `🎫 *TMS Ticket Details*`,
     `━━━━━━━━━━━━━━━━━━━`,
     `🔢 *Ticket Code:* ${ticketCode}`,
     title ? `📌 *Title:* ${title}` : null,
+    formattedEventDate ? `📅 *Date:* ${formattedEventDate}` : null,
+    venue ? `📍 *Venue:* ${venue}` : null,
+    eventTime ? `⏰ *Time:* ${eventTime}` : null,
+    priority ? `⚡ *Priority:* ${priority.toUpperCase()}` : null,
     requesterName ? `👤 *Raised By:* ${requesterName}` : null,
     departmentName ? `🏢 *Department:* ${departmentName}` : null,
     complaintType ? `🛠️ *Category:* ${complaintType}` : null,
@@ -147,6 +167,46 @@ export function ShareTicketModal({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            {formattedEventDate && (
+              <div className="flex items-center gap-2">
+                <Calendar size={14} className="text-blue-600 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Event Date</span>
+                  <p className="text-xs font-bold text-slate-800 truncate">{formattedEventDate}</p>
+                </div>
+              </div>
+            )}
+
+            {venue && (
+              <div className="flex items-center gap-2">
+                <MapPin size={14} className="text-rose-600 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Venue</span>
+                  <p className="text-xs font-bold text-slate-800 truncate">{venue}</p>
+                </div>
+              </div>
+            )}
+
+            {eventTime && (
+              <div className="flex items-center gap-2">
+                <Clock size={14} className="text-amber-600 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Time</span>
+                  <p className="text-xs font-bold text-slate-800 truncate">{eventTime}</p>
+                </div>
+              </div>
+            )}
+
+            {priority && (
+              <div className="flex items-center gap-2">
+                <Zap size={14} className="text-amber-500 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Priority</span>
+                  <p className="text-xs font-bold text-slate-800 uppercase">{priority}</p>
+                </div>
+              </div>
+            )}
+
             {requesterName && (
               <div className="flex items-center gap-2">
                 <User size={14} className="text-indigo-600 shrink-0" />
