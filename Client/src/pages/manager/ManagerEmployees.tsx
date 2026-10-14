@@ -184,7 +184,7 @@ export function ManagerEmployees() {
     <div>
       <PageHeader
         title="Employees"
-        description="Manage technicians and staff in your department."
+        description="Manage employees and staff in your department."
         actions={
           <div className="flex items-center gap-2.5">
             {managerDepts.length > 1 && (
@@ -306,7 +306,7 @@ export function ManagerEmployees() {
             {!employees.length && (
               <tr>
                 <td colSpan={managerDepts.length > 1 ? 6 : 5} className="py-8 text-center text-sm text-[var(--ink-muted)]">
-                  No employees yet. Add your first technician to start assigning tickets.
+                  No employees yet. Add your first employees to start assigning tickets.
                 </td>
               </tr>
             )}

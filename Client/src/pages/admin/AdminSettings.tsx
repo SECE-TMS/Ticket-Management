@@ -170,7 +170,7 @@ export function AdminSettings() {
                 </span> */}
               </div>
               <p className="text-xs text-[var(--ink-muted)] mt-0.5">
-                Require Department Managers to review technician resolution remarks &amp; media proofs before tickets can be closed.
+                Require Department Managers to review resolution remarks &amp; media proofs before tickets can be closed.
               </p>
             </div>
           </div>
@@ -231,7 +231,7 @@ export function AdminSettings() {
                   title: 'Direct Resolution (Disabled)',
                   badge: 'Fast Track',
                   badgeColor: 'bg-gray-100 text-gray-700 border-gray-200',
-                  desc: 'Technicians can directly mark tickets resolved/closed without manager intervention.',
+                  desc: 'Employees can directly mark tickets resolved/closed without manager intervention.',
                   icon: CheckCircle2,
                 },
               ].map((policy) => {

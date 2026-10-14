@@ -116,7 +116,7 @@ export function TrackTicket() {
       setTicket(res.ticket)
       setActivities(res.activities)
       setRequesterReviewComment('')
-      toast.success('Ticket rejected — automatically reopened for technician rework.')
+      toast.success('Ticket rejected — automatically reopened for employee rework.')
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to reopen ticket'))
     } finally {
@@ -137,7 +137,7 @@ export function TrackTicket() {
       setTicket(res.ticket)
       setActivities(res.activities)
       setNewComment('')
-      toast.success('Message sent to assigned department/technician!')
+      toast.success('Message sent to assigned department/employees!')
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to send comment'))
     } finally {
@@ -416,7 +416,7 @@ export function TrackTicket() {
                         Ticket Reopened for Rework {ticket.reopenCount ? `(Revision #${ticket.reopenCount})` : ''}
                       </h4>
                       <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                        This ticket has been reopened for rework. The assigned technician and department head have been notified and are actively addressing your issue. You will receive updates as progress is made.
+                        This ticket has been reopened for rework. The assigned employees and department head have been notified and are actively addressing your issue. You will receive updates as progress is made.
                       </p>
                     </div>
                   </div>
@@ -434,7 +434,7 @@ export function TrackTicket() {
 
                 <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)] mb-1">
-                    Technician / Specialist
+                    Employee / Specialist
                   </p>
                   <p className="text-sm font-bold text-[var(--primary-blue)]">
                     {getName(ticket.assignedTo, 'Pending assignment')}
@@ -590,7 +590,7 @@ export function TrackTicket() {
                     </div>
                   </div>
 
-                  {/* Card 2: Technician Resolution Proof Attachment (After) */}
+                  {/* Card 2: employee Resolution Proof Attachment (After) */}
                   <div className="flex flex-col justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
                     <div>
                       {(() => {
@@ -669,7 +669,7 @@ export function TrackTicket() {
                         ) : (
                           <div className="rounded-xl border border-green-200 bg-[var(--white)] p-4">
                             <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[var(--success)]">
-                              <Volume2 size={15} /> Technician Audio Proof
+                              <Volume2 size={15} /> Employee Audio Proof
                             </div>
                             <audio controls src={getAttachmentUrl(ticket.resolution.attachment.url)} className="w-full h-10" />
                           </div>
@@ -680,7 +680,7 @@ export function TrackTicket() {
                           <p className="text-xs font-semibold text-[var(--ink-muted)]">
                             {ticket.status === 'resolved' || ticket.status === 'closed'
                               ? 'Resolved without attachment'
-                              : 'Pending work completion by technician'}
+                              : 'Pending work completion by employee'}
                           </p>
                         </div>
                       )}
@@ -689,13 +689,13 @@ export function TrackTicket() {
                 </div>
               </div>
 
-              {/* Technician Resolution Remarks Callout */}
+              {/* employee Resolution Remarks Callout */}
               {ticket.resolution?.remarks && (
                 <div className="rounded-2xl border border-[var(--success)]/30 bg-[var(--success-light)] p-5 shadow-xs">
                   <div className="flex items-center gap-2 mb-1.5">
                     <CheckCircle2 size={18} className="text-[var(--success)]" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--success)]">
-                      Technician Resolution Notes
+                      Employee Resolution Notes
                     </h4>
                   </div>
                   <p className="text-sm leading-relaxed text-[var(--ink)]">
@@ -719,10 +719,10 @@ export function TrackTicket() {
                     <span className="text-2xl shrink-0">⏳</span>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-base font-bold text-amber-950">
-                        Technician Finished Work — Please Review &amp; Approve
+                        Employee Finished Work — Please Review &amp; Approve
                       </h4>
                       <p className="text-xs text-amber-800 mt-1">
-                        The assigned technician has submitted their resolution notes and media proof above. Please verify that your issue has been resolved. If you are satisfied, approve to close the ticket. If the work is incomplete or unsatisfactory, reject with a comment to automatically reopen the ticket for rework.
+                        The assigned employee has submitted their resolution notes and media proof above. Please verify that your issue has been resolved. If you are satisfied, approve to close the ticket. If the work is incomplete or unsatisfactory, reject with a comment to automatically reopen the ticket for rework.
                       </p>
 
                       <div className="mt-4">
@@ -778,7 +778,7 @@ export function TrackTicket() {
                           Issue Not Resolved or Problem Reoccurred?
                         </h4>
                         <p className="text-xs text-red-800 mt-1 max-w-xl leading-relaxed">
-                          If your issue was not solved to your satisfaction, or the same problem has happened again, you can reopen this ticket. The assigned technician and department manager will be notified immediately for rework.
+                          If your issue was not solved to your satisfaction, or the same problem has happened again, you can reopen this ticket. The assigned employee and department manager will be notified immediately for rework.
                         </p>
                       </div>
                     </div>
@@ -815,14 +815,14 @@ export function TrackTicket() {
               Comments &amp; Query Desk
             </h3>
             <p className="text-xs text-[var(--ink-muted)] mb-4">
-              Send messages, updates, or queries directly to the assigned department and technician.
+              Send messages, updates, or queries directly to the assigned department and employee.
             </p>
 
             <form onSubmit={handlePostComment} className="flex flex-col gap-2 sm:flex-row mb-6">
               <input
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Ask a question or send a message to the technician..."
+                placeholder="Ask a question or send a message to the employee..."
                 className="h-11 flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
                 id="requester-comment-input"
               />
@@ -987,7 +987,7 @@ export function TrackTicket() {
             className="space-y-4"
           >
             <div className="rounded-xl bg-amber-50 border border-amber-200 p-3.5 text-xs text-amber-900 leading-relaxed">
-              <strong>Notice:</strong> Reopening this ticket will alert the assigned department and technician to resume work on your request. Please explain what is still not resolved.
+              <strong>Notice:</strong> Reopening this ticket will alert the assigned department and employee to resume work on your request. Please explain what is still not resolved.
             </div>
             <div>
               <label
