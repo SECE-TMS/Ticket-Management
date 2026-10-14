@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft,
   Building2,
-  // Check,
+  Calendar,
   CheckCircle2,
   Clock,
   Copy,
@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Headset,
   IdCard,
+  MapPin,
   Phone,
   Printer,
   QrCode,
@@ -54,6 +55,9 @@ const schema = z
       .min(15, 'Ticket Title must be at least 15 characters')
       .max(30, 'Ticket Title must not exceed 30 characters'),
     description: z.string().min(5, 'Describe the issue (min 5 characters)'),
+    eventDate: z.string().optional(),
+    venue: z.string().optional(),
+    eventTime: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -158,6 +162,9 @@ export function RaiseTicket() {
       complaintType: '',
       title: '',
       description: '',
+      eventDate: '',
+      venue: '',
+      eventTime: '',
     },
   })
 
@@ -433,6 +440,15 @@ export function RaiseTicket() {
       formData.append('complaintType', values.complaintType)
       formData.append('title', values.title.trim())
       formData.append('description', values.description)
+      if (values.eventDate) {
+        formData.append('eventDate', values.eventDate)
+      }
+      if (values.venue) {
+        formData.append('venue', values.venue.trim())
+      }
+      if (values.eventTime) {
+        formData.append('eventTime', values.eventTime.trim())
+      }
       if (attachments.length > 0) {
         attachments.forEach((file) => {
           formData.append('attachment', file)
@@ -534,6 +550,9 @@ export function RaiseTicket() {
                 setSessionId(null)
                 setOtpValue('')
                 setValue('title', '')
+                setValue('eventDate', '')
+                setValue('venue', '')
+                setValue('eventTime', '')
               }}
             >
               Raise Another Ticket
@@ -557,6 +576,10 @@ export function RaiseTicket() {
           title={watch('title') || createdTicket?.title}
           complaintType={watch('complaintType')}
           status={createdTicket?.status || 'new'}
+          eventDate={createdTicket?.eventDate || watch('eventDate')}
+          venue={createdTicket?.venue || watch('venue')}
+          eventTime={createdTicket?.eventTime || watch('eventTime')}
+          priority={createdTicket?.priority || 'medium'}
         />
 
         <TicketReceiptModal
@@ -1141,7 +1164,139 @@ export function RaiseTicket() {
               )}
             </div>
 
-            {/* Step 4: Description & Proof Attachment */}
+            {/* Step 4: Date, Venue & Time (Schedule Details) */}
+            <div>
+              <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-2">
+                <Calendar size={18} className="text-[var(--primary-blue)]" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)]">
+                  4. Date, Venue &amp; Time (Optional)
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Date Picker */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="rt-event-date" className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                    <Calendar size={13} className="text-blue-600" />
+                    Date
+                  </label>
+                  <input
+                    {...register('eventDate')}
+                    type="date"
+                    id="rt-event-date"
+                    className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
+                  />
+                  <span className="text-[11px] text-[var(--ink-muted)]">Select target or event date</span>
+                </div>
+
+                {/* Venue Text Input */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="rt-venue" className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                    <MapPin size={13} className="text-rose-600" />
+                    Venue
+                  </label>
+                  <input
+                    {...register('venue')}
+                    type="text"
+                    id="rt-venue"
+                    maxLength={100}
+                    placeholder="e.g., Auditorium, Lab 3, Room 204"
+                    className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
+                  />
+                  <span className="text-[11px] text-[var(--ink-muted)]">Enter hall, lab, or room number</span>
+                </div>
+
+                {/* Time Picker with AM/PM */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                    <Clock size={13} className="text-amber-600" />
+                    Time (AM/PM)
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    {/* Hour Select */}
+                    <select
+                      id="rt-time-hour"
+                      value={watch('eventTime') ? watch('eventTime')!.split(' ')[0]?.split(':')[0] || '10' : '10'}
+                      onChange={(e) => {
+                        const cur = watch('eventTime') || '10:00 AM'
+                        const parts = cur.split(' ')
+                        const timeParts = (parts[0] || '10:00').split(':')
+                        const min = timeParts[1] || '00'
+                        const ampm = parts[1] || 'AM'
+                        setValue('eventTime', `${e.target.value}:${min} ${ampm}`)
+                      }}
+                      className="h-11 flex-1 rounded-xl border border-[var(--border)] bg-[var(--white)] px-2 text-sm text-[var(--ink)] font-semibold outline-none cursor-pointer focus:border-[var(--primary-blue)]"
+                    >
+                      {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+
+                    <span className="font-bold text-[var(--ink-muted)]">:</span>
+
+                    {/* Minute Select */}
+                    <select
+                      id="rt-time-min"
+                      value={watch('eventTime') ? watch('eventTime')!.split(' ')[0]?.split(':')[1] || '00' : '00'}
+                      onChange={(e) => {
+                        const cur = watch('eventTime') || '10:00 AM'
+                        const parts = cur.split(' ')
+                        const hr = parts[0]?.split(':')[0] || '10'
+                        const ampm = parts[1] || 'AM'
+                        setValue('eventTime', `${hr}:${e.target.value} ${ampm}`)
+                      }}
+                      className="h-11 flex-1 rounded-xl border border-[var(--border)] bg-[var(--white)] px-2 text-sm text-[var(--ink)] font-semibold outline-none cursor-pointer focus:border-[var(--primary-blue)]"
+                    >
+                      {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+
+                    {/* AM/PM Toggle Buttons */}
+                    <div className="flex rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-0.5 shrink-0">
+                      {(['AM', 'PM'] as const).map((period) => {
+                        const currentAmPm = watch('eventTime')?.endsWith('PM') ? 'PM' : 'AM'
+                        const isActive = currentAmPm === period
+                        return (
+                          <button
+                            key={period}
+                            type="button"
+                            onClick={() => {
+                              const cur = watch('eventTime') || '10:00 AM'
+                              const timePart = cur.split(' ')[0] || '10:00'
+                              setValue('eventTime', `${timePart} ${period}`)
+                            }}
+                            className={`px-2.5 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all ${
+                              isActive
+                                ? 'bg-[var(--primary-blue)] text-white shadow-xs'
+                                : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
+                            }`}
+                          >
+                            {period}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-[var(--ink-muted)]">
+                      {watch('eventTime') ? `Selected: ${watch('eventTime')}` : 'Format: HH:MM AM/PM'}
+                    </span>
+                    {watch('eventTime') && (
+                      <button
+                        type="button"
+                        onClick={() => setValue('eventTime', '')}
+                        className="text-[11px] font-semibold text-rose-500 hover:text-rose-700 underline cursor-pointer"
+                      >
+                        Clear time
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 5: Description & Proof Attachment */}
             <div>
               <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-2">
                 <FileText size={18} className="text-[var(--primary-blue)]" />

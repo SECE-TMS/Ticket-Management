@@ -391,40 +391,72 @@ const buildListFilter = (actor: IUserDocument, query: Record<string, unknown>) =
 
   if (actor.role === 'manager') {
     const managerDepts = getUserDepartmentIds(actor);
-    if (query.department) {
-      if (!managerDepts.includes(String(query.department))) {
+    const deptQuery = query.department && query.department !== 'all' && query.department !== '' && query.department !== 'undefined'
+      ? String(query.department)
+      : null;
+    if (deptQuery) {
+      if (!managerDepts.includes(deptQuery)) {
         throw ApiError.forbidden('Cannot filter outside your department(s)');
       }
-      filter.department = query.department;
+      filter.department = deptQuery;
     } else {
       filter.department = managerDepts.length === 1 ? managerDepts[0] : { $in: managerDepts };
     }
   } else if (actor.role === 'employee') {
     filter.assignedTo = actor._id;
-  } else if (query.department) {
+  } else if (query.department && query.department !== 'all' && query.department !== '' && query.department !== 'undefined') {
     filter.department = query.department;
   }
 
-  if (query.status) filter.status = query.status;
-  if (query.priority) filter.priority = query.priority;
-  if (query.assignedTo && actor.role !== 'employee') filter.assignedTo = query.assignedTo;
-
-  if (query.from || query.to) {
-    const createdAt: Record<string, Date> = {};
-    if (query.from) createdAt.$gte = new Date(String(query.from));
-    if (query.to) createdAt.$lte = new Date(String(query.to));
-    filter.createdAt = createdAt;
+  if (query.status === 'active') {
+    filter.status = { $ne: 'closed' };
+  } else if (query.status && query.status !== 'all' && query.status !== '' && query.status !== 'undefined') {
+    filter.status = query.status;
+  }
+  if (query.priority && query.priority !== 'all' && query.priority !== '' && query.priority !== 'undefined') {
+    filter.priority = query.priority;
+  }
+  if (query.assignedTo && query.assignedTo !== 'all' && query.assignedTo !== '' && query.assignedTo !== 'undefined' && actor.role !== 'employee') {
+    filter.assignedTo = query.assignedTo;
   }
 
-  if (query.search) {
+  const fromVal = query.from || query.startDate;
+  const toVal = query.to || query.endDate;
+  if (fromVal || toVal) {
+    const createdAt: Record<string, Date> = {};
+    if (fromVal && String(fromVal).trim() !== '' && String(fromVal) !== 'undefined' && String(fromVal) !== 'null') {
+      const fromD = new Date(String(fromVal));
+      if (!isNaN(fromD.getTime())) {
+        if (String(fromVal).length <= 10) {
+          fromD.setHours(0, 0, 0, 0);
+        }
+        createdAt.$gte = fromD;
+      }
+    }
+    if (toVal && String(toVal).trim() !== '' && String(toVal) !== 'undefined' && String(toVal) !== 'null') {
+      const toD = new Date(String(toVal));
+      if (!isNaN(toD.getTime())) {
+        if (String(toVal).length <= 10) {
+          toD.setHours(23, 59, 59, 999);
+        }
+        createdAt.$lte = toD;
+      }
+    }
+    if (Object.keys(createdAt).length > 0) {
+      filter.createdAt = createdAt;
+    }
+  }
+
+  if (query.search && String(query.search).trim() !== '' && query.search !== 'undefined') {
+    const s = String(query.search).trim();
     filter.$or = [
-      { ticketCode: { $regex: query.search, $options: 'i' } },
-      { title: { $regex: query.search, $options: 'i' } },
-      { 'requester.name': { $regex: query.search, $options: 'i' } },
-      { 'requester.mobile': { $regex: query.search, $options: 'i' } },
-      { 'requester.rollNumber': { $regex: query.search, $options: 'i' } },
-      { complaintType: { $regex: query.search, $options: 'i' } },
-      { description: { $regex: query.search, $options: 'i' } },
+      { ticketCode: { $regex: s, $options: 'i' } },
+      { title: { $regex: s, $options: 'i' } },
+      { 'requester.name': { $regex: s, $options: 'i' } },
+      { 'requester.mobile': { $regex: s, $options: 'i' } },
+      { 'requester.rollNumber': { $regex: s, $options: 'i' } },
+      { complaintType: { $regex: s, $options: 'i' } },
+      { description: { $regex: s, $options: 'i' } },
     ];
   }
 
@@ -484,6 +516,9 @@ export const createPublicTicket = async (
     priority: (body.priority as string) || 'medium',
     status: 'new',
     expectedResolutionAt,
+    eventDate: body.eventDate ? new Date(body.eventDate as string) : null,
+    venue: (body.venue as string) || '',
+    eventTime: (body.eventTime as string) || '',
   });
 
   await logActivity({
@@ -607,6 +642,9 @@ export interface UpdateTicketDetailsDto {
   title?: string;
   description?: string;
   priority?: TicketPriority;
+  eventDate?: string | Date | null;
+  venue?: string;
+  eventTime?: string;
   requester?: {
     name?: string;
     mobile?: string;
@@ -693,6 +731,26 @@ export const updateTicketDetails = async (
     if (reqChanged) {
       changes.push('Requester details updated');
     }
+  }
+
+  if (payload.eventDate !== undefined) {
+    const newDate = payload.eventDate ? new Date(payload.eventDate) : null;
+    const oldDateStr = ticket.eventDate ? new Date(ticket.eventDate).toISOString().slice(0, 10) : '';
+    const newDateStr = newDate ? newDate.toISOString().slice(0, 10) : '';
+    if (oldDateStr !== newDateStr) {
+      ticket.eventDate = newDate;
+      changes.push(`Event date changed to ${newDateStr || 'None'}`);
+    }
+  }
+
+  if (payload.venue !== undefined && payload.venue !== ticket.venue) {
+    changes.push(`Venue changed to "${payload.venue}"`);
+    ticket.venue = payload.venue;
+  }
+
+  if (payload.eventTime !== undefined && payload.eventTime !== ticket.eventTime) {
+    changes.push(`Event time changed to "${payload.eventTime}"`);
+    ticket.eventTime = payload.eventTime;
   }
 
   await ticket.save();
@@ -1330,6 +1388,34 @@ export const addComment = async (
   return populateTicket(Ticket.findById(ticket._id));
 };
 
+const formatDuration = (ms: number): string => {
+  if (ms < 0) return '0m';
+  const totalMinutes = Math.floor(ms / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
+  return parts.join(' ');
+};
+
+const getTicketDuration = (ticket: ITicket): string => {
+  if (!ticket.createdAt) return '—';
+  const start = new Date(ticket.createdAt).getTime();
+  const end = ticket.closedAt
+    ? new Date(ticket.closedAt).getTime()
+    : ticket.resolution?.resolvedAt
+    ? new Date(ticket.resolution.resolvedAt).getTime()
+    : Date.now();
+  const dur = formatDuration(end - start);
+  if (ticket.status === 'closed' || ticket.status === 'resolved') {
+    return dur;
+  }
+  return `${dur} (open)`;
+};
+
 export const exportCsv = async (actor: IUserDocument, query: Record<string, unknown>) => {
   const filter = buildListFilter(actor, query);
   const tickets = await populateTicket(Ticket.find(filter).sort({ createdAt: -1 }).limit(5000));
@@ -1346,6 +1432,8 @@ export const exportCsv = async (actor: IUserDocument, query: Record<string, unkn
     'assignedTo',
     'createdAt',
     'expectedResolutionAt',
+    'deadline',
+    'duration',
   ];
 
   const escape = (val: unknown) => {
@@ -1372,6 +1460,8 @@ export const exportCsv = async (actor: IUserDocument, query: Record<string, unkn
       assignee?.name || '',
       t.createdAt?.toISOString(),
       t.expectedResolutionAt?.toISOString() || '',
+      t.expectedResolutionAt ? t.expectedResolutionAt.toISOString() : '',
+      getTicketDuration(t),
     ]
       .map(escape)
       .join(',');
@@ -1396,7 +1486,7 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
   });
 
   // Title Header Block
-  worksheet.mergeCells('A1:P1');
+  worksheet.mergeCells('A1:R1');
   const titleCell = worksheet.getCell('A1');
   titleCell.value = 'TICKET MANAGEMENT SYSTEM - PERFORMANCE & RESOLUTION REPORT';
   titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFF' } };
@@ -1405,9 +1495,27 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
   worksheet.getRow(1).height = 36;
 
   // Metadata Row
-  worksheet.mergeCells('A2:P2');
+  worksheet.mergeCells('A2:R2');
   const metaCell = worksheet.getCell('A2');
-  metaCell.value = `Generated on: ${new Date().toLocaleString()} | Total Records: ${tickets.length} | Exported by: ${actor.name}`;
+
+  const filterSummaryParts: string[] = [];
+  if (filter.createdAt) {
+    const ca = filter.createdAt as Record<string, Date>;
+    if (ca.$gte && ca.$lte) {
+      filterSummaryParts.push(`Date: ${ca.$gte.toLocaleDateString()} to ${ca.$lte.toLocaleDateString()}`);
+    } else if (ca.$gte) {
+      filterSummaryParts.push(`Date From: ${ca.$gte.toLocaleDateString()}`);
+    } else if (ca.$lte) {
+      filterSummaryParts.push(`Date To: ${ca.$lte.toLocaleDateString()}`);
+    }
+  }
+  if (query.status && query.status !== 'all') filterSummaryParts.push(`Status: ${query.status}`);
+  if (query.priority && query.priority !== 'all') filterSummaryParts.push(`Priority: ${query.priority}`);
+  if (query.department && query.department !== 'all') filterSummaryParts.push(`Dept Filter: Active`);
+  if (query.search) filterSummaryParts.push(`Search: "${query.search}"`);
+
+  const filterLabel = filterSummaryParts.length > 0 ? ` | Filter: [${filterSummaryParts.join(', ')}]` : ' | Filter: All Records';
+  metaCell.value = `Generated on: ${new Date().toLocaleString()} | Matching Records: ${tickets.length}${filterLabel} | Exported by: ${actor.name}`;
   metaCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: '475569' } };
   metaCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
   metaCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -1430,6 +1538,8 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
     'Assigned To',
     'Description',
     'Resolution Remarks',
+    'Deadline',
+    'Duration',
     'User Attachment Image URL',
     'Resolution Proof Image URL',
     'Feedback Rating',
@@ -1479,6 +1589,10 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
     const feedbackText = t.feedback?.rating
       ? `${t.feedback.rating}★ ${t.feedback.comment ? `("${t.feedback.comment}")` : ''}`
       : 'Unrated';
+    const deadlineText = t.expectedResolutionAt
+      ? new Date(t.expectedResolutionAt).toLocaleString()
+      : '—';
+    const durationText = getTicketDuration(t);
 
     const rowIndex = idx + 5;
     const row = worksheet.getRow(rowIndex);
@@ -1496,6 +1610,8 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
       assignee?.name || 'Unassigned',
       t.description || '—',
       t.resolution?.remarks || '—',
+      deadlineText,
+      durationText,
       userAttUrl,
       resAttUrl,
       feedbackText,
@@ -1511,8 +1627,17 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
       cell.font = { name: 'Arial', size: 10, color: { argb: '1E293B' } };
       cell.alignment = {
         vertical: 'middle',
-        horizontal: colNumber === 1 || colNumber === 7 || colNumber === 8 || colNumber === 14 ? 'center' : 'left',
-        wrapText: colNumber === 10 || colNumber === 11,
+        horizontal:
+          colNumber === 1 ||
+          colNumber === 7 ||
+          colNumber === 8 ||
+          colNumber === 9 ||
+          colNumber === 13 ||
+          colNumber === 14 ||
+          colNumber === 17
+            ? 'center'
+            : 'left',
+        wrapText: colNumber === 11 || colNumber === 12,
       };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
       cell.border = {
@@ -1522,15 +1647,15 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
         right: { style: 'thin', color: { argb: 'E2E8F0' } },
       };
 
-      // Column 7: Priority formatting
-      if (colNumber === 7) {
+      // Column 8: Priority formatting
+      if (colNumber === 8) {
         const pStyle = priorityFills[t.priority] || priorityFills.medium;
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: pStyle.fgColor } };
         cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: pStyle.textColor } };
       }
 
-      // Column 8: Status formatting
-      if (colNumber === 8) {
+      // Column 9: Status formatting
+      if (colNumber === 9) {
         const sStyle = statusFills[t.status] || statusFills.new;
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: sStyle.fgColor } };
         cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: sStyle.textColor } };
@@ -1545,10 +1670,12 @@ export const exportExcel = async (actor: IUserDocument, query: Record<string, un
       const len = cell.value ? String(cell.value).length : 0;
       if (len > maxLen) maxLen = len;
     });
-    // Give extra width for description, remarks and image links
-    if (colIdx === 9 || colIdx === 10) {
+    // Give extra width for description, remarks, deadline, duration and image links
+    if (colIdx === 10 || colIdx === 11) {
       column.width = 35;
-    } else if (colIdx === 11 || colIdx === 12) {
+    } else if (colIdx === 12 || colIdx === 13) {
+      column.width = 22;
+    } else if (colIdx === 14 || colIdx === 15) {
       column.width = 40;
     } else {
       column.width = Math.min(Math.max(maxLen + 4, 12), 40);
@@ -2244,6 +2371,24 @@ export const requesterAddComment = async ({
     .lean();
 
   return { ticket: populated, activities };
+};
+
+export const deleteTicket = async (id: string, actor: IUserDocument) => {
+  if (actor.role !== 'admin') {
+    throw ApiError.forbidden('Only administrators can permanently delete tickets');
+  }
+
+  const ticket = await Ticket.findById(id);
+  if (!ticket) throw ApiError.notFound('Ticket not found');
+
+  // Cascade delete associated activities and notifications
+  await Promise.all([
+    ActivityLog.deleteMany({ ticket: ticket._id }),
+    Notification.deleteMany({ ticket: ticket._id }),
+    Ticket.findByIdAndDelete(ticket._id),
+  ]);
+
+  return { message: `Ticket ${ticket.ticketCode} deleted permanently`, ticketCode: ticket.ticketCode };
 };
 
 export { OPEN_STATUSES };

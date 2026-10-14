@@ -194,6 +194,9 @@ export interface Ticket {
   assignedTo?: UserRef | string | null
   assignedBy?: UserRef | string | null
   expectedResolutionAt?: string | null
+  eventDate?: string | null
+  venue?: string
+  eventTime?: string
   resolution?: {
     remarks?: string
     attachment?: Attachment | null

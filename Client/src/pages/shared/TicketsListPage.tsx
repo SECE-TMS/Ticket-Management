@@ -8,6 +8,7 @@ import { PageLoader } from '../../components/common/LoadingSpinner'
 import { PageHeader } from '../../components/common/KpiCard'
 import { useToast } from '../../context/ToastContext'
 import { useAppSelector } from '../../store/hooks'
+import { CheckCircle2, Inbox } from 'lucide-react'
 import { getErrorMessage } from '../../lib/utils'
 import type { Department, Ticket, TicketPriority, TicketStatus } from '../../types'
 
@@ -23,7 +24,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
   const role = user?.role
 
   const [loading, setLoading] = useState(true)
-  const [exporting, setExporting] = useState(false)
+  const [exporting, setExporting] = useState<'excel' | 'csv' | null>(null)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [page, setPage] = useState(1)
@@ -37,6 +38,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
   const [toDate, setToDate] = useState('')
   const [limit, setLimit] = useState(10)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [tab, setTab] = useState<'all' | 'active' | 'closed'>('all')
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(search), 300)
@@ -46,8 +48,64 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
   useEffect(() => {
     if (role === 'admin') {
       departmentService.listAll().then(setDepartments).catch(() => {})
+    } else if (role === 'manager' && user) {
+      const userDepts = (user.departments && user.departments.length > 0
+        ? user.departments
+        : user.department
+          ? [user.department]
+          : []
+      ).filter((d): d is Department => typeof d === 'object' && d !== null)
+
+      if (userDepts.length > 0) {
+        setDepartments(userDepts)
+      } else {
+        departmentService.listAll().then((all) => {
+          const managerDeptIds = (user.departments || [user.department])
+            .map((d: any) => (typeof d === 'object' ? d?._id : d))
+            .filter(Boolean)
+          setDepartments(all.filter((d) => managerDeptIds.includes(d._id)))
+        }).catch(() => {})
+      }
     }
-  }, [role])
+  }, [role, user])
+
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+    status ||
+    priority ||
+    department ||
+    fromDate ||
+    toDate
+  )
+
+  const handleResetFilters = () => {
+    setSearch('')
+    setDebouncedSearch('')
+    setStatus('')
+    setPriority('')
+    setDepartment('')
+    setFromDate('')
+    setToDate('')
+    setPage(1)
+  }
+
+  const getFilterParams = (): TicketListParams => {
+    const activeSearch = (search || debouncedSearch || '').trim()
+    let effectiveStatus: TicketStatus | 'active' | '' = status
+    if (tab === 'closed') {
+      effectiveStatus = 'closed'
+    } else if (tab === 'active' && !status) {
+      effectiveStatus = 'active'
+    }
+    return {
+      search: activeSearch || undefined,
+      status: effectiveStatus || undefined,
+      priority: priority || undefined,
+      department: department || undefined,
+      from: fromDate || undefined,
+      to: toDate || undefined,
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -55,12 +113,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
       const params: TicketListParams = {
         page,
         limit,
-        search: debouncedSearch || undefined,
-        status: status || undefined,
-        priority: priority || undefined,
-        department: department || undefined,
-        from: fromDate || undefined,
-        to: toDate || undefined,
+        ...getFilterParams(),
       }
       const data = await ticketService.list(params)
       setTickets(data.items)
@@ -71,7 +124,7 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
     } finally {
       setLoading(false)
     }
-  }, [page, limit, debouncedSearch, status, priority, department, fromDate, toDate, toast])
+  }, [page, limit, debouncedSearch, search, status, priority, department, fromDate, toDate, tab, toast])
 
   useEffect(() => {
     void load()
@@ -79,25 +132,39 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, status, priority, department, fromDate, toDate, limit])
+  }, [debouncedSearch, status, priority, department, fromDate, toDate, limit, tab])
 
   const handleExportExcel = async () => {
-    setExporting(true)
+    setExporting('excel')
     try {
-      const params: TicketListParams = {
-        search: debouncedSearch || undefined,
-        status: status || undefined,
-        priority: priority || undefined,
-        department: department || undefined,
-        from: fromDate || undefined,
-        to: toDate || undefined,
-      }
+      const params = getFilterParams()
       await ticketService.exportExcel(params)
-      toast.success('Colorful Excel Report downloaded successfully')
+      toast.success(
+        hasActiveFilters
+          ? `Filtered Excel Report (${total} tickets) downloaded successfully`
+          : 'Excel Report downloaded successfully'
+      )
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to export Excel report'))
     } finally {
-      setExporting(false)
+      setExporting(null)
+    }
+  }
+
+  const handleExportCsv = async () => {
+    setExporting('csv')
+    try {
+      const params = getFilterParams()
+      await ticketService.exportCsv(params)
+      toast.success(
+        hasActiveFilters
+          ? `Filtered CSV Report (${total} tickets) downloaded successfully`
+          : 'CSV Report downloaded successfully'
+      )
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to export CSV report'))
+    } finally {
+      setExporting(null)
     }
   }
 
@@ -115,6 +182,60 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
         }
       />
 
+      {/* Ticket List Tab Navigation */}
+      <div className="mb-4 flex items-center gap-1.5 border-b border-[var(--border)] pb-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => {
+            setTab('all')
+            setStatus('')
+            setPage(1)
+          }}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            tab === 'all'
+              ? 'bg-[var(--primary-blue)] text-white shadow-xs'
+              : 'text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]'
+          }`}
+        >
+          <Inbox size={15} />
+          <span>All Tickets</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setTab('active')
+            setStatus('')
+            setPage(1)
+          }}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            tab === 'active'
+              ? 'bg-[var(--primary-blue)] text-white shadow-xs'
+              : 'text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]'
+          }`}
+        >
+          <span className="flex h-2 w-2 rounded-full bg-emerald-400"></span>
+          <span>Active Tickets</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setTab('closed')
+            setStatus('closed')
+            setPage(1)
+          }}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            tab === 'closed'
+              ? 'bg-slate-800 text-white shadow-xs'
+              : 'text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]'
+          }`}
+        >
+          <CheckCircle2 size={15} className={tab === 'closed' ? 'text-emerald-400' : 'text-slate-500'} />
+          <span>Closed Tickets</span>
+        </button>
+      </div>
+
       <TicketFilters
         search={search}
         status={status}
@@ -126,11 +247,15 @@ export function TicketsListPage({ title, description, detailBase }: TicketsPageP
         onSearchChange={setSearch}
         onStatusChange={setStatus}
         onPriorityChange={setPriority}
-        onDepartmentChange={role === 'admin' ? setDepartment : undefined}
+        onDepartmentChange={role === 'admin' || (role === 'manager' && departments.length > 1) ? setDepartment : undefined}
         onFromDateChange={setFromDate}
         onToDateChange={setToDate}
-        onExportExcel={role === 'admin' || role === 'manager' ? handleExportExcel : undefined}
+        onExportExcel={handleExportExcel}
+        onExportCsv={handleExportCsv}
         exporting={exporting}
+        filteredCount={total}
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={handleResetFilters}
       />
 
       {loading ? (

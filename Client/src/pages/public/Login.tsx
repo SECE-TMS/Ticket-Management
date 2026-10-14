@@ -131,9 +131,8 @@ export function Login() {
                 type="email"
                 autoComplete="email"
                 {...register('email')}
-                className={`h-10 w-full rounded-lg border bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
-                  errors.email ? 'border-[var(--danger)]' : 'border-[var(--border)]'
-                }`}
+                className={`h-10 w-full rounded-lg border bg-[var(--white)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${errors.email ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                  }`}
                 placeholder="admin@sece.ac.in"
               />
               {errors.email && (

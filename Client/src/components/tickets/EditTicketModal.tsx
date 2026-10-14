@@ -7,7 +7,7 @@ import { ticketService, type UpdateTicketPayload } from '../../services/ticketSe
 import { useToast } from '../../context/ToastContext'
 import type { Department, Ticket, TicketPriority } from '../../types'
 import { getId } from '../../types'
-import { Building2, FileText, User as UserIcon } from 'lucide-react'
+import { Building2, Calendar, Clock, FileText, MapPin, User as UserIcon } from 'lucide-react'
 
 interface EditTicketModalProps {
   open: boolean
@@ -35,6 +35,9 @@ export function EditTicketModal({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<TicketPriority>('medium')
+  const [eventDate, setEventDate] = useState('')
+  const [venue, setVenue] = useState('')
+  const [eventTime, setEventTime] = useState('')
 
   // Requester states
   const [requesterName, setRequesterName] = useState('')
@@ -81,6 +84,10 @@ export function EditTicketModal({
       setRequesterEmail(ticket.requester?.email || '')
       setRequesterUserType(ticket.requester?.userType || 'guest')
       setRequesterRollNumber(ticket.requester?.rollNumber || '')
+
+      setEventDate(ticket.eventDate ? new Date(ticket.eventDate).toISOString().slice(0, 10) : '')
+      setVenue(ticket.venue || '')
+      setEventTime(ticket.eventTime || '')
 
       setComplaintType(ticket.complaintType || '')
       setIsCustomType(false)
@@ -143,6 +150,9 @@ export function EditTicketModal({
         title: title.trim(),
         description: description.trim(),
         priority,
+        eventDate: eventDate || null,
+        venue: venue.trim(),
+        eventTime: eventTime.trim(),
         requester: {
           name: requesterName.trim(),
           mobile: requesterMobile.trim(),
@@ -351,6 +361,127 @@ export function EditTicketModal({
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full rounded-xl border border-[var(--border)] bg-[var(--white)] p-3.5 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2.5: Date, Venue & Time */}
+        <div>
+          <div className="flex items-center gap-2 mb-3 pb-1 border-b border-[var(--border)]">
+            <Calendar size={16} className="text-[var(--primary-blue)]" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+              Date, Venue &amp; Time (Schedule Details)
+            </h3>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {/* Date */}
+            <div>
+              <label htmlFor="edit-event-date" className="block text-xs font-bold text-[var(--ink)] mb-1 flex items-center gap-1">
+                <Calendar size={12} className="text-blue-600" />
+                Date
+              </label>
+              <input
+                id="edit-event-date"
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs sm:text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+              />
+            </div>
+
+            {/* Venue */}
+            <div>
+              <label htmlFor="edit-venue" className="block text-xs font-bold text-[var(--ink)] mb-1 flex items-center gap-1">
+                <MapPin size={12} className="text-rose-600" />
+                Venue
+              </label>
+              <input
+                id="edit-venue"
+                type="text"
+                placeholder="e.g., Seminar Hall, Lab 2"
+                value={venue}
+                onChange={(e) => setVenue(e.target.value)}
+                className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs sm:text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+              />
+            </div>
+
+            {/* Time with AM/PM */}
+            <div>
+              <label className="block text-xs font-bold text-[var(--ink)] mb-1 flex items-center gap-1">
+                <Clock size={12} className="text-amber-600" />
+                Time (AM/PM)
+              </label>
+              <div className="flex items-center gap-1">
+                <select
+                  id="edit-time-hour"
+                  value={eventTime ? eventTime.split(' ')[0]?.split(':')[0] || '10' : '10'}
+                  onChange={(e) => {
+                    const cur = eventTime || '10:00 AM'
+                    const parts = cur.split(' ')
+                    const min = parts[0]?.split(':')[1] || '00'
+                    const ampm = parts[1] || 'AM'
+                    setEventTime(`${e.target.value}:${min} ${ampm}`)
+                  }}
+                  className="h-9 flex-1 rounded-xl border border-[var(--border)] bg-[var(--white)] px-1 text-xs text-[var(--ink)] font-semibold outline-none cursor-pointer focus:border-[var(--primary-blue)]"
+                >
+                  {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((h) => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
+                <span className="font-bold text-[var(--ink-muted)] text-xs">:</span>
+                <select
+                  id="edit-time-min"
+                  value={eventTime ? eventTime.split(' ')[0]?.split(':')[1] || '00' : '00'}
+                  onChange={(e) => {
+                    const cur = eventTime || '10:00 AM'
+                    const parts = cur.split(' ')
+                    const hr = parts[0]?.split(':')[0] || '10'
+                    const ampm = parts[1] || 'AM'
+                    setEventTime(`${hr}:${e.target.value} ${ampm}`)
+                  }}
+                  className="h-9 flex-1 rounded-xl border border-[var(--border)] bg-[var(--white)] px-1 text-xs text-[var(--ink)] font-semibold outline-none cursor-pointer focus:border-[var(--primary-blue)]"
+                >
+                  {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <div className="flex rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5">
+                  {(['AM', 'PM'] as const).map((period) => {
+                    const curAmPm = eventTime?.endsWith('PM') ? 'PM' : 'AM'
+                    const isActive = curAmPm === period && !!eventTime
+                    return (
+                      <button
+                        key={period}
+                        type="button"
+                        onClick={() => {
+                          const cur = eventTime || '10:00 AM'
+                          const timePart = cur.split(' ')[0] || '10:00'
+                          setEventTime(`${timePart} ${period}`)
+                        }}
+                        className={`px-1.5 py-0.5 text-[10px] font-bold rounded cursor-pointer ${
+                          isActive
+                            ? 'bg-[var(--primary-blue)] text-white'
+                            : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
+                        }`}
+                      >
+                        {period}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              {eventTime && (
+                <div className="flex justify-end mt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setEventTime('')}
+                    className="text-[10px] font-semibold text-rose-500 hover:text-rose-700 underline cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

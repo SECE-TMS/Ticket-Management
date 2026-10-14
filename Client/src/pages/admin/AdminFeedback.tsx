@@ -579,7 +579,7 @@ export function AdminFeedback() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <span className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--primary-blue)]">
-                            Complaint Category
+                            Ticket Category
                           </span>
                           <h3 className="text-base font-black text-[var(--ink)] leading-snug">
                             {cat.categoryName}

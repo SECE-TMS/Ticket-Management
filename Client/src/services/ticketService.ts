@@ -10,7 +10,7 @@ import type {
 export interface TicketListParams {
   page?: number
   limit?: number
-  status?: TicketStatus | ''
+  status?: TicketStatus | 'active' | ''
   priority?: TicketPriority | ''
   department?: string
   assignedTo?: string
@@ -25,6 +25,9 @@ export interface UpdateTicketPayload {
   title?: string
   description?: string
   priority?: TicketPriority
+  eventDate?: string | null
+  venue?: string
+  eventTime?: string
   requester?: {
     name?: string
     mobile?: string
@@ -172,10 +175,26 @@ export const ticketService = {
       params,
       responseType: 'blob',
     })
+    const dateRangeStr = params.from || params.to ? `_${params.from || 'start'}_to_${params.to || 'end'}` : ''
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `tickets_report_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    link.setAttribute('download', `tickets_report${dateRangeStr}_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  },
+
+  async exportCsv(params: TicketListParams = {}) {
+    const response = await api.get('/tickets/export', {
+      params,
+      responseType: 'blob',
+    })
+    const dateRangeStr = params.from || params.to ? `_${params.from || 'start'}_to_${params.to || 'end'}` : ''
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `tickets_report${dateRangeStr}_${new Date().toISOString().slice(0, 10)}.csv`)
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -184,5 +203,10 @@ export const ticketService = {
   async approveClose(id: string, message?: string) {
     const { data } = await api.patch(`/tickets/${id}/approve-close`, { message })
     return data.data as Ticket
+  },
+
+  async delete(id: string) {
+    const { data } = await api.delete(`/tickets/${id}`)
+    return data.data as { message: string; ticketCode: string }
   },
 }

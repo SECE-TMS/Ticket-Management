@@ -61,14 +61,14 @@ router.get(
 router.get(
   '/export',
   authenticate,
-  requireRole('admin', 'manager'),
+  requireRole('admin', 'manager', 'employee'),
   ticketController.exportCsv
 );
 
 router.get(
   '/export-excel',
   authenticate,
-  requireRole('admin', 'manager'),
+  requireRole('admin', 'manager', 'employee'),
   ticketController.exportExcel
 );
 
@@ -93,6 +93,13 @@ router.patch(
   requireRole('admin'),
   validate(updateTicketSchema),
   ticketController.updateDetails
+);
+
+router.delete(
+  '/:id',
+  authenticate,
+  requireRole('admin'),
+  ticketController.deleteTicket
 );
 
 router.patch(

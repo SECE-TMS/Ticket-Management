@@ -138,7 +138,7 @@ export function AdminDepartments() {
     <div>
       <PageHeader
         title="Departments"
-        description="Configure facilities teams, complaint types, and SLA hours."
+        description="Configure facilities teams, Ticket types, and SLA hours."
         actions={
           <Button type="button" id="add-dept-btn" onClick={openCreate}>
             + Add Department
@@ -151,7 +151,7 @@ export function AdminDepartments() {
           <thead>
             <tr className="bg-[var(--primary-blue)] text-white/90 text-xs font-bold uppercase tracking-wider">
               <th className="px-4 py-3 first:rounded-tl-xl">Department</th>
-              <th className="px-4 py-3">Complaint Types</th>
+              <th className="px-4 py-3">Ticket Types</th>
               <th className="px-4 py-3">SLA</th>
               <th className="px-4 py-3">Manager</th>
               <th className="px-4 py-3">Status</th>
@@ -295,7 +295,7 @@ export function AdminDepartments() {
 
           {/* Complaint types */}
           <div className="flex flex-col gap-1.5">
-            <p className="text-sm font-semibold text-[var(--ink)]">Complaint Types</p>
+            <p className="text-sm font-semibold text-[var(--ink)]">Ticket Types</p>
             {types.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {types.map((t) => (

@@ -267,3 +267,13 @@ export const requesterComment = async (req: Request, res: Response, next: NextFu
     next(err);
   }
 };
+
+export const deleteTicket = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await ticketService.deleteTicket(req.params.id, req.user!);
+    return sendSuccess(res, { data, message: 'Ticket deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
