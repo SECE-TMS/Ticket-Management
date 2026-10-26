@@ -58,6 +58,8 @@ const schema = z
     eventDate: z.string().optional(),
     venue: z.string().optional(),
     eventTime: z.string().optional(),
+    block: z.string().optional(),
+    floor: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -165,12 +167,15 @@ export function RaiseTicket() {
       eventDate: '',
       venue: '',
       eventTime: '',
+      block: '',
+      floor: '',
     },
   })
 
   const selectedUserType = watch('userType')
   const selectedDeptId = watch('department')
   const complaintTypeValue = watch('complaintType')
+  const blockValue = watch('block')
   const mobileValue = watch('mobile')
   const emailValue = watch('email')
   const descriptionValue = watch('description') || ''
@@ -179,6 +184,15 @@ export function RaiseTicket() {
     () => departments.find((d) => getId(d) === selectedDeptId),
     [departments, selectedDeptId]
   )
+
+  const selectedBlockObj = useMemo(() => {
+    if (!selectedDept?.blocks) return null
+    return selectedDept.blocks.find((b) => b.blockName === blockValue)
+  }, [selectedDept, blockValue])
+
+  const availableFloors = useMemo(() => {
+    return selectedBlockObj?.floors || []
+  }, [selectedBlockObj])
 
   // Countdown timer for Mobile OTP resend
   useEffect(() => {
@@ -297,6 +311,8 @@ export function RaiseTicket() {
       setValue('complaintType', '')
       setValue('title', '')
     }
+    setValue('block', '')
+    setValue('floor', '')
   }, [selectedDeptId, selectedDept, setValue, watch])
 
   // OTP Send Handler
@@ -421,6 +437,17 @@ export function RaiseTicket() {
 
     setSubmitting(true)
     try {
+      if (selectedDept?.locationEnabled && (selectedDept.blocks || []).length > 0) {
+        if (!values.block) {
+          toast.error('Please select a campus block for this department')
+          return
+        }
+        if (availableFloors.length > 0 && !values.floor) {
+          toast.error('Please select a floor for the chosen block')
+          return
+        }
+      }
+
       const formData = new FormData()
       formData.append('userType', values.userType)
       if ((values.userType === 'student' || values.userType === 'staff') && values.rollNumber) {
@@ -440,6 +467,12 @@ export function RaiseTicket() {
       formData.append('complaintType', values.complaintType)
       formData.append('title', values.title.trim())
       formData.append('description', values.description)
+      if (values.block) {
+        formData.append('block', values.block.trim())
+      }
+      if (values.floor) {
+        formData.append('floor', values.floor.trim())
+      }
       if (values.eventDate) {
         formData.append('eventDate', values.eventDate)
       }
@@ -500,6 +533,16 @@ export function RaiseTicket() {
             <p className="font-mono text-3xl font-bold tracking-widest text-[var(--primary-blue-deeper)]">
               {ticketCode}
             </p>
+
+            {(createdTicket?.block || createdTicket?.floor) && (
+              <p className="text-xs font-semibold text-slate-700 flex items-center justify-center gap-1.5 pt-1">
+                <MapPin size={14} className="text-rose-500" />
+                <span>
+                  Location: <strong>{createdTicket.block}</strong>
+                  {createdTicket.floor ? ` · ${createdTicket.floor}` : ''}
+                </span>
+              </p>
+            )}
 
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
               <button
@@ -580,6 +623,8 @@ export function RaiseTicket() {
           venue={createdTicket?.venue || watch('venue')}
           eventTime={createdTicket?.eventTime || watch('eventTime')}
           priority={createdTicket?.priority || 'medium'}
+          block={createdTicket?.block || watch('block')}
+          floor={createdTicket?.floor || watch('floor')}
         />
 
         <TicketReceiptModal
@@ -1120,6 +1165,75 @@ export function RaiseTicket() {
                       {errors.complaintType.message}
                     </span>
                   )}
+                </div>
+              )}
+
+              {/* Campus Block & Floor Selection (Only if configured in Admin Panel) */}
+              {selectedDept && selectedDept.locationEnabled && (selectedDept.blocks || []).length > 0 && (
+                <div className="mt-4 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 p-4 shadow-2xs space-y-3 animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <MapPin size={16} className="text-[var(--primary-blue)]" />
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+                      Campus Location <span className="text-[var(--danger)]">*</span>
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Block Dropdown */}
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="rt-block" className="text-xs font-bold text-[var(--ink)]">
+                        Campus Block <span className="text-[var(--danger)]">*</span>
+                      </label>
+                      <select
+                        {...register('block')}
+                        id="rt-block"
+                        onChange={(e) => {
+                          setValue('block', e.target.value)
+                          setValue('floor', '')
+                        }}
+                        className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                          errors.block ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                        }`}
+                      >
+                        <option value="">Select Campus Block…</option>
+                        {(selectedDept.blocks || []).map((b) => (
+                          <option key={b.blockName} value={b.blockName}>
+                            {b.blockName}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.block && (
+                        <span className="text-xs text-[var(--danger)]">{errors.block.message}</span>
+                      )}
+                    </div>
+
+                    {/* Floor Dropdown */}
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="rt-floor" className="text-xs font-bold text-[var(--ink)]">
+                        Floor <span className="text-[var(--danger)]">*</span>
+                      </label>
+                      <select
+                        {...register('floor')}
+                        id="rt-floor"
+                        disabled={!blockValue}
+                        className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed ${
+                          errors.floor ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                        }`}
+                      >
+                        <option value="">
+                          {blockValue ? 'Select Floor…' : 'First select a block…'}
+                        </option>
+                        {availableFloors.map((fl) => (
+                          <option key={fl.floorName} value={fl.floorName}>
+                            {fl.floorName}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.floor && (
+                        <span className="text-xs text-[var(--danger)]">{errors.floor.message}</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 

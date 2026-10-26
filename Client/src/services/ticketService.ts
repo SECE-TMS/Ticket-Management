@@ -28,6 +28,8 @@ export interface UpdateTicketPayload {
   eventDate?: string | null
   venue?: string
   eventTime?: string
+  block?: string
+  floor?: string
   requester?: {
     name?: string
     mobile?: string

@@ -17,6 +17,8 @@ interface ShareTicketModalProps {
   venue?: string
   eventTime?: string
   priority?: string
+  block?: string
+  floor?: string
 }
 
 export function ShareTicketModal({
@@ -33,6 +35,8 @@ export function ShareTicketModal({
   venue = '',
   eventTime = '',
   priority = '',
+  block = '',
+  floor = '',
 }: ShareTicketModalProps) {
   const toast = useToast()
   const [copiedLink, setCopiedLink] = useState(false)
@@ -59,6 +63,7 @@ export function ShareTicketModal({
     title ? `📌 *Title:* ${title}` : null,
     formattedEventDate ? `📅 *Date:* ${formattedEventDate}` : null,
     venue ? `📍 *Venue:* ${venue}` : null,
+    (block || floor) ? `🏢 *Location:* ${block}${floor ? ` · ${floor}` : ''}` : null,
     eventTime ? `⏰ *Time:* ${eventTime}` : null,
     priority ? `⚡ *Priority:* ${priority.toUpperCase()}` : null,
     requesterName ? `👤 *Raised By:* ${requesterName}` : null,

@@ -70,6 +70,12 @@ export function TicketInfoCard({
           />
         )}
         {ticket.venue && <Info label="Venue" value={ticket.venue} />}
+        {(ticket.block || ticket.floor) && (
+          <Info
+            label="Campus Location"
+            value={`${ticket.block || '—'}${ticket.floor ? ` · ${ticket.floor}` : ''}`}
+          />
+        )}
         {ticket.eventTime && <Info label="Time" value={ticket.eventTime} />}
         <Info
           label="Created"

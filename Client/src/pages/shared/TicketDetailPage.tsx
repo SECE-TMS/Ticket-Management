@@ -445,6 +445,8 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
           venue={ticket.venue}
           eventTime={ticket.eventTime}
           priority={ticket.priority}
+          block={ticket.block}
+          floor={ticket.floor}
         />
       )}
 

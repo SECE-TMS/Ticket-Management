@@ -5,7 +5,9 @@ import { getUserDepartmentIds, type IUserDocument } from '../models/User';
 
 export const listActive = async () => {
   return Department.find({ isActive: true })
-    .select('name description complaintTypes slaHours')
+    .select('name description complaintTypes slaHours locationEnabled blocks defaultAssignee')
+    .populate('defaultAssignee', 'name email role')
+    .populate('blocks.floors.defaultAssignee', 'name email role')
     .sort({ name: 1 })
     .lean();
 };
@@ -13,12 +15,17 @@ export const listActive = async () => {
 export const listAll = async () => {
   return Department.find()
     .populate('manager', 'name email')
+    .populate('defaultAssignee', 'name email role')
+    .populate('blocks.floors.defaultAssignee', 'name email role')
     .sort({ name: 1 })
     .lean();
 };
 
 export const getById = async (id: string, actor: IUserDocument) => {
-  const dept = await Department.findById(id).populate('manager', 'name email phone');
+  const dept = await Department.findById(id)
+    .populate('manager', 'name email phone')
+    .populate('defaultAssignee', 'name email role')
+    .populate('blocks.floors.defaultAssignee', 'name email role');
   if (!dept) throw ApiError.notFound('Department not found');
 
   if (actor.role === 'manager') {
@@ -34,14 +41,27 @@ export const getById = async (id: string, actor: IUserDocument) => {
 export const create = async (data: Record<string, unknown>) => {
   const exists = await Department.findOne({ name: data.name as string });
   if (exists) throw ApiError.conflict('Department name already exists');
-  return Department.create(data);
+  if (data.defaultAssignee === '' || data.defaultAssignee === 'none') {
+    data.defaultAssignee = null;
+  }
+  const created = await Department.create(data);
+  return Department.findById(created._id)
+    .populate('manager', 'name email')
+    .populate('defaultAssignee', 'name email role')
+    .populate('blocks.floors.defaultAssignee', 'name email role');
 };
 
 export const update = async (id: string, data: Record<string, unknown>) => {
+  if (data.defaultAssignee === '' || data.defaultAssignee === 'none') {
+    data.defaultAssignee = null;
+  }
   const dept = await Department.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
-  }).populate('manager', 'name email');
+  })
+    .populate('manager', 'name email')
+    .populate('defaultAssignee', 'name email role')
+    .populate('blocks.floors.defaultAssignee', 'name email role');
   if (!dept) throw ApiError.notFound('Department not found');
   return dept;
 };

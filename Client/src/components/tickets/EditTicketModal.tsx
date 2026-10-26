@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Modal } from '../common/Modal'
 import { Button } from '../common/Button'
 import { PRIORITIES, formatLabel, getErrorMessage } from '../../lib/utils'
@@ -38,6 +38,8 @@ export function EditTicketModal({
   const [eventDate, setEventDate] = useState('')
   const [venue, setVenue] = useState('')
   const [eventTime, setEventTime] = useState('')
+  const [block, setBlock] = useState('')
+  const [floor, setFloor] = useState('')
 
   // Requester states
   const [requesterName, setRequesterName] = useState('')
@@ -88,6 +90,8 @@ export function EditTicketModal({
       setEventDate(ticket.eventDate ? new Date(ticket.eventDate).toISOString().slice(0, 10) : '')
       setVenue(ticket.venue || '')
       setEventTime(ticket.eventTime || '')
+      setBlock(ticket.block || '')
+      setFloor(ticket.floor || '')
 
       setComplaintType(ticket.complaintType || '')
       setIsCustomType(false)
@@ -96,8 +100,22 @@ export function EditTicketModal({
   }, [open, ticket])
 
   // Get active selected department object
-  const selectedDepartment = departments.find((d) => d._id === departmentId)
-  const availableComplaintTypes = selectedDepartment?.complaintTypes || []
+  const selectedDepartment = useMemo(
+    () => departments.find((d) => d._id === departmentId),
+    [departments, departmentId]
+  )
+  const availableComplaintTypes = useMemo(
+    () => selectedDepartment?.complaintTypes || [],
+    [selectedDepartment]
+  )
+  const selectedBlockObj = useMemo(
+    () => selectedDepartment?.blocks?.find((b) => b.blockName === block),
+    [selectedDepartment, block]
+  )
+  const availableFloors = useMemo(
+    () => selectedBlockObj?.floors || [],
+    [selectedBlockObj]
+  )
 
   // Check if current complaint type is custom
   useEffect(() => {
@@ -153,6 +171,8 @@ export function EditTicketModal({
         eventDate: eventDate || null,
         venue: venue.trim(),
         eventTime: eventTime.trim(),
+        block: block.trim(),
+        floor: floor.trim(),
         requester: {
           name: requesterName.trim(),
           mobile: requesterMobile.trim(),
@@ -483,6 +503,54 @@ export function EditTicketModal({
                 </div>
               )}
             </div>
+
+            {/* Campus Location (Block & Floor) */}
+            {selectedDepartment?.locationEnabled && (selectedDepartment.blocks || []).length > 0 && (
+              <div className="sm:col-span-3 grid gap-3 sm:grid-cols-2 rounded-xl border border-blue-200 bg-blue-50/40 p-3">
+                <div>
+                  <label htmlFor="edit-block" className="block text-xs font-bold text-[var(--ink)] mb-1 flex items-center gap-1">
+                    <MapPin size={12} className="text-blue-600" />
+                    Campus Block
+                  </label>
+                  <select
+                    id="edit-block"
+                    value={block}
+                    onChange={(e) => {
+                      setBlock(e.target.value)
+                      setFloor('')
+                    }}
+                    className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs sm:text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)]"
+                  >
+                    <option value="">Select Block…</option>
+                    {(selectedDepartment.blocks || []).map((b) => (
+                      <option key={b.blockName} value={b.blockName}>
+                        {b.blockName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="edit-floor" className="block text-xs font-bold text-[var(--ink)] mb-1">
+                    Floor
+                  </label>
+                  <select
+                    id="edit-floor"
+                    value={floor}
+                    disabled={!block}
+                    onChange={(e) => setFloor(e.target.value)}
+                    className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--white)] px-3 text-xs sm:text-sm text-[var(--ink)] outline-none focus:border-[var(--primary-blue)] disabled:bg-slate-100"
+                  >
+                    <option value="">{block ? 'Select Floor…' : 'Select a block first'}</option>
+                    {availableFloors.map((fl) => (
+                      <option key={fl.floorName} value={fl.floorName}>
+                        {fl.floorName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

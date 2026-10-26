@@ -8,7 +8,7 @@ interface ModalProps {
   title: string
   children: ReactNode
   className?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 export function Modal({
@@ -38,6 +38,7 @@ export function Modal({
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
   }[size]
 
   return (
