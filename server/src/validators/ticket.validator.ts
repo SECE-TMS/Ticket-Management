@@ -18,6 +18,8 @@ export const createTicketSchema = z.object({
   eventDate: z.string().optional().or(z.literal('')).or(z.null()),
   venue: z.string().max(200).optional().default(''),
   eventTime: z.string().max(50).optional().default(''),
+  block: z.string().max(100).optional().default(''),
+  floor: z.string().max(100).optional().default(''),
 });
 
 export const trackTicketSchema = z.object({
@@ -34,6 +36,8 @@ export const updateTicketSchema = z.object({
   eventDate: z.string().optional().or(z.literal('')).or(z.null()),
   venue: z.string().max(200).optional().or(z.literal('')),
   eventTime: z.string().max(50).optional().or(z.literal('')),
+  block: z.string().max(100).optional().or(z.literal('')),
+  floor: z.string().max(100).optional().or(z.literal('')),
   requester: z
     .object({
       name: z.string().min(2).max(100).optional(),
