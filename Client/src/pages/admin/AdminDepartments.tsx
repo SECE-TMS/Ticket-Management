@@ -83,8 +83,10 @@ export function AdminDepartments() {
       defaultAssignee: dept.defaultAssignee ? getId(dept.defaultAssignee as any) : '',
       locationEnabled: Boolean(dept.locationEnabled),
       blocks: (dept.blocks || []).map((b) => ({
+        _id: b._id,
         blockName: b.blockName,
         floors: (b.floors || []).map((fl) => ({
+          _id: fl._id,
           floorName: fl.floorName,
           defaultAssignee: fl.defaultAssignee ? getId(fl.defaultAssignee as any) : null,
         })),
@@ -202,17 +204,25 @@ export function AdminDepartments() {
     try {
       const cleanBlocks = form.locationEnabled
         ? form.blocks
-            .filter((b) => b.blockName.trim().length > 0)
+            .filter((b) => b.blockName && b.blockName.trim().length > 0)
             .map((b) => ({
+              ...(b._id ? { _id: b._id } : {}),
               blockName: b.blockName.trim(),
               floors: (b.floors || [])
-                .filter((fl) => fl.floorName.trim().length > 0)
+                .filter((fl) => fl.floorName && fl.floorName.trim().length > 0)
                 .map((fl) => ({
+                  ...(fl._id ? { _id: fl._id } : {}),
                   floorName: fl.floorName.trim(),
                   defaultAssignee: fl.defaultAssignee || null,
                 })),
             }))
         : []
+
+      if (form.locationEnabled && cleanBlocks.length === 0) {
+        toast.error('Please add at least one campus block, or disable the classification toggle')
+        setSaving(false)
+        return
+      }
 
       const payload = {
         name: form.name.trim(),

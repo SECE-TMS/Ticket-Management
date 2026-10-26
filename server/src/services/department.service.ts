@@ -44,6 +44,25 @@ export const create = async (data: Record<string, unknown>) => {
   if (data.defaultAssignee === '' || data.defaultAssignee === 'none') {
     data.defaultAssignee = null;
   }
+  if (data.manager === '' || data.manager === 'none') {
+    data.manager = null;
+  }
+  if (Array.isArray(data.blocks)) {
+    data.blocks = (data.blocks as any[]).map((b) => ({
+      ...b,
+      blockName: typeof b.blockName === 'string' ? b.blockName.trim() : b.blockName,
+      floors: Array.isArray(b.floors)
+        ? b.floors.map((fl: any) => ({
+            ...fl,
+            floorName: typeof fl.floorName === 'string' ? fl.floorName.trim() : fl.floorName,
+            defaultAssignee:
+              fl.defaultAssignee && fl.defaultAssignee !== '' && fl.defaultAssignee !== 'none'
+                ? fl.defaultAssignee
+                : null,
+          }))
+        : [],
+    }));
+  }
   const created = await Department.create(data);
   return Department.findById(created._id)
     .populate('manager', 'name email')
@@ -54,6 +73,25 @@ export const create = async (data: Record<string, unknown>) => {
 export const update = async (id: string, data: Record<string, unknown>) => {
   if (data.defaultAssignee === '' || data.defaultAssignee === 'none') {
     data.defaultAssignee = null;
+  }
+  if (data.manager === '' || data.manager === 'none') {
+    data.manager = null;
+  }
+  if (Array.isArray(data.blocks)) {
+    data.blocks = (data.blocks as any[]).map((b) => ({
+      ...b,
+      blockName: typeof b.blockName === 'string' ? b.blockName.trim() : b.blockName,
+      floors: Array.isArray(b.floors)
+        ? b.floors.map((fl: any) => ({
+            ...fl,
+            floorName: typeof fl.floorName === 'string' ? fl.floorName.trim() : fl.floorName,
+            defaultAssignee:
+              fl.defaultAssignee && fl.defaultAssignee !== '' && fl.defaultAssignee !== 'none'
+                ? fl.defaultAssignee
+                : null,
+          }))
+        : [],
+    }));
   }
   const dept = await Department.findByIdAndUpdate(id, data, {
     new: true,
