@@ -462,13 +462,23 @@ export function TrackTicket() {
                 </div>
               </div>
 
-              {/* Event / Schedule & Venue Details Card */}
-              {(ticket.eventDate || ticket.venue || ticket.eventTime) && (
+              {/* Campus Location, Event / Schedule & Venue Details Card */}
+              {(ticket.block || ticket.floor || ticket.eventDate || ticket.venue || ticket.eventTime) && (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 shadow-xs">
                   <p className="text-xs font-bold uppercase tracking-wider text-blue-900 mb-2.5 flex items-center gap-1.5">
-                    <Calendar size={14} className="text-blue-600" /> Event &amp; Venue Details
+                    <MapPin size={14} className="text-blue-600" /> Location &amp; Schedule Details
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {(ticket.block || ticket.floor) && (
+                      <div className="rounded-xl bg-white p-3 border border-blue-100">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5 flex items-center gap-1">
+                          <MapPin size={11} className="text-blue-600" /> Campus Location
+                        </span>
+                        <p className="text-xs font-bold text-slate-900">
+                          {ticket.block || ''}{ticket.floor ? ` · ${ticket.floor}` : ''}
+                        </p>
+                      </div>
+                    )}
                     {ticket.eventDate && (
                       <div className="rounded-xl bg-white p-3 border border-blue-100">
                         <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Date</span>

@@ -623,6 +623,8 @@ export function RaiseTicket() {
           venue={createdTicket?.venue || watch('venue')}
           eventTime={createdTicket?.eventTime || watch('eventTime')}
           priority={createdTicket?.priority || 'medium'}
+          block={createdTicket?.block || watch('block')}
+          floor={createdTicket?.floor || watch('floor')}
         />
 
         <TicketReceiptModal
