@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Modal } from '../common/Modal'
 import { Button } from '../common/Button'
 import { PRIORITIES, formatLabel, getErrorMessage } from '../../lib/utils'
@@ -100,10 +100,22 @@ export function EditTicketModal({
   }, [open, ticket])
 
   // Get active selected department object
-  const selectedDepartment = departments.find((d) => d._id === departmentId)
-  const availableComplaintTypes = selectedDepartment?.complaintTypes || []
-  const selectedBlockObj = selectedDepartment?.blocks?.find((b) => b.blockName === block)
-  const availableFloors = selectedBlockObj?.floors || []
+  const selectedDepartment = useMemo(
+    () => departments.find((d) => d._id === departmentId),
+    [departments, departmentId]
+  )
+  const availableComplaintTypes = useMemo(
+    () => selectedDepartment?.complaintTypes || [],
+    [selectedDepartment]
+  )
+  const selectedBlockObj = useMemo(
+    () => selectedDepartment?.blocks?.find((b) => b.blockName === block),
+    [selectedDepartment, block]
+  )
+  const availableFloors = useMemo(
+    () => selectedBlockObj?.floors || [],
+    [selectedBlockObj]
+  )
 
   // Check if current complaint type is custom
   useEffect(() => {
