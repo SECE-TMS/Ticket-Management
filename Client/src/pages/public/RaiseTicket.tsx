@@ -58,6 +58,8 @@ const schema = z
     eventDate: z.string().optional(),
     venue: z.string().optional(),
     eventTime: z.string().optional(),
+    block: z.string().optional(),
+    floor: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -165,12 +167,15 @@ export function RaiseTicket() {
       eventDate: '',
       venue: '',
       eventTime: '',
+      block: '',
+      floor: '',
     },
   })
 
   const selectedUserType = watch('userType')
   const selectedDeptId = watch('department')
   const complaintTypeValue = watch('complaintType')
+  const blockValue = watch('block')
   const mobileValue = watch('mobile')
   const emailValue = watch('email')
   const descriptionValue = watch('description') || ''
@@ -179,6 +184,15 @@ export function RaiseTicket() {
     () => departments.find((d) => getId(d) === selectedDeptId),
     [departments, selectedDeptId]
   )
+
+  const selectedBlockObj = useMemo(() => {
+    if (!selectedDept?.blocks) return null
+    return selectedDept.blocks.find((b) => b.blockName === blockValue)
+  }, [selectedDept, blockValue])
+
+  const availableFloors = useMemo(() => {
+    return selectedBlockObj?.floors || []
+  }, [selectedBlockObj])
 
   // Countdown timer for Mobile OTP resend
   useEffect(() => {
@@ -297,6 +311,8 @@ export function RaiseTicket() {
       setValue('complaintType', '')
       setValue('title', '')
     }
+    setValue('block', '')
+    setValue('floor', '')
   }, [selectedDeptId, selectedDept, setValue, watch])
 
   // OTP Send Handler
@@ -421,6 +437,17 @@ export function RaiseTicket() {
 
     setSubmitting(true)
     try {
+      if (selectedDept?.locationEnabled && (selectedDept.blocks || []).length > 0) {
+        if (!values.block) {
+          toast.error('Please select a campus block for this department')
+          return
+        }
+        if (availableFloors.length > 0 && !values.floor) {
+          toast.error('Please select a floor for the chosen block')
+          return
+        }
+      }
+
       const formData = new FormData()
       formData.append('userType', values.userType)
       if ((values.userType === 'student' || values.userType === 'staff') && values.rollNumber) {
@@ -440,6 +467,12 @@ export function RaiseTicket() {
       formData.append('complaintType', values.complaintType)
       formData.append('title', values.title.trim())
       formData.append('description', values.description)
+      if (values.block) {
+        formData.append('block', values.block.trim())
+      }
+      if (values.floor) {
+        formData.append('floor', values.floor.trim())
+      }
       if (values.eventDate) {
         formData.append('eventDate', values.eventDate)
       }
@@ -500,6 +533,16 @@ export function RaiseTicket() {
             <p className="font-mono text-3xl font-bold tracking-widest text-[var(--primary-blue-deeper)]">
               {ticketCode}
             </p>
+
+            {(createdTicket?.block || createdTicket?.floor) && (
+              <p className="text-xs font-semibold text-slate-700 flex items-center justify-center gap-1.5 pt-1">
+                <MapPin size={14} className="text-rose-500" />
+                <span>
+                  Location: <strong>{createdTicket.block}</strong>
+                  {createdTicket.floor ? ` · ${createdTicket.floor}` : ''}
+                </span>
+              </p>
+            )}
 
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
               <button

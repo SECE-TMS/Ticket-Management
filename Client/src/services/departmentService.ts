@@ -24,6 +24,9 @@ export const departmentService = {
     slaHours?: number
     isActive?: boolean
     manager?: string | null
+    defaultAssignee?: string | null
+    locationEnabled?: boolean
+    blocks?: import('../types').Block[]
   }) {
     const { data } = await api.post('/departments', payload)
     return data.data as Department
@@ -38,6 +41,9 @@ export const departmentService = {
       slaHours: number
       isActive: boolean
       manager: string | null
+      defaultAssignee: string | null
+      locationEnabled: boolean
+      blocks: import('../types').Block[]
     }>
   ) {
     const { data } = await api.put(`/departments/${id}`, payload)
