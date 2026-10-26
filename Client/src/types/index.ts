@@ -31,6 +31,18 @@ export interface Pagination {
   totalPages?: number
 }
 
+export interface Floor {
+  _id?: string
+  floorName: string
+  defaultAssignee?: UserRef | User | string | null
+}
+
+export interface Block {
+  _id?: string
+  blockName: string
+  floors: Floor[]
+}
+
 export interface Department {
   _id: string
   name: string
@@ -39,6 +51,9 @@ export interface Department {
   slaHours: number
   isActive?: boolean
   manager?: UserRef | string | null
+  defaultAssignee?: UserRef | User | string | null
+  locationEnabled?: boolean
+  blocks?: Block[]
   createdAt?: string
   updatedAt?: string
 }
@@ -197,6 +212,8 @@ export interface Ticket {
   eventDate?: string | null
   venue?: string
   eventTime?: string
+  block?: string
+  floor?: string
   resolution?: {
     remarks?: string
     attachment?: Attachment | null

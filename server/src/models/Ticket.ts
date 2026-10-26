@@ -85,6 +85,8 @@ export interface ITicket {
   eventDate?: Date | null;
   venue?: string;
   eventTime?: string;
+  block?: string;
+  floor?: string;
   resolution: ITicketResolution;
   resolutionHistory: ITicketResolutionHistoryItem[];
   closedBy: mongoose.Types.ObjectId | null;
@@ -152,6 +154,8 @@ const ticketSchema = new Schema<ITicket>(
     eventDate: { type: Date, default: null },
     venue: { type: String, trim: true, default: '' },
     eventTime: { type: String, trim: true, default: '' },
+    block: { type: String, trim: true, default: '' },
+    floor: { type: String, trim: true, default: '' },
     resolution: {
       remarks: { type: String, default: '' },
       attachment: { type: attachmentSchema, default: null },

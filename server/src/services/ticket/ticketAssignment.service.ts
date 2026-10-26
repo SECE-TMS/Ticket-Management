@@ -15,6 +15,8 @@ export interface UpdateTicketDetailsDto {
   eventDate?: string | Date | null;
   venue?: string;
   eventTime?: string;
+  block?: string;
+  floor?: string;
   requester?: {
     name?: string;
     mobile?: string;
@@ -121,6 +123,16 @@ export const updateTicketDetails = async (
   if (payload.eventTime !== undefined && payload.eventTime !== ticket.eventTime) {
     changes.push(`Event time changed to "${payload.eventTime}"`);
     ticket.eventTime = payload.eventTime;
+  }
+
+  if (payload.block !== undefined && payload.block !== ticket.block) {
+    changes.push(`Block changed to "${payload.block || 'None'}"`);
+    ticket.block = payload.block;
+  }
+
+  if (payload.floor !== undefined && payload.floor !== ticket.floor) {
+    changes.push(`Floor changed to "${payload.floor || 'None'}"`);
+    ticket.floor = payload.floor;
   }
 
   await ticket.save();

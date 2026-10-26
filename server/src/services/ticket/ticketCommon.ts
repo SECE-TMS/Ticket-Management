@@ -7,7 +7,7 @@ export type TicketQuery = Query<ITicket | ITicket[] | null, ITicket>;
 
 export const populateTicket = <T extends TicketQuery>(query: T): T =>
   query
-    .populate('department', 'name complaintTypes slaHours')
+    .populate('department', 'name complaintTypes slaHours locationEnabled blocks defaultAssignee')
     .populate('assignedTo', 'name email phone')
     .populate('assignedBy', 'name email')
     .populate('closedBy', 'name email')

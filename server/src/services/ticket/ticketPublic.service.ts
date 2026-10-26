@@ -1,11 +1,16 @@
 import Ticket, { type ITicketDocument } from '../../models/Ticket';
 import Department from '../../models/Department';
+import User from '../../models/User';
 import ActivityLog from '../../models/ActivityLog';
 import ApiError from '../../utils/apiError';
 import generateTicketCode from '../../utils/generateTicketCode';
 import { uploadBuffer, type UploadableFile } from '../../utils/upload';
 import { logActivity, notify, notifyMany } from '../activity.service';
-import { notifyRequesterOnAction, notifyStaffOnTicketCreated } from './ticketNotification.service';
+import {
+  notifyRequesterOnAction,
+  notifyStaffOnTicketCreated,
+  notifyEmployeeOnAssignment,
+} from './ticketNotification.service';
 import { populateTicket } from './ticketCommon';
 
 export const createPublicTicket = async (
@@ -23,6 +28,70 @@ export const createPublicTicket = async (
     !department.complaintTypes.includes(body.complaintType as string)
   ) {
     throw ApiError.badRequest('Invalid complaint type for this department');
+  }
+
+  let block = ((body.block as string) || '').trim();
+  let floor = ((body.floor as string) || '').trim();
+
+  // Validate block & floor if department has location classification enabled
+  if (department.locationEnabled && department.blocks?.length) {
+    if (!block) {
+      throw ApiError.badRequest('Block selection is required for this department');
+    }
+    const matchedBlock = department.blocks.find(
+      (b) => b.blockName.trim().toLowerCase() === block.toLowerCase()
+    );
+    if (!matchedBlock) {
+      throw ApiError.badRequest(`Invalid block "${block}" for this department`);
+    }
+    block = matchedBlock.blockName;
+
+    if (matchedBlock.floors?.length) {
+      if (!floor) {
+        throw ApiError.badRequest('Floor selection is required for this department');
+      }
+      const matchedFloor = matchedBlock.floors.find(
+        (f) => f.floorName.trim().toLowerCase() === floor.toLowerCase()
+      );
+      if (!matchedFloor) {
+        throw ApiError.badRequest(`Invalid floor "${floor}" for block "${block}"`);
+      }
+      floor = matchedFloor.floorName;
+    }
+  }
+
+  // Determine auto-assignee:
+  // 1. Check if the selected floor has a specific defaultAssignee
+  // 2. Otherwise fall back to department.defaultAssignee
+  let autoAssigneeId: unknown = null;
+  let assignSource = '';
+
+  if (department.locationEnabled && department.blocks?.length && block && floor) {
+    const matchedBlock = department.blocks.find(
+      (b) => b.blockName.trim().toLowerCase() === block.toLowerCase()
+    );
+    if (matchedBlock) {
+      const matchedFloor = matchedBlock.floors?.find(
+        (f) => f.floorName.trim().toLowerCase() === floor.toLowerCase()
+      );
+      if (matchedFloor?.defaultAssignee) {
+        autoAssigneeId = matchedFloor.defaultAssignee;
+        assignSource = `Floor Assignee (${block} - ${floor})`;
+      }
+    }
+  }
+
+  if (!autoAssigneeId && department.defaultAssignee) {
+    autoAssigneeId = department.defaultAssignee;
+    assignSource = 'Department Default Assignee';
+  }
+
+  let assignedEmployee = null;
+  if (autoAssigneeId) {
+    const emp = await User.findById(autoAssigneeId);
+    if (emp && emp.isActive) {
+      assignedEmployee = emp;
+    }
   }
 
   const rawFiles = files && files.length ? files : file ? [file] : [];
@@ -59,11 +128,15 @@ export const createPublicTicket = async (
     userAttachment,
     userAttachments,
     priority: (body.priority as string) || 'medium',
-    status: 'new',
+    status: assignedEmployee ? 'assigned' : 'new',
+    assignedTo: assignedEmployee ? assignedEmployee._id : null,
+    assignedBy: null,
     expectedResolutionAt,
     eventDate: body.eventDate ? new Date(body.eventDate as string) : null,
     venue: (body.venue as string) || '',
     eventTime: (body.eventTime as string) || '',
+    block,
+    floor,
   });
 
   await logActivity({
@@ -74,16 +147,52 @@ export const createPublicTicket = async (
     message: `Ticket ${ticketCode} created by ${body.name}`,
   });
 
+  if (assignedEmployee) {
+    await logActivity({
+      ticket,
+      actor: null,
+      action: 'assigned',
+      fromStatus: 'new',
+      toStatus: 'assigned',
+      message: `Auto-assigned to ${assignedEmployee.name} (${assignSource})`,
+    });
+
+    await notify({
+      recipient: assignedEmployee._id,
+      ticket,
+      type: 'ticket_assigned',
+      message: `Ticket ${ticketCode} automatically assigned to you`,
+    });
+
+    void notifyEmployeeOnAssignment(ticket, assignedEmployee);
+  }
+
   if (department.manager) {
     await notify({
       recipient: department.manager,
       ticket,
       type: 'ticket_created',
-      message: `New ticket ${ticketCode} in ${department.name}`,
+      message: `New ticket ${ticketCode} in ${department.name}${
+        assignedEmployee ? ` (Assigned to ${assignedEmployee.name})` : ''
+      }`,
     });
   }
 
-  void notifyRequesterOnAction(ticket, 'Ticket Created Successfully', `Your ticket #${ticket.ticketCode} has been logged.`, 'created');
+  if (assignedEmployee) {
+    void notifyRequesterOnAction(
+      ticket,
+      'Ticket Created & Assigned to Staff',
+      `Your ticket #${ticket.ticketCode} has been logged and assigned to ${assignedEmployee.name}.`,
+      'assigned'
+    );
+  } else {
+    void notifyRequesterOnAction(
+      ticket,
+      'Ticket Created Successfully',
+      `Your ticket #${ticket.ticketCode} has been logged.`,
+      'created'
+    );
+  }
   void notifyStaffOnTicketCreated(ticket, department);
 
   return populateTicket(Ticket.findById(ticket._id));
