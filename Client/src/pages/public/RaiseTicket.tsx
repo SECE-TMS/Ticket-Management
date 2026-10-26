@@ -1166,6 +1166,75 @@ export function RaiseTicket() {
                 </div>
               )}
 
+              {/* Campus Block & Floor Selection (Only if configured in Admin Panel) */}
+              {selectedDept && selectedDept.locationEnabled && (selectedDept.blocks || []).length > 0 && (
+                <div className="mt-4 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 p-4 shadow-2xs space-y-3 animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <MapPin size={16} className="text-[var(--primary-blue)]" />
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+                      Campus Location <span className="text-[var(--danger)]">*</span>
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Block Dropdown */}
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="rt-block" className="text-xs font-bold text-[var(--ink)]">
+                        Campus Block <span className="text-[var(--danger)]">*</span>
+                      </label>
+                      <select
+                        {...register('block')}
+                        id="rt-block"
+                        onChange={(e) => {
+                          setValue('block', e.target.value)
+                          setValue('floor', '')
+                        }}
+                        className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 ${
+                          errors.block ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                        }`}
+                      >
+                        <option value="">Select Campus Block…</option>
+                        {(selectedDept.blocks || []).map((b) => (
+                          <option key={b.blockName} value={b.blockName}>
+                            {b.blockName}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.block && (
+                        <span className="text-xs text-[var(--danger)]">{errors.block.message}</span>
+                      )}
+                    </div>
+
+                    {/* Floor Dropdown */}
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="rt-floor" className="text-xs font-bold text-[var(--ink)]">
+                        Floor <span className="text-[var(--danger)]">*</span>
+                      </label>
+                      <select
+                        {...register('floor')}
+                        id="rt-floor"
+                        disabled={!blockValue}
+                        className={`h-11 w-full rounded-xl border bg-[var(--white)] px-3.5 text-sm text-[var(--ink)] outline-none cursor-pointer transition-all focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed ${
+                          errors.floor ? 'border-[var(--danger)]' : 'border-[var(--border)]'
+                        }`}
+                      >
+                        <option value="">
+                          {blockValue ? 'Select Floor…' : 'First select a block…'}
+                        </option>
+                        {availableFloors.map((fl) => (
+                          <option key={fl.floorName} value={fl.floorName}>
+                            {fl.floorName}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.floor && (
+                        <span className="text-xs text-[var(--danger)]">{errors.floor.message}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Ticket Title Input (15-30 characters) - displayed after selecting Department & Complaint Type */}
               {selectedDept && complaintTypeValue && (
                 <div className="mt-4 flex flex-col gap-1.5 animate-fade-in">

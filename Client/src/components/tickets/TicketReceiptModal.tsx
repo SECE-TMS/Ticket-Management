@@ -324,6 +324,14 @@ export function TicketReceiptModal({
                   <p className="info-val font-bold text-slate-900 mt-0.5 truncate">{title}</p>
                 </div>
               )}
+              {(ticket?.block || ticket?.floor) && (
+                <div className="info-item col-span-2 rounded-lg bg-slate-50 p-2.5 border border-slate-200">
+                  <span className="info-label text-[9px] font-bold text-slate-400 uppercase">Campus Location</span>
+                  <p className="info-val font-bold text-slate-900 mt-0.5 truncate">
+                    📍 {ticket.block} {ticket.floor ? `· ${ticket.floor}` : ''}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Feedback Badge if already submitted */}
