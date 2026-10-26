@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Download,
@@ -90,7 +90,7 @@ export function AdminDashboard() {
     void loadDashboard()
   }, [timeRange, selectedDept])
 
-  const handleCustomDateSubmit = (e: React.FormEvent) => {
+  const handleCustomDateSubmit = (e: FormEvent) => {
     e.preventDefault()
     void loadDashboard()
   }
@@ -149,19 +149,21 @@ export function AdminDashboard() {
   }
 
   // Prepare Chart Data
-  const statusPieData = Object.entries(data?.byStatus || {})
-    .filter(([, count]) => count > 0)
+  const statusCounts = (data?.byStatus || {}) as Record<string, number>
+  const statusPieData = Object.entries(statusCounts)
+    .filter(([, count]) => Number(count) > 0)
     .map(([status, count]) => ({
       name: status.replace('_', ' ').toUpperCase(),
-      value: count,
+      value: Number(count),
       color: STATUS_COLORS[status] || '#64748B',
     }))
 
-  const priorityPieData = Object.entries(data?.byPriority || {})
-    .filter(([, count]) => count > 0)
+  const priorityCounts = (data?.byPriority || {}) as Record<string, number>
+  const priorityPieData = Object.entries(priorityCounts)
+    .filter(([, count]) => Number(count) > 0)
     .map(([prio, count]) => ({
       name: prio.toUpperCase(),
-      value: count,
+      value: Number(count),
       color: PRIORITY_COLORS[prio] || '#64748B',
     }))
 
@@ -169,8 +171,8 @@ export function AdminDashboard() {
     <div className="space-y-6 pb-12">
       {/* ── Top Header ──────────────────────────────────────────────────────── */}
       <PageHeader
-        title="Admin Analytics & Operations Hub"
-        description="Facility-wide ticket health, department performance, and month-wise feedback insights."
+        title="Dashboard"
+        description="Monitor and manage tickets, departments, and user feedback with powerful analytics."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button
