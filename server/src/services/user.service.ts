@@ -268,6 +268,19 @@ export const updateUser = async (
     delete data.password;
   }
 
+  if (data.email) {
+    const normalizedEmail = String(data.email).trim().toLowerCase();
+    if (normalizedEmail !== user.email) {
+      const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+      if (existing) {
+        throw ApiError.conflict('Email already registered');
+      }
+      data.email = normalizedEmail;
+    } else {
+      delete data.email;
+    }
+  }
+
   if (Array.isArray(data.departments) && data.departments.length > 0) {
     data.department = data.departments[0];
   } else if (data.department) {

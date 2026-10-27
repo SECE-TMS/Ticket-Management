@@ -74,6 +74,17 @@ export const updateAdmin = async (
   if (!user) throw ApiError.notFound('Admin not found');
   if (user.role !== 'admin') throw ApiError.badRequest('User is not an admin');
 
+  if (data.email) {
+    const normalizedEmail = String(data.email).trim().toLowerCase();
+    if (normalizedEmail !== user.email) {
+      const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+      if (existing) {
+        throw ApiError.conflict('Email already registered');
+      }
+      user.email = normalizedEmail;
+    }
+  }
+
   // Don't allow changing role or password through this endpoint
   const allowed: Array<'name' | 'phone' | 'isActive'> = ['name', 'phone', 'isActive'];
   for (const key of allowed) {

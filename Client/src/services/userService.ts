@@ -62,6 +62,7 @@ export const userService = {
     id: string,
     payload: Partial<{
       name: string
+      email: string
       phone: string
       rollNumber: string
       department: string | null
@@ -69,6 +70,7 @@ export const userService = {
       role: 'manager' | 'employee'
       managers: string[]
       employees: string[]
+      password?: string
     }>
   ) {
     const { data } = await api.put(`/users/${id}`, payload)
