@@ -143,6 +143,7 @@ export function SuperAdminAdmins() {
       await userService.remove(deletingAdmin.id)
       toast.success('Admin deleted successfully')
       setDeletingAdmin(null)
+      setEditAdmin(null)
       void load()
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to delete admin'))
@@ -465,9 +466,19 @@ export function SuperAdminAdmins() {
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Phone</label>
                 <input type="text" value={editForm.phone} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} placeholder="Optional" className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--primary-blue)]/20" />
               </div>
-              <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setEditAdmin(null)} className="flex-1 rounded-xl border border-[var(--border)] py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)] cursor-pointer">Cancel</button>
-                <Button type="submit" id="sa-edit-admin-submit" loading={editLoading} className="flex-1">Save Changes</Button>
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-[var(--border)]">
+                <button
+                  type="button"
+                  onClick={() => setDeletingAdmin(editAdmin)}
+                  className="flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                  Delete Admin
+                </button>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setEditAdmin(null)} className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)] cursor-pointer">Cancel</button>
+                  <Button type="submit" id="sa-edit-admin-submit" loading={editLoading}>Save Changes</Button>
+                </div>
               </div>
             </form>
           </div>

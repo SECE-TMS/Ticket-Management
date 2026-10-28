@@ -22,7 +22,6 @@ export interface IDepartment {
   blocks: IBlock[];
   isDeleted: boolean;
   deletedAt: Date | null;
-  originalName?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,7 +46,7 @@ const blockSchema = new Schema<IBlock>(
 
 const departmentSchema = new Schema<IDepartment>(
   {
-    name: { type: String, required: true, unique: true, trim: true },
+    name: { type: String, required: true, trim: true },
     description: { type: String, default: '', trim: true },
     manager: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     defaultAssignee: { type: Schema.Types.ObjectId, ref: 'User', default: null },
@@ -58,10 +57,11 @@ const departmentSchema = new Schema<IDepartment>(
     blocks: { type: [blockSchema], default: [] },
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null },
-    originalName: { type: String, default: null },
   },
   { timestamps: true }
 );
+
+departmentSchema.index({ name: 1 }, { unique: true, partialFilterExpression: { isDeleted: false } });
 
 const Department: Model<IDepartment> = mongoose.model<IDepartment>('Department', departmentSchema);
 

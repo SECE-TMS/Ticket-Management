@@ -220,6 +220,8 @@ export function AdminUsers() {
       await userService.remove(getId(deleting))
       toast.success('User deleted successfully')
       setDeleting(null)
+      setOpen(false)
+      setEditing(null)
       await load()
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to delete user'))
@@ -442,18 +444,6 @@ export function AdminUsers() {
                             onClick={() => void toggleActive(u)}
                           >
                             {u.isActive ? 'Deactivate' : 'Activate'}
-                          </Button>
-                        )}
-                        {u.role !== 'admin' && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
-                            onClick={() => setDeleting(u)}
-                          >
-                            <Trash2 size={13} className="mr-1" />
-                            Delete
                           </Button>
                         )}
                       </div>
@@ -780,25 +770,38 @@ export function AdminUsers() {
             />
           </Field>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setOpen(false)
-                setEditing(null)
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              loading={saving}
-              onClick={() => void save()}
-              disabled={!form.name || !form.email || !form.department || !isPasswordValid || (!editing && !form.password)}
-            >
-              {editing ? 'Save Changes' : 'Create User'}
-            </Button>
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-[var(--border)]">
+            {editing && editing.role !== 'admin' ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer text-xs font-semibold"
+                onClick={() => setDeleting(editing)}
+              >
+                <Trash2 size={14} className="mr-1.5" />
+                Delete User
+              </Button>
+            ) : <div />}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setOpen(false)
+                  setEditing(null)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                loading={saving}
+                onClick={() => void save()}
+                disabled={!form.name || !form.email || !form.department || !isPasswordValid || (!editing && !form.password)}
+              >
+                {editing ? 'Save Changes' : 'Create User'}
+              </Button>
+            </div>
           </div>
         </div>
       </Modal>

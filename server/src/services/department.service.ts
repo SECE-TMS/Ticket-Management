@@ -136,21 +136,11 @@ export const remove = async (id: string) => {
     throw ApiError.conflict(`Cannot delete department with ${openCount} open ticket(s)`);
   }
 
-  // Soft delete: mark as deleted, deactivate, and preserve audit trail
+  // Soft delete only: keep department name and all related records intact
   dept.isDeleted = true;
   dept.deletedAt = new Date();
   dept.isActive = false;
-  dept.originalName = dept.name;
-  dept.name = `${dept.name} [DELETED-${Date.now()}]`;
-  dept.manager = null;
-  dept.defaultAssignee = null;
   await dept.save();
-
-  // Clear department references in users
-  await Promise.all([
-    User.updateMany({ department: id }, { $set: { department: null } }),
-    User.updateMany({ departments: id }, { $pull: { departments: id } }),
-  ]);
 
   return dept;
 };

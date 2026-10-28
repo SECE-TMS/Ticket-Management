@@ -260,6 +260,8 @@ export function AdminDepartments() {
       await departmentService.remove(getId(deleting))
       toast.success('Department deleted successfully')
       setDeleting(null)
+      setOpen(false)
+      setEditing(null)
       await load()
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to delete department'))
@@ -421,16 +423,6 @@ export function AdminDepartments() {
                           onClick={() => void toggleActive(d)}
                         >
                           {d.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
-                          onClick={() => setDeleting(d)}
-                        >
-                          <Trash2 size={13} className="mr-1" />
-                          Delete
                         </Button>
                       </div>
                     </td>
@@ -800,18 +792,31 @@ export function AdminDepartments() {
             )}
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              loading={saving}
-              onClick={() => void save()}
-              disabled={!form.name.trim()}
-            >
-              {editing ? 'Save Changes' : 'Create Department'}
-            </Button>
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-[var(--border)]">
+            {editing ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer text-xs font-semibold"
+                onClick={() => setDeleting(editing)}
+              >
+                <Trash2 size={14} className="mr-1.5" />
+                Delete Department
+              </Button>
+            ) : <div />}
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                loading={saving}
+                onClick={() => void save()}
+                disabled={!form.name.trim()}
+              >
+                {editing ? 'Save Changes' : 'Create Department'}
+              </Button>
+            </div>
           </div>
         </div>
       </Modal>

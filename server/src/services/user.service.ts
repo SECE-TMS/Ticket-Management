@@ -402,34 +402,11 @@ export const removeUser = async (id: string, actor: IUserDocument) => {
     throw ApiError.badRequest('Cannot delete your own account');
   }
 
-  // Soft delete: mark as deleted, deactivate, free email for future use, and preserve audit trail
+  // Soft delete only: keep user name, email, and task/ticket assignments completely intact
+  // (Tasks, tickets, logs, history continue to show the person's name as expected)
   user.isDeleted = true;
   user.deletedAt = new Date();
   user.isActive = false;
-  user.originalEmail = user.email;
-  user.email = `deleted_${Date.now()}_${user.email}`;
-
-  // Clean up references and assignments
-  await Promise.all([
-    User.updateMany({ employees: user._id }, { $pull: { employees: user._id } }),
-    User.updateMany({ managers: user._id }, { $pull: { managers: user._id } }),
-    Department.updateMany({ defaultAssignee: user._id }, { $set: { defaultAssignee: null } }),
-    Department.updateMany({ manager: user._id }, { $set: { manager: null } }),
-    Department.updateMany(
-      { 'blocks.floors.defaultAssignee': user._id },
-      { $set: { 'blocks.$[].floors.$[fl].defaultAssignee': null } },
-      { arrayFilters: [{ 'fl.defaultAssignee': user._id }] }
-    ),
-    Ticket.updateMany(
-      { assignedTo: user._id, status: { $in: ['assigned', 'accepted'] }, isDeleted: { $ne: true } },
-      { $set: { assignedTo: null, status: 'new' } }
-    ),
-    Task.updateMany(
-      { assignedTo: user._id, status: { $in: ['pending', 'in_progress'] }, isDeleted: { $ne: true } },
-      { $set: { status: 'cancelled', cancelledReason: 'Assignee account was deleted' } }
-    ),
-  ]);
-
   await user.save();
   return { id, message: 'User deleted successfully' };
 };
