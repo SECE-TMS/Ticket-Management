@@ -115,6 +115,8 @@ export function ManagerEmployees() {
       await userService.remove(getId(deleting))
       toast.success('Employee deleted successfully')
       setDeleting(null)
+      setOpen(false)
+      setEditing(null)
       await load()
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to delete employee'))
@@ -471,25 +473,38 @@ export function ManagerEmployees() {
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setOpen(false)
-                setEditing(null)
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              loading={saving}
-              disabled={!form.name || !form.email || !isPasswordValid || (!editing && !form.password)}
-              onClick={() => void save()}
-            >
-              {editing ? 'Save Changes' : 'Create Employee'}
-            </Button>
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-[var(--border)]">
+            {editing ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer text-xs font-semibold"
+                onClick={() => setDeleting(editing)}
+              >
+                <Trash2 size={14} className="mr-1.5" />
+                Delete Employee
+              </Button>
+            ) : <div />}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setOpen(false)
+                  setEditing(null)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                loading={saving}
+                disabled={!form.name || !form.email || !isPasswordValid || (!editing && !form.password)}
+                onClick={() => void save()}
+              >
+                {editing ? 'Save Changes' : 'Create Employee'}
+              </Button>
+            </div>
           </div>
         </div>
       </Modal>

@@ -127,6 +127,7 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
+userSchema.index({ email: 1 }, { unique: true, partialFilterExpression: { isDeleted: false } });
 userSchema.index({ role: 1, department: 1 });
 userSchema.index({ departments: 1 });
 
