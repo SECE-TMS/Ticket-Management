@@ -50,6 +50,8 @@ export interface Department {
   complaintTypes: string[]
   slaHours: number
   isActive?: boolean
+  isDeleted?: boolean
+  deletedAt?: string | null
   manager?: UserRef | string | null
   defaultAssignee?: UserRef | User | string | null
   locationEnabled?: boolean
@@ -82,6 +84,8 @@ export interface User {
   rollNumber?: string
   avatarUrl?: string
   isActive: boolean
+  isDeleted?: boolean
+  deletedAt?: string | null
   lastLogin?: string | null
   createdAt?: string
   updatedAt?: string

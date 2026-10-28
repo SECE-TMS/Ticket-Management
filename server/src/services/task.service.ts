@@ -144,7 +144,7 @@ export const listTasks = async (
   const limit = Math.min(Number(query.limit) || 20, 100);
   const skip = (page - 1) * limit;
 
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { isDeleted: { $ne: true } };
 
   // Role scoping
   if (actor.role === 'employee') {
@@ -262,7 +262,7 @@ export const getTaskById = async (
   id: string,
   actor: { _id: Types.ObjectId | string; role: string; department?: Types.ObjectId | string | null; departments?: any }
 ) => {
-  const task = await Task.findById(id)
+  const task = await Task.findOne({ _id: id, isDeleted: { $ne: true } })
     .populate('department', 'name complaintTypes')
     .populate('assignedTo', 'name email phone rollNumber avatarUrl')
     .populate('assignedBy', 'name email role')
@@ -459,8 +459,10 @@ export const toggleChecklistItem = async (
  * Delete a task (Admin only).
  */
 export const deleteTask = async (id: string) => {
-  const task = await Task.findByIdAndDelete(id);
+  const task = await Task.findOne({ _id: id, isDeleted: { $ne: true } });
   if (!task) throw ApiError.notFound('Task not found');
-  await Notification.deleteMany({ task: task._id });
+  task.isDeleted = true;
+  task.deletedAt = new Date();
+  await task.save();
   return { success: true };
 };

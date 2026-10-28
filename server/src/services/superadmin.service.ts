@@ -7,7 +7,7 @@ import ApiError from '../utils/apiError';
 // ─── Admin Management ────────────────────────────────────────────────────────
 
 export const listAdmins = async (query: Record<string, unknown> = {}) => {
-  const filter: Record<string, unknown> = { role: 'admin' };
+  const filter: Record<string, unknown> = { role: 'admin', isDeleted: { $ne: true } };
   if (query.isActive !== undefined) {
     filter.isActive = query.isActive === 'true' || query.isActive === true;
   }
@@ -43,7 +43,7 @@ export const createAdmin = async (data: Record<string, unknown>, actor: IUserDoc
     throw ApiError.forbidden('Only superadmin can create admin accounts');
   }
 
-  const existing = await User.findOne({ email: String(data.email).toLowerCase() });
+  const existing = await User.findOne({ email: String(data.email).toLowerCase(), isDeleted: { $ne: true } });
   if (existing) throw ApiError.conflict('Email already registered');
 
   const user = await User.create({
@@ -70,14 +70,14 @@ export const updateAdmin = async (
     throw ApiError.forbidden('Only superadmin can update admin accounts');
   }
 
-  const user = await User.findById(id);
+  const user = await User.findOne({ _id: id, isDeleted: { $ne: true } });
   if (!user) throw ApiError.notFound('Admin not found');
   if (user.role !== 'admin') throw ApiError.badRequest('User is not an admin');
 
   if (data.email) {
     const normalizedEmail = String(data.email).trim().toLowerCase();
     if (normalizedEmail !== user.email) {
-      const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+      const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id }, isDeleted: { $ne: true } });
       if (existing) {
         throw ApiError.conflict('Email already registered');
       }
@@ -104,7 +104,7 @@ export const toggleAdminStatus = async (id: string, isActive: boolean, actor: IU
     throw ApiError.forbidden('Only superadmin can toggle admin status');
   }
 
-  const user = await User.findById(id);
+  const user = await User.findOne({ _id: id, isDeleted: { $ne: true } });
   if (!user) throw ApiError.notFound('Admin not found');
   if (user.role !== 'admin') throw ApiError.badRequest('User is not an admin');
 
@@ -135,7 +135,7 @@ export const resetAdminPassword = async (
 // ─── Department-wise Reports ─────────────────────────────────────────────────
 
 export const getDepartmentReport = async () => {
-  const departments = await Department.find().populate('manager', 'name email').lean();
+  const departments = await Department.find({ isDeleted: { $ne: true } }).populate('manager', 'name email').lean();
 
   const report = await Promise.all(
     departments.map(async (dept) => {
@@ -143,24 +143,26 @@ export const getDepartmentReport = async () => {
 
       // Ticket stats per department
       const [total, open, resolved, closed, overdue, pendingApproval] = await Promise.all([
-        Ticket.countDocuments({ department: deptId }),
+        Ticket.countDocuments({ department: deptId, isDeleted: { $ne: true } }),
         Ticket.countDocuments({
           department: deptId,
           status: { $in: ['new', 'assigned', 'accepted', 'in_progress', 'reopened'] },
+          isDeleted: { $ne: true },
         }),
-        Ticket.countDocuments({ department: deptId, status: 'resolved' }),
-        Ticket.countDocuments({ department: deptId, status: 'closed' }),
+        Ticket.countDocuments({ department: deptId, status: 'resolved', isDeleted: { $ne: true } }),
+        Ticket.countDocuments({ department: deptId, status: 'closed', isDeleted: { $ne: true } }),
         Ticket.countDocuments({
           department: deptId,
           status: { $in: ['new', 'assigned', 'accepted', 'in_progress', 'reopened'] },
           expectedResolutionAt: { $lt: new Date() },
+          isDeleted: { $ne: true },
         }),
-        Ticket.countDocuments({ department: deptId, status: 'pending_approval' }),
+        Ticket.countDocuments({ department: deptId, status: 'pending_approval', isDeleted: { $ne: true } }),
       ]);
 
       // Average feedback rating
       const feedbackAgg = await Ticket.aggregate([
-        { $match: { department: new mongoose.Types.ObjectId(String(deptId)), 'feedback.rating': { $exists: true, $ne: null } } },
+        { $match: { department: new mongoose.Types.ObjectId(String(deptId)), 'feedback.rating': { $exists: true, $ne: null }, isDeleted: { $ne: true } } },
         { $group: { _id: null, avgRating: { $avg: '$feedback.rating' }, totalFeedback: { $sum: 1 } } },
       ]);
       const avgRating = feedbackAgg[0]?.avgRating ?? 0;
@@ -168,16 +170,8 @@ export const getDepartmentReport = async () => {
 
       // Staff counts
       const [managerCount, employeeCount] = await Promise.all([
-        User.countDocuments({
-          $or: [{ department: deptId }, { departments: deptId }],
-          role: 'manager',
-          isActive: true,
-        }),
-        User.countDocuments({
-          $or: [{ department: deptId }, { departments: deptId }],
-          role: 'employee',
-          isActive: true,
-        }),
+        User.countDocuments({ $or: [{ department: deptId }, { departments: deptId }], role: 'manager', isActive: true, isDeleted: { $ne: true } }),
+        User.countDocuments({ $or: [{ department: deptId }, { departments: deptId }], role: 'employee', isActive: true, isDeleted: { $ne: true } }),
       ]);
 
       return {
@@ -222,14 +216,14 @@ export const getSuperAdminDashboard = async () => {
     pendingApprovalTickets,
     overdueTickets,
   ] = await Promise.all([
-    User.countDocuments({ isActive: true }),
-    User.countDocuments({ role: 'admin', isActive: true }),
-    User.countDocuments({ role: 'manager', isActive: true }),
-    User.countDocuments({ role: 'employee', isActive: true }),
-    Ticket.countDocuments({}),
-    Ticket.countDocuments({ status: { $in: ['new', 'assigned', 'accepted', 'in_progress', 'reopened'] } }),
-    Ticket.countDocuments({ status: 'closed' }),
-    Ticket.countDocuments({ status: 'pending_approval' }),
+    User.countDocuments({ isActive: true, isDeleted: { $ne: true } }),
+    User.countDocuments({ role: 'admin', isActive: true, isDeleted: { $ne: true } }),
+    User.countDocuments({ role: 'manager', isActive: true, isDeleted: { $ne: true } }),
+    User.countDocuments({ role: 'employee', isActive: true, isDeleted: { $ne: true } }),
+    Ticket.countDocuments({ isDeleted: { $ne: true } }),
+    Ticket.countDocuments({ status: { $in: ['new', 'assigned', 'accepted', 'in_progress', 'reopened'] }, isDeleted: { $ne: true } }),
+    Ticket.countDocuments({ status: 'closed', isDeleted: { $ne: true } }),
+    Ticket.countDocuments({ status: 'pending_approval', isDeleted: { $ne: true } }),
     Ticket.countDocuments({
       status: { $in: ['new', 'assigned', 'accepted', 'in_progress', 'reopened'] },
       expectedResolutionAt: { $lt: new Date() },
@@ -243,7 +237,7 @@ export const getSuperAdminDashboard = async () => {
   sixMonthsAgo.setHours(0, 0, 0, 0);
 
   const monthlyTrendAgg = await Ticket.aggregate([
-    { $match: { createdAt: { $gte: sixMonthsAgo } } },
+    { $match: { createdAt: { $gte: sixMonthsAgo }, isDeleted: { $ne: true } } },
     {
       $group: {
         _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },

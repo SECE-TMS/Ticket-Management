@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import { Button } from '../../components/common/Button'
 import { Modal } from '../../components/common/Modal'
 import { PageLoader } from '../../components/common/LoadingSpinner'
@@ -76,6 +77,8 @@ export function AdminUsers() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<User | null>(null)
   const [form, setForm] = useState<UserForm>(emptyForm)
+  const [deleting, setDeleting] = useState<User | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(search), 300)
@@ -206,6 +209,22 @@ export function AdminUsers() {
       toast.error(getErrorMessage(err))
     } finally {
       setSaving(false)
+    }
+  }
+
+  
+  const handleDelete = async () => {
+    if (!deleting) return
+    setDeleteLoading(true)
+    try {
+      await userService.remove(getId(deleting))
+      toast.success('User deleted successfully')
+      setDeleting(null)
+      await load()
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to delete user'))
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -425,6 +444,18 @@ export function AdminUsers() {
                             {u.isActive ? 'Deactivate' : 'Activate'}
                           </Button>
                         )}
+                        {u.role !== 'admin' && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
+                            onClick={() => setDeleting(u)}
+                          >
+                            <Trash2 size={13} className="mr-1" />
+                            Delete
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -457,6 +488,45 @@ export function AdminUsers() {
       )}
 
       {/* Create / Edit user modal */}
+            {/* Delete Confirmation Modal */}
+      <Modal
+        open={Boolean(deleting)}
+        onClose={() => setDeleting(null)}
+        title="Delete User"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 leading-relaxed">
+            <p className="font-bold text-sm mb-1 text-red-950 flex items-center gap-1.5">
+              <Trash2 size={16} className="text-red-600" />
+              Soft Delete User Account
+            </p>
+            Are you sure you want to delete user <strong className="font-semibold text-red-950">"{deleting?.name}"</strong> ({deleting?.email})?
+            <br /><br />
+            This account will be soft-deleted in the database. The user will be deactivated, unassigned from tickets and tasks, and can no longer log in.
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleting(null)}
+              disabled={deleteLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              loading={deleteLoading}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold cursor-pointer"
+              onClick={() => void handleDelete()}
+            >
+              Yes, Delete User
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       <Modal
         open={open}
         onClose={() => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Users } from 'lucide-react'
+import { Trash2, Users } from 'lucide-react'
 import { Button } from '../../components/common/Button'
 import { Modal } from '../../components/common/Modal'
 import { PageLoader } from '../../components/common/LoadingSpinner'
@@ -66,6 +66,8 @@ export function ManagerEmployees() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<User | null>(null)
   const [form, setForm] = useState<EmpForm>(emptyForm)
+  const [deleting, setDeleting] = useState<User | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const load = useCallback(async () => {
     if (!activeDeptId) {
@@ -103,6 +105,22 @@ export function ManagerEmployees() {
       rollNumber: emp.rollNumber || '',
     })
     setOpen(true)
+  }
+
+  
+  const handleDelete = async () => {
+    if (!deleting) return
+    setDeleteLoading(true)
+    try {
+      await userService.remove(getId(deleting))
+      toast.success('Employee deleted successfully')
+      setDeleting(null)
+      await load()
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to delete employee'))
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const toggleActive = async (emp: User) => {
@@ -329,6 +347,45 @@ export function ManagerEmployees() {
           />
         </div>
       )}
+
+            {/* Delete Confirmation Modal */}
+      <Modal
+        open={Boolean(deleting)}
+        onClose={() => setDeleting(null)}
+        title="Delete Employee"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 leading-relaxed">
+            <p className="font-bold text-sm mb-1 text-red-950 flex items-center gap-1.5">
+              <Trash2 size={16} className="text-red-600" />
+              Soft Delete Employee Account
+            </p>
+            Are you sure you want to delete employee <strong className="font-semibold text-red-950">"{deleting?.name}"</strong> ({deleting?.email})?
+            <br /><br />
+            This account will be soft-deleted and deactivated in the department. The employee will be unassigned from active tickets and tasks.
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleting(null)}
+              disabled={deleteLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              loading={deleteLoading}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold cursor-pointer"
+              onClick={() => void handleDelete()}
+            >
+              Yes, Delete Employee
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Add / Edit Employee Modal */}
       <Modal

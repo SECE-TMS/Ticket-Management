@@ -46,7 +46,7 @@ router.patch(
   validate(userStatusSchema),
   userController.updateStatus
 );
-router.delete('/:id', requireRole('admin'), userController.remove);
+router.delete('/:id', requireRole('admin', 'manager'), userController.remove);
 router.put(
   '/:id/password',
   requireRole('admin', 'manager', 'employee'),

@@ -20,6 +20,9 @@ export interface IDepartment {
   isActive: boolean;
   locationEnabled: boolean;
   blocks: IBlock[];
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  originalName?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +56,9 @@ const departmentSchema = new Schema<IDepartment>(
     isActive: { type: Boolean, default: true },
     locationEnabled: { type: Boolean, default: false },
     blocks: { type: [blockSchema], default: [] },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date, default: null },
+    originalName: { type: String, default: null },
   },
   { timestamps: true }
 );

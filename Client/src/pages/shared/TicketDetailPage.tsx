@@ -461,7 +461,7 @@ export function TicketDetailPage({ backTo }: TicketDetailPageProps) {
               await ticketService.delete(ticket._id);
               setDeleteModalOpen(false);
               navigate(backTo);
-            }, 'Ticket deleted permanently')
+            }, 'Ticket deleted successfully')
           }
         />
       )}
