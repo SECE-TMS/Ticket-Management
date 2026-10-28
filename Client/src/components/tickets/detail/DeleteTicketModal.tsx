@@ -19,20 +19,20 @@ export function DeleteTicketModal({
   onConfirmDelete,
 }: DeleteTicketModalProps) {
   return (
-    <Modal open={open} onClose={onClose} title="Delete Ticket Permanently">
+    <Modal open={open} onClose={onClose} title="Delete Ticket">
       <div className="space-y-4">
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 leading-relaxed">
           <p className="font-bold text-sm mb-1 text-red-950 flex items-center gap-1.5">
             <Trash2 size={16} className="text-red-600" />
-            Warning: Permanent and Irreversible Action
+            Soft Delete Ticket
           </p>
-          Are you sure you want to permanently delete ticket{' '}
+          Are you sure you want to delete ticket{' '}
           <strong className="font-mono text-red-950 bg-red-100 px-1.5 py-0.5 rounded">
             #{ticket.ticketCode}
           </strong>{' '}
           ({ticket.title || ticket.complaintType})?
-          <br />
-          All associated resolution history, media attachments, activity logs, and notifications will be permanently removed from the database.
+          <br /><br />
+          This ticket will be marked as deleted in the database and hidden from active views.
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">
@@ -51,7 +51,7 @@ export function DeleteTicketModal({
             className="bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-md"
             onClick={onConfirmDelete}
           >
-            Yes, Delete Permanently
+            Yes, Delete Ticket
           </Button>
         </div>
       </div>

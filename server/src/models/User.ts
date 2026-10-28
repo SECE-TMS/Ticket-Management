@@ -17,6 +17,8 @@ export interface IUserSafeObject {
   rollNumber: string;
   avatarUrl: string;
   isActive: boolean;
+  isDeleted?: boolean;
+  deletedAt?: Date | null;
   lastLogin: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
@@ -35,6 +37,9 @@ export interface IUser {
   rollNumber: string;
   avatarUrl: string;
   isActive: boolean;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  originalEmail?: string | null;
   lastLogin: Date | null;
   createdBy: mongoose.Types.ObjectId | null;
   refreshToken: string | null;
@@ -107,6 +112,9 @@ const userSchema = new Schema<IUser>(
     rollNumber: { type: String, trim: true, default: '' },
     avatarUrl: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date, default: null },
+    originalEmail: { type: String, default: null },
     lastLogin: { type: Date, default: null },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     refreshToken: { type: String, select: false, default: null },
@@ -165,6 +173,8 @@ userSchema.methods.toSafeObject = function toSafeObject(this: IUserDocument): IU
     rollNumber: this.rollNumber || '',
     avatarUrl: this.avatarUrl,
     isActive: this.isActive,
+    isDeleted: Boolean(this.isDeleted),
+    deletedAt: this.deletedAt || null,
     lastLogin: this.lastLogin,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,

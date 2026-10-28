@@ -1,6 +1,5 @@
 import Ticket from '../../models/Ticket';
 import ActivityLog from '../../models/ActivityLog';
-import Notification from '../../models/Notification';
 import type { IUserDocument } from '../../models/User';
 import ApiError from '../../utils/apiError';
 import { assertTicketAccess, buildListFilter, populateTicket } from './ticketCommon';
@@ -23,7 +22,7 @@ export const listTickets = async (actor: IUserDocument, query: Record<string, un
 };
 
 export const getTicketById = async (id: string, actor: IUserDocument) => {
-  const ticket = await populateTicket(Ticket.findById(id));
+  const ticket = await populateTicket(Ticket.findOne({ _id: id, isDeleted: { $ne: true } }));
   if (!ticket) throw ApiError.notFound('Ticket not found');
   assertTicketAccess(ticket, actor);
 
@@ -55,18 +54,24 @@ export const getTicketById = async (id: string, actor: IUserDocument) => {
 };
 
 export const deleteTicket = async (id: string, actor: IUserDocument) => {
-  if (actor.role !== 'admin') {
-    throw ApiError.forbidden('Only administrators can permanently delete tickets');
+  if (actor.role !== 'admin' && actor.role !== 'superadmin') {
+    throw ApiError.forbidden('Only administrators can delete tickets');
   }
 
-  const ticket = await Ticket.findById(id);
+  const ticket = await Ticket.findOne({ _id: id, isDeleted: { $ne: true } });
   if (!ticket) throw ApiError.notFound('Ticket not found');
 
-  await Promise.all([
-    ActivityLog.deleteMany({ ticket: ticket._id }),
-    Notification.deleteMany({ ticket: ticket._id }),
-    Ticket.findByIdAndDelete(ticket._id),
-  ]);
+  // Soft delete ticket (no direct/hard delete)
+  ticket.isDeleted = true;
+  ticket.deletedAt = new Date();
+  await ticket.save();
 
-  return { message: `Ticket ${ticket.ticketCode} deleted permanently`, ticketCode: ticket.ticketCode };
+  await ActivityLog.create({
+    ticket: ticket._id,
+    actor: actor._id,
+    action: 'updated',
+    message: `Ticket soft deleted by ${actor.name} (${actor.role})`,
+  });
+
+  return { message: `Ticket ${ticket.ticketCode} deleted successfully`, ticketCode: ticket.ticketCode };
 };

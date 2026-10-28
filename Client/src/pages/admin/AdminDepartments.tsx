@@ -45,6 +45,8 @@ export function AdminDepartments() {
   const [editing, setEditing] = useState<Department | null>(null)
   const [form, setForm] = useState<DeptForm>(emptyForm)
   const [chipInput, setChipInput] = useState('')
+  const [deleting, setDeleting] = useState<Department | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -250,6 +252,22 @@ export function AdminDepartments() {
     }
   }
 
+  
+  const handleDelete = async () => {
+    if (!deleting) return
+    setDeleteLoading(true)
+    try {
+      await departmentService.remove(getId(deleting))
+      toast.success('Department deleted successfully')
+      setDeleting(null)
+      await load()
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to delete department'))
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
   const toggleActive = async (dept: Department) => {
     try {
       await departmentService.updateStatus(getId(dept), !dept.isActive)
@@ -404,6 +422,16 @@ export function AdminDepartments() {
                         >
                           {d.isActive ? 'Deactivate' : 'Activate'}
                         </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
+                          onClick={() => setDeleting(d)}
+                        >
+                          <Trash2 size={13} className="mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -435,6 +463,45 @@ export function AdminDepartments() {
           />
         </div>
       )}
+
+            {/* Delete confirmation modal */}
+      <Modal
+        open={Boolean(deleting)}
+        onClose={() => setDeleting(null)}
+        title="Delete Department"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 leading-relaxed">
+            <p className="font-bold text-sm mb-1 text-red-950 flex items-center gap-1.5">
+              <Trash2 size={16} className="text-red-600" />
+              Soft Delete Department
+            </p>
+            Are you sure you want to delete <strong className="font-semibold text-red-950">"{deleting?.name}"</strong>?
+            <br /><br />
+            This will soft-delete the department in the database, deactivating it and unassigning it from facilities. Note: Departments with open tickets cannot be deleted.
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleting(null)}
+              disabled={deleteLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              loading={deleteLoading}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold cursor-pointer"
+              onClick={() => void handleDelete()}
+            >
+              Yes, Delete Department
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Create/Edit modal */}
       <Modal

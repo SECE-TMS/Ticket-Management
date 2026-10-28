@@ -1,30 +1,40 @@
 import User, { getUserDepartmentIds, type IUserDocument } from '../models/User';
 import Department from '../models/Department';
+import Ticket from '../models/Ticket';
+import Task from '../models/Task';
 import ApiError from '../utils/apiError';
 
 export const listUsers = async (query: Record<string, unknown> = {}) => {
-  const filter: Record<string, unknown> = {
-    role: { $ne: 'superadmin' },
-  };
+  const conditions: Array<Record<string, unknown>> = [
+    { role: { $ne: 'superadmin' } },
+    { isDeleted: { $ne: true } },
+  ];
+
   if (query.role && query.role !== 'superadmin') {
-    filter.role = query.role;
+    conditions.push({ role: query.role });
   }
   if (query.department) {
-    filter.$or = [
-      { department: query.department },
-      { departments: query.department },
-    ];
+    conditions.push({
+      $or: [
+        { department: query.department },
+        { departments: query.department },
+      ],
+    });
   }
   if (query.isActive !== undefined) {
-    filter.isActive = query.isActive === 'true' || query.isActive === true;
+    conditions.push({ isActive: query.isActive === 'true' || query.isActive === true });
   }
   if (query.search) {
-    filter.$or = [
-      { name: { $regex: query.search, $options: 'i' } },
-      { email: { $regex: query.search, $options: 'i' } },
-      { rollNumber: { $regex: query.search, $options: 'i' } },
-    ];
+    conditions.push({
+      $or: [
+        { name: { $regex: query.search, $options: 'i' } },
+        { email: { $regex: query.search, $options: 'i' } },
+        { rollNumber: { $regex: query.search, $options: 'i' } },
+      ],
+    });
   }
+
+  const filter = { $and: conditions };
 
   const page = Number(query.page) || 1;
   const limit = Math.min(Number(query.limit) || 20, 100);
@@ -56,12 +66,13 @@ export const listByDepartment = async (deptId: string, actor: IUserDocument) => 
     }
   }
 
-  const dept = await Department.findById(deptId);
+  const dept = await Department.findOne({ _id: deptId, isDeleted: { $ne: true } });
   if (!dept) throw ApiError.notFound('Department not found');
 
   const users = await User.find({
     $or: [{ department: deptId }, { departments: deptId }],
     role: { $ne: 'admin' },
+    isDeleted: { $ne: true },
   })
     .populate('department', 'name')
     .populate('departments', 'name')
@@ -73,20 +84,25 @@ export const listByDepartment = async (deptId: string, actor: IUserDocument) => 
 };
 
 export const listAssignees = async (actor: IUserDocument, search?: string) => {
-  const filter: Record<string, unknown> = {
-    role: { $in: ['employee', 'manager'] },
-    isActive: true,
-  };
+  const conditions: Array<Record<string, unknown>> = [
+    { role: { $in: ['employee', 'manager'] } },
+    { isActive: true },
+    { isDeleted: { $ne: true } },
+  ];
 
   if (search && search.trim()) {
     const s = search.trim();
-    filter.$or = [
-      { name: { $regex: s, $options: 'i' } },
-      { email: { $regex: s, $options: 'i' } },
-      { phone: { $regex: s, $options: 'i' } },
-      { rollNumber: { $regex: s, $options: 'i' } },
-    ];
+    conditions.push({
+      $or: [
+        { name: { $regex: s, $options: 'i' } },
+        { email: { $regex: s, $options: 'i' } },
+        { phone: { $regex: s, $options: 'i' } },
+        { rollNumber: { $regex: s, $options: 'i' } },
+      ],
+    });
   }
+
+  const filter = { $and: conditions };
 
   const users = await User.find(filter)
     .populate('department', 'name complaintTypes')
@@ -102,20 +118,26 @@ export const createUser = async (data: Record<string, unknown>, actor: IUserDocu
     throw ApiError.badRequest('Cannot create admin via API');
   }
 
-  const rawDepts = Array.isArray(data.departments) && data.departments.length > 0
-    ? (data.departments as string[]).map(String)
-    : (data.department ? [String(data.department)] : []);
+  const rawDepts =
+    Array.isArray(data.departments) && data.departments.length > 0
+      ? (data.departments as string[]).map(String)
+      : data.department
+        ? [String(data.department)]
+        : [];
 
   if (rawDepts.length === 0) {
     throw ApiError.badRequest('At least one department is required');
   }
 
-  const depts = await Department.find({ _id: { $in: rawDepts } });
+  const depts = await Department.find({ _id: { $in: rawDepts }, isDeleted: { $ne: true } });
   if (depts.length !== rawDepts.length) {
     throw ApiError.notFound('One or more selected departments not found');
   }
 
-  const existing = await User.findOne({ email: String(data.email).toLowerCase() });
+  const existing = await User.findOne({
+    email: String(data.email).toLowerCase(),
+    isDeleted: { $ne: true },
+  });
   if (existing) throw ApiError.conflict('Email already registered');
 
   const user = await User.create({
@@ -164,9 +186,12 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
     throw ApiError.badRequest('Manager has no department assigned');
   }
 
-  const rawDepts = Array.isArray(data.departments) && data.departments.length > 0
-    ? (data.departments as string[]).map(String)
-    : (data.department ? [String(data.department)] : [managerDepts[0]]);
+  const rawDepts =
+    Array.isArray(data.departments) && data.departments.length > 0
+      ? (data.departments as string[]).map(String)
+      : data.department
+        ? [String(data.department)]
+        : [managerDepts[0]];
 
   for (const d of rawDepts) {
     if (!managerDepts.includes(d)) {
@@ -174,12 +199,16 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
     }
   }
 
-  const existing = await User.findOne({ email: String(data.email).toLowerCase() });
+  const existing = await User.findOne({
+    email: String(data.email).toLowerCase(),
+    isDeleted: { $ne: true },
+  });
   if (existing) throw ApiError.conflict('Email already registered');
 
-  const userManagers = Array.isArray(data.managers) && data.managers.length > 0
-    ? data.managers
-    : [actor._id];
+  const userManagers =
+    Array.isArray(data.managers) && data.managers.length > 0
+      ? data.managers
+      : [actor._id];
 
   const user = await User.create({
     name: data.name,
@@ -209,7 +238,7 @@ export const createEmployee = async (data: Record<string, unknown>, actor: IUser
 };
 
 export const getById = async (id: string, actor: IUserDocument) => {
-  const user = await User.findById(id)
+  const user = await User.findOne({ _id: id, isDeleted: { $ne: true } })
     .populate('department', 'name')
     .populate('departments', 'name')
     .populate('managers', 'name email phone role')
@@ -235,7 +264,7 @@ export const updateUser = async (
   data: Record<string, unknown>,
   actor: IUserDocument
 ) => {
-  const user = await User.findById(id);
+  const user = await User.findOne({ _id: id, isDeleted: { $ne: true } });
   if (!user) throw ApiError.notFound('User not found');
 
   if (user.role === 'superadmin') {
@@ -258,7 +287,7 @@ export const updateUser = async (
     delete data.departments;
   }
 
-  if (actor.role !== 'admin') {
+  if (actor.role !== 'admin' && actor.role !== 'superadmin') {
     delete data.role;
     delete data.department;
     delete data.departments;
@@ -271,7 +300,11 @@ export const updateUser = async (
   if (data.email) {
     const normalizedEmail = String(data.email).trim().toLowerCase();
     if (normalizedEmail !== user.email) {
-      const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+      const existing = await User.findOne({
+        email: normalizedEmail,
+        _id: { $ne: user._id },
+        isDeleted: { $ne: true },
+      });
       if (existing) {
         throw ApiError.conflict('Email already registered');
       }
@@ -328,7 +361,7 @@ export const updateUser = async (
 };
 
 export const updateStatus = async (id: string, isActive: boolean) => {
-  const user = await User.findById(id);
+  const user = await User.findOne({ _id: id, isDeleted: { $ne: true } });
   if (!user) throw ApiError.notFound('User not found');
   if (user.role === 'superadmin') {
     throw ApiError.forbidden('Cannot modify superadmin user status');
@@ -341,14 +374,64 @@ export const updateStatus = async (id: string, isActive: boolean) => {
   return user.toSafeObject();
 };
 
-export const removeUser = async (id: string) => {
-  const user = await User.findById(id);
+export const removeUser = async (id: string, actor: IUserDocument) => {
+  const user = await User.findOne({ _id: id, isDeleted: { $ne: true } });
   if (!user) throw ApiError.notFound('User not found');
-  if (user.role === 'superadmin' || user.role === 'admin') {
-    throw ApiError.badRequest('Cannot delete admin or superadmin account');
+
+  if (user.role === 'superadmin') {
+    throw ApiError.forbidden('Cannot delete superadmin account');
   }
-  await user.deleteOne();
-  return { id };
+
+  if (user.role === 'admin' && actor.role !== 'superadmin') {
+    throw ApiError.forbidden('Only superadmin can delete admin accounts');
+  }
+
+  if (actor.role === 'manager') {
+    if (user.role !== 'employee') {
+      throw ApiError.forbidden('Managers can only delete employee accounts');
+    }
+    const managerDepts = getUserDepartmentIds(actor);
+    const userDepts = getUserDepartmentIds(user);
+    const sharesDept = userDepts.some((d) => managerDepts.includes(d));
+    if (!sharesDept) {
+      throw ApiError.forbidden('Cannot delete employee outside your department');
+    }
+  }
+
+  if (String(actor._id) === String(user._id)) {
+    throw ApiError.badRequest('Cannot delete your own account');
+  }
+
+  // Soft delete: mark as deleted, deactivate, free email for future use, and preserve audit trail
+  user.isDeleted = true;
+  user.deletedAt = new Date();
+  user.isActive = false;
+  user.originalEmail = user.email;
+  user.email = `deleted_${Date.now()}_${user.email}`;
+
+  // Clean up references and assignments
+  await Promise.all([
+    User.updateMany({ employees: user._id }, { $pull: { employees: user._id } }),
+    User.updateMany({ managers: user._id }, { $pull: { managers: user._id } }),
+    Department.updateMany({ defaultAssignee: user._id }, { $set: { defaultAssignee: null } }),
+    Department.updateMany({ manager: user._id }, { $set: { manager: null } }),
+    Department.updateMany(
+      { 'blocks.floors.defaultAssignee': user._id },
+      { $set: { 'blocks.$[].floors.$[fl].defaultAssignee': null } },
+      { arrayFilters: [{ 'fl.defaultAssignee': user._id }] }
+    ),
+    Ticket.updateMany(
+      { assignedTo: user._id, status: { $in: ['assigned', 'accepted'] }, isDeleted: { $ne: true } },
+      { $set: { assignedTo: null, status: 'new' } }
+    ),
+    Task.updateMany(
+      { assignedTo: user._id, status: { $in: ['pending', 'in_progress'] }, isDeleted: { $ne: true } },
+      { $set: { status: 'cancelled', cancelledReason: 'Assignee account was deleted' } }
+    ),
+  ]);
+
+  await user.save();
+  return { id, message: 'User deleted successfully' };
 };
 
 export const changePassword = async (
@@ -356,11 +439,11 @@ export const changePassword = async (
   { currentPassword, newPassword }: { currentPassword: string; newPassword: string },
   actor: IUserDocument
 ) => {
-  if (String(actor._id) !== String(id) && actor.role !== 'admin') {
+  if (String(actor._id) !== String(id) && actor.role !== 'admin' && actor.role !== 'superadmin') {
     throw ApiError.forbidden();
   }
 
-  const user = await User.findById(id).select('+password');
+  const user = await User.findOne({ _id: id, isDeleted: { $ne: true } }).select('+password');
   if (!user) throw ApiError.notFound('User not found');
 
   if (String(actor._id) === String(id)) {

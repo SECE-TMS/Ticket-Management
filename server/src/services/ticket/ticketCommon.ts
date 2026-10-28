@@ -50,7 +50,7 @@ export const assertTicketAccess = (
 };
 
 export const buildListFilter = (actor: IUserDocument, query: Record<string, unknown>) => {
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { isDeleted: { $ne: true } };
 
   if (actor.role === 'manager') {
     const managerDepts = getUserDepartmentIds(actor);

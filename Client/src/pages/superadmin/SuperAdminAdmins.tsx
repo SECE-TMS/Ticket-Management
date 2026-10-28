@@ -11,9 +11,11 @@ import {
   ShieldOff,
   ToggleLeft,
   ToggleRight,
+  Trash2,
   X,
 } from 'lucide-react'
 import { superadminService } from '../../services/superadminService'
+import { userService } from '../../services/userService'
 import { PageLoader } from '../../components/common/LoadingSpinner'
 import { Button } from '../../components/common/Button'
 import { useToast } from '../../context/ToastContext'
@@ -58,6 +60,10 @@ export function SuperAdminAdmins() {
   const [editAdmin, setEditAdmin] = useState<User | null>(null)
   const [editForm, setEditForm] = useState({ name: '', phone: '' })
   const [editLoading, setEditLoading] = useState(false)
+
+  // Delete admin state
+  const [deletingAdmin, setDeletingAdmin] = useState<User | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   // Reset password state
   const [resetPwd, setResetPwd] = useState<ResetPasswordState | null>(null)
@@ -126,6 +132,22 @@ export function SuperAdminAdmins() {
       void load()
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to toggle admin status'))
+    }
+  }
+
+
+  const handleDeleteAdmin = async () => {
+    if (!deletingAdmin) return
+    setDeleteLoading(true)
+    try {
+      await userService.remove(deletingAdmin.id)
+      toast.success('Admin deleted successfully')
+      setDeletingAdmin(null)
+      void load()
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to delete admin'))
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -321,6 +343,48 @@ export function SuperAdminAdmins() {
               {p}
             </button>
           ))}
+        </div>
+      )}
+
+            {/* Delete Admin Modal */}
+      {deletingAdmin && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeletingAdmin(null)} />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--white)] shadow-2xl p-5 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-100">
+                <Trash2 size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-[var(--ink)]">Delete Admin Account</h3>
+                <p className="text-xs text-[var(--ink-muted)]">Soft delete confirmation</p>
+              </div>
+            </div>
+            <p className="text-xs text-[var(--ink-muted)] leading-relaxed">
+              Are you sure you want to delete admin account <strong className="font-semibold text-[var(--ink)]">"{deletingAdmin.name}"</strong> ({deletingAdmin.email})?
+              The account will be soft-deleted in the database and deactivated.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeletingAdmin(null)}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                loading={deleteLoading}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold cursor-pointer"
+                onClick={() => void handleDeleteAdmin()}
+              >
+                Yes, Delete Admin
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -209,6 +209,7 @@ export const trackTicket = async ({
     Ticket.findOne({
       ticketCode: String(ticketCode).trim().toUpperCase(),
       'requester.mobile': mobile,
+      isDeleted: { $ne: true },
     })
   );
 
@@ -253,6 +254,7 @@ export const requesterApproveClose = async ({
   const ticket = await Ticket.findOne({
     ticketCode: String(ticketCode).trim().toUpperCase(),
     'requester.mobile': String(mobile).trim(),
+    isDeleted: { $ne: true },
   });
 
   if (!ticket) throw ApiError.notFound('Ticket not found or mobile mismatch');

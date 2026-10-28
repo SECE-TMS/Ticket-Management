@@ -25,7 +25,7 @@ const countByStatus = async (match: Record<string, unknown> = {}) => {
 };
 
 export const adminDashboard = async (query: Record<string, unknown> = {}) => {
-  const match: Record<string, unknown> = {};
+  const match: Record<string, unknown> = { isDeleted: { $ne: true } };
 
   if (query.department) {
     match.department = toObjectId(query.department);
@@ -81,8 +81,8 @@ export const adminDashboard = async (query: Record<string, unknown> = {}) => {
     Ticket.countDocuments(match),
     Ticket.countDocuments({ ...match, status: { $in: [...OPEN_STATUSES] } }),
     Ticket.countDocuments({ ...match, status: { $in: ['resolved', 'closed'] } }),
-    Department.countDocuments({ isActive: true }),
-    User.countDocuments({ isActive: true, role: { $ne: 'admin' } }),
+    Department.countDocuments({ isActive: true, isDeleted: { $ne: true } }),
+    User.countDocuments({ isActive: true, role: { $ne: 'admin' }, isDeleted: { $ne: true } }),
     Ticket.countDocuments({
       ...match,
       status: { $in: [...OPEN_STATUSES] },
@@ -370,6 +370,7 @@ export const managerDashboard = async (actor: IUserDocument) => {
       ],
       role: 'employee',
       isActive: true,
+      isDeleted: { $ne: true },
     }),
     Ticket.find(match)
       .sort({ createdAt: -1 })

@@ -62,6 +62,8 @@ export interface ITask {
     sms: boolean;
   };
   activities: ITaskActivity[];
+  isDeleted: boolean;
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -164,6 +166,8 @@ const taskSchema = new Schema<ITask>(
       sms: { type: Boolean, default: true },
     },
     activities: { type: [taskActivitySchema], default: [] },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

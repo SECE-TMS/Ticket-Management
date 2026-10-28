@@ -37,7 +37,7 @@ export const login = async ({ email, password }: { email: string; password: stri
     '+password +loginAttempts +lockUntil +refreshToken'
   );
 
-  if (!user) {
+  if (!user || user.isDeleted) {
     throw ApiError.unauthorized('Invalid email or password', 'INVALID_CREDENTIALS');
   }
 
@@ -90,7 +90,7 @@ export const refresh = async (refreshToken: string | undefined) => {
   }
 
   const user = await User.findById(decoded.sub).select('+refreshToken');
-  if (!user || !user.isActive || user.refreshToken !== refreshToken) {
+  if (!user || !user.isActive || user.isDeleted || user.refreshToken !== refreshToken) {
     throw ApiError.unauthorized('Invalid refresh token', 'TOKEN_INVALID');
   }
 

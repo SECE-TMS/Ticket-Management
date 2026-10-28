@@ -29,7 +29,7 @@ export const authenticate = async (
     }
 
     const user = await User.findById(decoded.sub);
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.isDeleted) {
       throw ApiError.unauthorized('User not found or inactive');
     }
 
@@ -51,7 +51,7 @@ export const optionalAuth = async (
       try {
         const decoded = verifyAccessToken(header.slice(7));
         const user = await User.findById(decoded.sub);
-        if (user && user.isActive) req.user = user;
+        if (user && user.isActive && !user.isDeleted) req.user = user;
       } catch {
         // ignore invalid optional token
       }

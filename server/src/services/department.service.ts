@@ -1,10 +1,10 @@
 import Department from '../models/Department';
 import Ticket, { OPEN_STATUSES } from '../models/Ticket';
+import User, { getUserDepartmentIds, type IUserDocument } from '../models/User';
 import ApiError from '../utils/apiError';
-import { getUserDepartmentIds, type IUserDocument } from '../models/User';
 
 export const listActive = async () => {
-  return Department.find({ isActive: true })
+  return Department.find({ isActive: true, isDeleted: { $ne: true } })
     .select('name description complaintTypes slaHours locationEnabled blocks defaultAssignee')
     .populate('defaultAssignee', 'name email role')
     .populate('blocks.floors.defaultAssignee', 'name email role')
@@ -13,7 +13,7 @@ export const listActive = async () => {
 };
 
 export const listAll = async () => {
-  return Department.find()
+  return Department.find({ isDeleted: { $ne: true } })
     .populate('manager', 'name email')
     .populate('defaultAssignee', 'name email role')
     .populate('blocks.floors.defaultAssignee', 'name email role')
@@ -22,7 +22,7 @@ export const listAll = async () => {
 };
 
 export const getById = async (id: string, actor: IUserDocument) => {
-  const dept = await Department.findById(id)
+  const dept = await Department.findOne({ _id: id, isDeleted: { $ne: true } })
     .populate('manager', 'name email phone')
     .populate('defaultAssignee', 'name email role')
     .populate('blocks.floors.defaultAssignee', 'name email role');
@@ -39,7 +39,7 @@ export const getById = async (id: string, actor: IUserDocument) => {
 };
 
 export const create = async (data: Record<string, unknown>) => {
-  const exists = await Department.findOne({ name: data.name as string });
+  const exists = await Department.findOne({ name: data.name as string, isDeleted: { $ne: true } });
   if (exists) throw ApiError.conflict('Department name already exists');
   if (data.defaultAssignee === '' || data.defaultAssignee === 'none') {
     data.defaultAssignee = null;
@@ -71,6 +71,15 @@ export const create = async (data: Record<string, unknown>) => {
 };
 
 export const update = async (id: string, data: Record<string, unknown>) => {
+  if (data.name) {
+    const existingName = await Department.findOne({
+      name: data.name as string,
+      _id: { $ne: id },
+      isDeleted: { $ne: true },
+    });
+    if (existingName) throw ApiError.conflict('Department name already exists');
+  }
+
   if (data.defaultAssignee === '' || data.defaultAssignee === 'none') {
     data.defaultAssignee = null;
   }
@@ -93,7 +102,7 @@ export const update = async (id: string, data: Record<string, unknown>) => {
         : [],
     }));
   }
-  const dept = await Department.findByIdAndUpdate(id, data, {
+  const dept = await Department.findOneAndUpdate({ _id: id, isDeleted: { $ne: true } }, data, {
     new: true,
     runValidators: true,
   })
@@ -105,8 +114,8 @@ export const update = async (id: string, data: Record<string, unknown>) => {
 };
 
 export const updateStatus = async (id: string, isActive: boolean) => {
-  const dept = await Department.findByIdAndUpdate(
-    id,
+  const dept = await Department.findOneAndUpdate(
+    { _id: id, isDeleted: { $ne: true } },
     { isActive },
     { new: true, runValidators: true }
   );
@@ -115,15 +124,33 @@ export const updateStatus = async (id: string, isActive: boolean) => {
 };
 
 export const remove = async (id: string) => {
+  const dept = await Department.findOne({ _id: id, isDeleted: { $ne: true } });
+  if (!dept) throw ApiError.notFound('Department not found');
+
   const openCount = await Ticket.countDocuments({
     department: id,
     status: { $in: [...OPEN_STATUSES] },
+    isDeleted: { $ne: true },
   });
   if (openCount > 0) {
     throw ApiError.conflict(`Cannot delete department with ${openCount} open ticket(s)`);
   }
 
-  const dept = await Department.findByIdAndDelete(id);
-  if (!dept) throw ApiError.notFound('Department not found');
+  // Soft delete: mark as deleted, deactivate, and preserve audit trail
+  dept.isDeleted = true;
+  dept.deletedAt = new Date();
+  dept.isActive = false;
+  dept.originalName = dept.name;
+  dept.name = `${dept.name} [DELETED-${Date.now()}]`;
+  dept.manager = null;
+  dept.defaultAssignee = null;
+  await dept.save();
+
+  // Clear department references in users
+  await Promise.all([
+    User.updateMany({ department: id }, { $set: { department: null } }),
+    User.updateMany({ departments: id }, { $pull: { departments: id } }),
+  ]);
+
   return dept;
 };

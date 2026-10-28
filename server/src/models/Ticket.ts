@@ -96,6 +96,8 @@ export interface ITicket {
   feedback?: ITicketFeedback | null;
   approvalRequestedAt: Date | null;
   approvalRequestedBy: mongoose.Types.ObjectId | null;
+  isDeleted: boolean;
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -168,6 +170,8 @@ const ticketSchema = new Schema<ITicket>(
     reopenCount: { type: Number, default: 0 },
     approvalRequestedAt: { type: Date, default: null },
     approvalRequestedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date, default: null },
     feedback: {
       rating: { type: Number, min: 1, max: 5 },
       comment: { type: String, trim: true, default: '' },
